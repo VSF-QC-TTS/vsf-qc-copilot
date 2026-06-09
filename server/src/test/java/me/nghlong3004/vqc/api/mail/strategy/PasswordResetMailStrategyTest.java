@@ -10,27 +10,27 @@ import org.junit.jupiter.api.Test;
  * @author nghlong3004 (Long Nguyen Hoang)
  * @since 6/9/2026
  */
-class EmailVerificationMailStrategyTest {
+class PasswordResetMailStrategyTest {
 
-  private final EmailVerificationMailStrategy strategy = new EmailVerificationMailStrategy();
+  private final PasswordResetMailStrategy strategy = new PasswordResetMailStrategy();
 
   @Test
-  void buildMessageUsesEmailVerificationTemplateAndModel() {
+  void buildMessageUsesPasswordResetTemplateAndModel() {
     var request =
         MailRequest.builder()
             .to("qc.demo@example.com")
             .displayName("QC Demo")
-            .actionUrl("https://app.example.test/verify-email?token=abc")
+            .actionUrl("https://app.example.test/reset-password?token=abc")
             .build();
 
     var message = strategy.buildMessage(request);
 
-    assertThat(strategy.type()).isEqualTo(MailType.EMAIL_VERIFICATION);
+    assertThat(strategy.type()).isEqualTo(MailType.PASSWORD_RESET);
     assertThat(message.to()).isEqualTo("qc.demo@example.com");
-    assertThat(message.subject()).isEqualTo("Verify your VSF QC Copilot account");
-    assertThat(message.templatePath()).isEqualTo("templates/mail/email-verification.html");
+    assertThat(message.subject()).isEqualTo("Reset your VSF QC Copilot password");
+    assertThat(message.templatePath()).isEqualTo("templates/mail/password-reset.html");
     assertThat(message.model().get("displayName")).isEqualTo("QC Demo");
-    assertThat(message.model().get("verificationUrl"))
-        .isEqualTo("https://app.example.test/verify-email?token=abc");
+    assertThat(message.model().get("resetUrl"))
+        .isEqualTo("https://app.example.test/reset-password?token=abc");
   }
 }

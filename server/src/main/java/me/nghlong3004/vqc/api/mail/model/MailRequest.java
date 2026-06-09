@@ -4,7 +4,7 @@ package me.nghlong3004.vqc.api.mail.model;
  * @author nghlong3004 (Long Nguyen Hoang)
  * @since 6/9/2026
  */
-public record MailRequest(String to, String displayName, String verificationUrl) {
+public record MailRequest(String to, String displayName, String actionUrl) {
 
   public static Builder builder() {
     return new Builder();
@@ -13,7 +13,7 @@ public record MailRequest(String to, String displayName, String verificationUrl)
   public static class Builder {
     private String to;
     private String displayName;
-    private String verificationUrl;
+    private String actionUrl;
 
     public Builder to(String to) {
       this.to = to;
@@ -25,13 +25,13 @@ public record MailRequest(String to, String displayName, String verificationUrl)
       return this;
     }
 
-    public Builder verificationUrl(String verificationUrl) {
-      this.verificationUrl = verificationUrl;
+    public Builder actionUrl(String actionUrl) {
+      this.actionUrl = actionUrl;
       return this;
     }
 
     public MailRequest build() {
-      return new MailRequest(to, displayName, verificationUrl);
+      return new MailRequest(to, displayName, actionUrl);
     }
   }
 }

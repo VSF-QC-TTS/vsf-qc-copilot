@@ -10,7 +10,18 @@ import me.nghlong3004.vqc.api.mail.model.MailType;
  */
 public interface MailStrategy {
 
+  /**
+   * Declares the {@link MailType} handled by this strategy.
+   *
+   * @return supported {@link MailType}
+   */
   MailType type();
 
+  /**
+   * Builds the {@link MailMessage} metadata and template model.
+   *
+   * @param request {@link MailRequest} with recipient and scenario-specific data
+   * @return renderable {@link MailMessage}
+   */
   MailMessage buildMessage(MailRequest request);
 }

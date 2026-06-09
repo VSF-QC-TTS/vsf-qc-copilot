@@ -47,6 +47,18 @@ public enum ErrorCode {
       HttpStatus.BAD_REQUEST.value(),
       "EMAIL_VERIFICATION_TOKEN_USED",
       "Email verification token has already been used."),
+  INVALID_PASSWORD_RESET_TOKEN(
+      HttpStatus.BAD_REQUEST.value(),
+      "INVALID_PASSWORD_RESET_TOKEN",
+      "Password reset token is invalid."),
+  PASSWORD_RESET_TOKEN_EXPIRED(
+      HttpStatus.BAD_REQUEST.value(),
+      "PASSWORD_RESET_TOKEN_EXPIRED",
+      "Password reset token has expired."),
+  PASSWORD_RESET_TOKEN_USED(
+      HttpStatus.BAD_REQUEST.value(),
+      "PASSWORD_RESET_TOKEN_USED",
+      "Password reset token has already been used."),
   WRONG_PASSWORD(
       HttpStatus.BAD_REQUEST.value(), "WRONG_PASSWORD", "Current password is incorrect."),
   OAUTH_PASSWORD_NOT_ALLOWED(

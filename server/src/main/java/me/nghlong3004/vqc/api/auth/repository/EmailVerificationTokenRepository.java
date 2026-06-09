@@ -11,5 +11,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface EmailVerificationTokenRepository
     extends JpaRepository<EmailVerificationToken, Long> {
 
+  /**
+   * Finds an {@link EmailVerificationToken} by its persisted hash.
+   *
+   * @param tokenHash SHA-256 hash of the raw token
+   * @return {@link Optional} containing the matching {@link EmailVerificationToken} when present
+   */
   Optional<EmailVerificationToken> findByTokenHash(String tokenHash);
 }

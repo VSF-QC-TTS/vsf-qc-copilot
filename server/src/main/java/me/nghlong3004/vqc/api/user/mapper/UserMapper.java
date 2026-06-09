@@ -12,6 +12,12 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface UserMapper {
 
+  /**
+   * Maps an internal {@link User} entity to a public API response.
+   *
+   * @param user internal {@link User} entity
+   * @return public {@link UserResponse}
+   */
   @Mapping(source = "username", target = "email")
   UserResponse toResponse(User user);
 }

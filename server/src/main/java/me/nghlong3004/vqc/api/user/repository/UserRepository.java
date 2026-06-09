@@ -10,7 +10,19 @@ import org.springframework.data.jpa.repository.JpaRepository;
  */
 public interface UserRepository extends JpaRepository<User, Long> {
 
+  /**
+   * Checks whether a normalized email is already registered as a {@link User}.
+   *
+   * @param username normalized email stored in the username column
+   * @return true when the user exists
+   */
   boolean existsByUsername(String username);
 
+  /**
+   * Finds a {@link User} by normalized email.
+   *
+   * @param username normalized email stored in the username column
+   * @return {@link Optional} containing the matching {@link User} when present
+   */
   Optional<User> findByUsername(String username);
 }

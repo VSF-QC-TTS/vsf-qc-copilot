@@ -10,8 +10,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import me.nghlong3004.vqc.api.auth.cookie.AuthCookieFactory;
+import me.nghlong3004.vqc.api.auth.request.ForgotPasswordRequest;
 import me.nghlong3004.vqc.api.auth.request.LoginRequest;
 import me.nghlong3004.vqc.api.auth.request.RegisterRequest;
+import me.nghlong3004.vqc.api.auth.request.ResetPasswordRequest;
 import me.nghlong3004.vqc.api.auth.request.VerifyEmailRequest;
 import me.nghlong3004.vqc.api.auth.response.LoginResponse;
 import me.nghlong3004.vqc.api.auth.service.AuthService;
@@ -194,6 +196,82 @@ public class AuthController {
       produces = MediaType.APPLICATION_JSON_VALUE)
   public UserResponse verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
     return authService.verifyEmail(request);
+  }
+
+  @Operation(
+      summary = "Request password reset",
+      description =
+          "Creates a password reset token and sends a reset link when the email belongs to an account. Always returns 204 to avoid account enumeration.")
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      required = true,
+      description = "Password reset email payload",
+      content =
+          @Content(
+              mediaType = MediaType.APPLICATION_JSON_VALUE,
+              schema = @Schema(implementation = ForgotPasswordRequest.class),
+              examples =
+                  @ExampleObject(
+                      name = "ForgotPasswordRequest",
+                      value =
+                          """
+                          {
+                            "email": "qc.demo@example.com"
+                          }
+                          """)))
+  @ApiResponses({
+    @ApiResponse(responseCode = "204", description = "Password reset request accepted"),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Invalid request body",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @PostMapping(
+      value = "/forgot-password",
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+    authService.forgotPassword(request);
+  }
+
+  @Operation(
+      summary = "Reset password",
+      description = "Sets a new password using a valid password reset token.")
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      required = true,
+      description = "Password reset confirmation payload",
+      content =
+          @Content(
+              mediaType = MediaType.APPLICATION_JSON_VALUE,
+              schema = @Schema(implementation = ResetPasswordRequest.class),
+              examples =
+                  @ExampleObject(
+                      name = "ResetPasswordRequest",
+                      value =
+                          """
+                          {
+                            "token": "raw-password-reset-token",
+                            "newPassword": "newPassword123"
+                          }
+                          """)))
+  @ApiResponses({
+    @ApiResponse(responseCode = "204", description = "Password reset successful"),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Invalid request body or password reset token",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @PostMapping(
+      value = "/reset-password",
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+    authService.resetPassword(request);
   }
 
   @Operation(

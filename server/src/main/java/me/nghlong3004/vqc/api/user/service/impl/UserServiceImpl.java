@@ -89,7 +89,7 @@ public class UserServiceImpl implements UserService {
           MailRequest.builder()
               .to(user.getUsername())
               .displayName(user.getDisplayName())
-              .verificationUrl(buildVerificationUrl(rawToken))
+              .actionUrl(buildVerificationUrl(rawToken))
               .build());
     } catch (RuntimeException ex) {
       log.warn("Email verification dispatch failed for user {}", user.getPublicId());

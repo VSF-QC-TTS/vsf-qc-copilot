@@ -5,9 +5,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.lang.reflect.Proxy;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import me.nghlong3004.vqc.api.auth.request.ForgotPasswordRequest;
 import me.nghlong3004.vqc.api.auth.request.LoginRequest;
 import me.nghlong3004.vqc.api.auth.service.EmailVerificationService;
+import me.nghlong3004.vqc.api.auth.service.PasswordResetService;
 import me.nghlong3004.vqc.api.auth.token.JwtTokenService;
+import me.nghlong3004.vqc.api.mail.model.MailRequest;
+import me.nghlong3004.vqc.api.mail.model.MailType;
+import me.nghlong3004.vqc.api.mail.service.MailService;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.enums.Role;
 import me.nghlong3004.vqc.api.user.enums.UserStatus;
@@ -40,7 +45,9 @@ class AuthServiceImplTest {
             repository(user, savedUser),
             mapper(userResponse),
             tokenService(),
-            ignoredEmailVerificationService());
+            ignoredEmailVerificationService(),
+            ignoredPasswordResetService(),
+            ignoredMailService());
 
     var result = authService.login(new LoginRequest("  QC.Demo@Example.COM  ", "password123"));
 
@@ -52,6 +59,34 @@ class AuthServiceImplTest {
     assertThat(result.response().user()).isSameAs(userResponse);
     assertThat(result.refreshToken()).isEqualTo("refresh-token");
     assertThat(result.refreshTokenMaxAgeSeconds()).isEqualTo(604800);
+  }
+
+  @Test
+  void forgotPasswordDoesNotExposeAccountExistenceAndSendsResetLinkWhenUserExists() {
+    User user = new User();
+    user.setUsername("qc.demo@example.com");
+    user.setDisplayName("QC Demo");
+    AtomicReference<User> savedUser = new AtomicReference<>();
+    RecordingPasswordResetService passwordResetService = new RecordingPasswordResetService();
+    RecordingMailService mailService = new RecordingMailService();
+    AuthServiceImpl authService =
+        new AuthServiceImpl(
+            authenticationManager(new AtomicReference<>()),
+            repository(user, savedUser),
+            mapper(null),
+            tokenService(),
+            ignoredEmailVerificationService(),
+            passwordResetService,
+            mailService);
+
+    authService.forgotPassword(new ForgotPasswordRequest(" QC.Demo@Example.COM "));
+
+    assertThat(passwordResetService.user).isSameAs(user);
+    assertThat(mailService.type).isEqualTo(MailType.PASSWORD_RESET);
+    assertThat(mailService.request.to()).isEqualTo("qc.demo@example.com");
+    assertThat(mailService.request.displayName()).isEqualTo("QC Demo");
+    assertThat(mailService.request.actionUrl())
+        .isEqualTo("http://localhost:5173/reset-password?token=reset-token");
   }
 
   private AuthenticationManager authenticationManager(AtomicReference<String> authenticatedEmail) {
@@ -119,5 +154,51 @@ class AuthServiceImplTest {
         throw new AssertionError("Verify email should not be called");
       }
     };
+  }
+
+  private PasswordResetService ignoredPasswordResetService() {
+    return new PasswordResetService() {
+      @Override
+      public String createResetToken(User user) {
+        throw new AssertionError("Create reset token should not be called");
+      }
+
+      @Override
+      public void resetPassword(String rawToken, String newPassword) {
+        throw new AssertionError("Reset password should not be called");
+      }
+    };
+  }
+
+  private MailService ignoredMailService() {
+    return (type, request) -> {
+      throw new AssertionError("Mail service should not be called");
+    };
+  }
+
+  private static class RecordingPasswordResetService implements PasswordResetService {
+    private User user;
+
+    @Override
+    public String createResetToken(User user) {
+      this.user = user;
+      return "reset-token";
+    }
+
+    @Override
+    public void resetPassword(String rawToken, String newPassword) {
+      throw new AssertionError("Reset password should not be called");
+    }
+  }
+
+  private static class RecordingMailService implements MailService {
+    private MailType type;
+    private MailRequest request;
+
+    @Override
+    public void send(MailType type, MailRequest request) {
+      this.type = type;
+      this.request = request;
+    }
   }
 }

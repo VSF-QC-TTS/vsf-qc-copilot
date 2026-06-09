@@ -5,5 +5,6 @@ package me.nghlong3004.vqc.api.mail.model;
  * @since 6/9/2026
  */
 public enum MailType {
-  EMAIL_VERIFICATION
+  EMAIL_VERIFICATION,
+  PASSWORD_RESET
 }

@@ -42,6 +42,8 @@ public class SecurityConfig {
     API_BASE_PATH + "/auth/login",
     API_BASE_PATH + "/auth/register",
     API_BASE_PATH + "/auth/verify-email",
+    API_BASE_PATH + "/auth/forgot-password",
+    API_BASE_PATH + "/auth/reset-password",
   };
 
   private static final String[] API_GET_PUBLIC = {};

@@ -2,15 +2,15 @@ package me.nghlong3004.vqc.api.auth.service.impl;
 
 import java.time.OffsetDateTime;
 import lombok.RequiredArgsConstructor;
-import me.nghlong3004.vqc.api.auth.entity.EmailVerificationToken;
-import me.nghlong3004.vqc.api.auth.repository.EmailVerificationTokenRepository;
-import me.nghlong3004.vqc.api.auth.service.EmailVerificationService;
+import me.nghlong3004.vqc.api.auth.entity.PasswordResetToken;
+import me.nghlong3004.vqc.api.auth.repository.PasswordResetTokenRepository;
+import me.nghlong3004.vqc.api.auth.service.PasswordResetService;
 import me.nghlong3004.vqc.api.auth.token.OpaqueTokenService;
 import me.nghlong3004.vqc.api.exception.ErrorCode;
 import me.nghlong3004.vqc.api.exception.ResourceException;
 import me.nghlong3004.vqc.api.user.entity.User;
-import me.nghlong3004.vqc.api.user.enums.UserStatus;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,19 +20,20 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
-public class EmailVerificationServiceImpl implements EmailVerificationService {
+public class PasswordResetServiceImpl implements PasswordResetService {
 
-  private static final long TOKEN_TTL_HOURS = 24;
+  private static final long TOKEN_TTL_HOURS = 1;
 
-  private final EmailVerificationTokenRepository tokenRepository;
+  private final PasswordResetTokenRepository tokenRepository;
   private final UserRepository userRepository;
+  private final PasswordEncoder passwordEncoder;
   private final OpaqueTokenService opaqueTokenService;
 
   @Override
   @Transactional
-  public String createVerificationToken(User user) {
+  public String createResetToken(User user) {
     String rawToken = opaqueTokenService.generateRawToken();
-    EmailVerificationToken token = new EmailVerificationToken();
+    PasswordResetToken token = new PasswordResetToken();
     token.setUser(user);
     token.setTokenHash(opaqueTokenService.hash(rawToken));
     token.setExpiresAt(OffsetDateTime.now().plusHours(TOKEN_TTL_HOURS));
@@ -42,25 +43,24 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
 
   @Override
   @Transactional
-  public User verifyEmail(String rawToken) {
+  public void resetPassword(String rawToken, String newPassword) {
     OffsetDateTime now = OffsetDateTime.now();
-    EmailVerificationToken token =
+    PasswordResetToken token =
         tokenRepository
             .findByTokenHash(opaqueTokenService.hash(rawToken))
-            .orElseThrow(() -> new ResourceException(ErrorCode.INVALID_EMAIL_VERIFICATION_TOKEN));
+            .orElseThrow(() -> new ResourceException(ErrorCode.INVALID_PASSWORD_RESET_TOKEN));
 
     if (token.isUsed()) {
-      throw new ResourceException(ErrorCode.EMAIL_VERIFICATION_TOKEN_USED);
+      throw new ResourceException(ErrorCode.PASSWORD_RESET_TOKEN_USED);
     }
     if (token.isExpired(now)) {
-      throw new ResourceException(ErrorCode.EMAIL_VERIFICATION_TOKEN_EXPIRED);
+      throw new ResourceException(ErrorCode.PASSWORD_RESET_TOKEN_EXPIRED);
     }
 
     User user = token.getUser();
-    user.setStatus(UserStatus.ACTIVE);
+    user.setPasswordHash(passwordEncoder.encode(newPassword));
     token.setUsedAt(now);
     userRepository.save(user);
     tokenRepository.save(token);
-    return user;
   }
 }

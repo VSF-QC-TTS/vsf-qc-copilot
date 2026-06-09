@@ -58,7 +58,7 @@ class UserServiceImplTest {
     assertThat(mailService.type).isEqualTo(MailType.EMAIL_VERIFICATION);
     assertThat(mailService.request.to()).isEqualTo("qc.demo@example.com");
     assertThat(mailService.request.displayName()).isEqualTo("qc.demo");
-    assertThat(mailService.request.verificationUrl())
+    assertThat(mailService.request.actionUrl())
         .isEqualTo("http://localhost:5173/verify-email?token=raw-token");
     assertThat(response).isSameAs(mappedResponse);
   }

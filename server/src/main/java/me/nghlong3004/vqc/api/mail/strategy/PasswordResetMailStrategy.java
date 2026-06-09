@@ -11,14 +11,14 @@ import org.springframework.stereotype.Component;
  * @since 6/9/2026
  */
 @Component
-public class EmailVerificationMailStrategy implements MailStrategy {
+public class PasswordResetMailStrategy implements MailStrategy {
 
-  private static final String TEMPLATE_PATH = "templates/mail/email-verification.html";
-  private static final String SUBJECT = "Verify your VSF QC Copilot account";
+  private static final String TEMPLATE_PATH = "templates/mail/password-reset.html";
+  private static final String SUBJECT = "Reset your VSF QC Copilot password";
 
   @Override
   public MailType type() {
-    return MailType.EMAIL_VERIFICATION;
+    return MailType.PASSWORD_RESET;
   }
 
   @Override
@@ -31,9 +31,8 @@ public class EmailVerificationMailStrategy implements MailStrategy {
             Map.of(
                 "appName", "VSF QC Copilot",
                 "displayName", request.displayName(),
-                "verificationUrl", request.actionUrl(),
-                "preheader",
-                    "Verify your email address to activate your VSF QC Copilot account."))
+                "resetUrl", request.actionUrl(),
+                "preheader", "Use this secure link to reset your VSF QC Copilot password."))
         .build();
   }
 }

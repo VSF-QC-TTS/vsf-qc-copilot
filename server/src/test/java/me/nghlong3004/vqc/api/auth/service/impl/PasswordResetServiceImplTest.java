@@ -5,66 +5,66 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.lang.reflect.Proxy;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
-import me.nghlong3004.vqc.api.auth.entity.EmailVerificationToken;
-import me.nghlong3004.vqc.api.auth.repository.EmailVerificationTokenRepository;
+import me.nghlong3004.vqc.api.auth.entity.PasswordResetToken;
+import me.nghlong3004.vqc.api.auth.repository.PasswordResetTokenRepository;
 import me.nghlong3004.vqc.api.auth.token.OpaqueTokenService;
 import me.nghlong3004.vqc.api.user.entity.User;
-import me.nghlong3004.vqc.api.user.enums.UserStatus;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
  * @author nghlong3004 (Long Nguyen Hoang)
  * @since 6/9/2026
  */
-class EmailVerificationServiceImplTest {
+class PasswordResetServiceImplTest {
 
   @Test
-  void createVerificationTokenStoresHashAndVerifyEmailActivatesUser() {
+  void resetPasswordStoresTokenHashAndUpdatesPassword() {
     User user = new User();
     user.setUsername("qc.demo@example.com");
-    user.setDisplayName("QC Demo");
-    user.setStatus(UserStatus.PENDING_EMAIL_VERIFICATION);
-    AtomicReference<EmailVerificationToken> savedToken = new AtomicReference<>();
+    user.setPasswordHash("old-password");
+    AtomicReference<PasswordResetToken> savedToken = new AtomicReference<>();
     AtomicReference<User> savedUser = new AtomicReference<>();
-    EmailVerificationServiceImpl service =
-        new EmailVerificationServiceImpl(
-            tokenRepository(savedToken), userRepository(savedUser), opaqueTokenService());
+    PasswordResetServiceImpl service =
+        new PasswordResetServiceImpl(
+            tokenRepository(savedToken),
+            userRepository(savedUser),
+            passwordEncoder(),
+            opaqueTokenService());
 
-    String rawToken = service.createVerificationToken(user);
+    String rawToken = service.createResetToken(user);
 
-    assertThat(rawToken).isNotBlank();
-    assertThat(savedToken.get().getTokenHash()).isNotEqualTo(rawToken);
-    assertThat(savedToken.get().getTokenHash()).hasSize(64);
+    assertThat(rawToken).isEqualTo("raw-reset-token");
+    assertThat(savedToken.get().getTokenHash()).isEqualTo("b".repeat(64));
     assertThat(savedToken.get().getUser()).isSameAs(user);
 
-    User verifiedUser = service.verifyEmail(rawToken);
+    service.resetPassword(rawToken, "newPassword123");
 
-    assertThat(verifiedUser.getStatus()).isEqualTo(UserStatus.ACTIVE);
-    assertThat(savedUser).hasValue(user);
+    assertThat(savedUser.get().getPasswordHash()).isEqualTo("encoded-newPassword123");
     assertThat(savedToken.get().getUsedAt()).isNotNull();
   }
 
-  private EmailVerificationTokenRepository tokenRepository(
-      AtomicReference<EmailVerificationToken> savedToken) {
-    return (EmailVerificationTokenRepository)
+  private PasswordResetTokenRepository tokenRepository(
+      AtomicReference<PasswordResetToken> savedToken) {
+    return (PasswordResetTokenRepository)
         Proxy.newProxyInstance(
-            EmailVerificationTokenRepository.class.getClassLoader(),
-            new Class<?>[] {EmailVerificationTokenRepository.class},
+            PasswordResetTokenRepository.class.getClassLoader(),
+            new Class<?>[] {PasswordResetTokenRepository.class},
             (proxy, method, args) -> {
               return switch (method.getName()) {
                 case "save" -> {
-                  savedToken.set((EmailVerificationToken) args[0]);
+                  savedToken.set((PasswordResetToken) args[0]);
                   yield args[0];
                 }
                 case "findByTokenHash" -> {
-                  EmailVerificationToken token = savedToken.get();
+                  PasswordResetToken token = savedToken.get();
                   if (token != null && token.getTokenHash().equals(args[0])) {
                     yield Optional.of(token);
                   }
                   yield Optional.empty();
                 }
-                case "toString" -> "EmailVerificationTokenRepositoryTestDouble";
+                case "toString" -> "PasswordResetTokenRepositoryTestDouble";
                 default -> throw new UnsupportedOperationException(method.getName());
               };
             });
@@ -87,16 +87,30 @@ class EmailVerificationServiceImplTest {
             });
   }
 
+  private PasswordEncoder passwordEncoder() {
+    return new PasswordEncoder() {
+      @Override
+      public String encode(CharSequence rawPassword) {
+        return "encoded-" + rawPassword;
+      }
+
+      @Override
+      public boolean matches(CharSequence rawPassword, String encodedPassword) {
+        return false;
+      }
+    };
+  }
+
   private OpaqueTokenService opaqueTokenService() {
     return new OpaqueTokenService() {
       @Override
       public String generateRawToken() {
-        return "raw-token";
+        return "raw-reset-token";
       }
 
       @Override
       public String hash(String rawToken) {
-        return "a".repeat(64);
+        return "b".repeat(64);
       }
     };
   }
