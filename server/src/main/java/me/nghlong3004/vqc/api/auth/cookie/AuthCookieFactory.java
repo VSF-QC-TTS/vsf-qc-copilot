@@ -16,4 +16,11 @@ public interface AuthCookieFactory {
    * @return configured refresh token {@link ResponseCookie}
    */
   ResponseCookie refreshTokenCookie(String refreshToken, long maxAgeSeconds);
+
+  /**
+   * Builds the HttpOnly refresh-token {@link ResponseCookie} used to clear the browser cookie.
+   *
+   * @return configured expired refresh token {@link ResponseCookie}
+   */
+  ResponseCookie clearRefreshTokenCookie();
 }

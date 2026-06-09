@@ -189,6 +189,27 @@ public class AuthController {
   }
 
   @Operation(
+      summary = "Logout",
+      description = "Clears the HttpOnly refresh_token cookie for the current browser session.")
+  @ApiResponses({
+    @ApiResponse(responseCode = "204", description = "Logout successful"),
+    @ApiResponse(
+        responseCode = "500",
+        description = "Unexpected server error",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @PostMapping("/logout")
+  public ResponseEntity<Void> logout() {
+    var clearCookie = authCookieFactory.clearRefreshTokenCookie();
+    return ResponseEntity.noContent()
+        .header(HttpHeaders.SET_COOKIE, clearCookie.toString())
+        .build();
+  }
+
+  @Operation(
       summary = "Verify email",
       description = "Activates a pending local account using the email verification token.")
   @io.swagger.v3.oas.annotations.parameters.RequestBody(
