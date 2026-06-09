@@ -18,7 +18,7 @@ class UserMapperTest {
   private final UserMapper userMapper = Mappers.getMapper(UserMapper.class);
 
   @Test
-  void toResponseUsesEmailContractAndDefaultRoleCode() {
+  void toResponseUsesEmailContractAndDefaultRole() {
     User user = new User();
     user.setUsername("qc.demo@example.com");
     user.setDisplayName("QC Demo");

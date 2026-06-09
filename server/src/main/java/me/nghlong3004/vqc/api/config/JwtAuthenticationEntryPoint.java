@@ -36,9 +36,10 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     log.debug("Authentication failed [{}]: {}", errorCode.getCode(), authException.getMessage());
 
-    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+    response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
     response.setStatus(errorCode.getStatus());
-    objectMapper.writeValue(response.getOutputStream(), errorCode.toErrorResponse());
+    objectMapper.writeValue(
+        response.getOutputStream(), errorCode.toErrorResponse(request.getRequestURI()));
   }
 
   private ErrorCode resolveErrorCode(AuthenticationException ex) {

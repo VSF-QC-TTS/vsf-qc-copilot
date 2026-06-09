@@ -28,6 +28,21 @@ spring:
     baseline-on-migrate: false
     validate-on-migrate: true
 
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS_ENABLE:true}
+          connectiontimeout: ${MAIL_CONNECTION_TIMEOUT:5000}
+          timeout: ${MAIL_TIMEOUT:5000}
+          writetimeout: ${MAIL_WRITE_TIMEOUT:5000}
+
   ai:
     google:
       genai:
@@ -75,6 +90,8 @@ vqc:
     base-url: ${WEB_BASE_URL}
   server:
     base-url: ${SERVER_BASE_URL}
+  mail:
+    from: ${MAIL_FROM:no-reply@localhost}
   security:
     access-expiration: 15
     refresh-expiration: 10080

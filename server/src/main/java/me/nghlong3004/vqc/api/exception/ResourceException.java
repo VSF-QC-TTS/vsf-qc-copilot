@@ -31,12 +31,6 @@ public class ResourceException extends RuntimeException {
 
   public ResourceException(ErrorCode errorCode, long retryAfterSeconds) {
     super(errorCode.getMessage());
-    this.response =
-        new ErrorResponse(
-            errorCode.getMessage(),
-            errorCode.getStatus(),
-            errorCode.getCode(),
-            null,
-            retryAfterSeconds);
+    this.response = errorCode.toErrorResponse().withRetryAfterSeconds(retryAfterSeconds);
   }
 }

@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import me.nghlong3004.vqc.api.auth.request.RegisterRequest;
 import me.nghlong3004.vqc.api.exception.ErrorCode;
 import me.nghlong3004.vqc.api.exception.ResourceException;
+import me.nghlong3004.vqc.api.mail.service.MailService;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.mapper.UserMapper;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
@@ -27,6 +28,7 @@ public class UserServiceImpl implements UserService {
   private final UserRepository userRepository;
   private final UserMapper userMapper;
   private final PasswordEncoder passwordEncoder;
+  private final MailService mailService;
 
   @Override
   @Transactional
@@ -52,7 +54,9 @@ public class UserServiceImpl implements UserService {
     }
 
     log.info("Registered local user {}", saved.getPublicId());
-    return userMapper.toResponse(saved);
+    UserResponse response = userMapper.toResponse(saved);
+    sendRegistrationWelcome(saved);
+    return response;
   }
 
   private String normalizeEmail(String email) {
@@ -64,5 +68,13 @@ public class UserServiceImpl implements UserService {
       return displayName.trim();
     }
     return email.substring(0, email.indexOf('@'));
+  }
+
+  private void sendRegistrationWelcome(User user) {
+    try {
+      mailService.sendRegistrationWelcome(user.getUsername(), user.getDisplayName());
+    } catch (RuntimeException ex) {
+      log.warn("Registration welcome email dispatch failed for user {}", user.getPublicId());
+    }
   }
 }

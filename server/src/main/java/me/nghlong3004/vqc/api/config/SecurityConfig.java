@@ -56,7 +56,9 @@ public class SecurityConfig {
 
   private static final String[] API_GET_PUBLIC = {};
 
-  private static final String[] SWAGGER_PATHS = {};
+  private static final String[] SWAGGER_PATHS = {
+    "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**"
+  };
 
   private static final String[] INTERNAL_PATHS = {};
 

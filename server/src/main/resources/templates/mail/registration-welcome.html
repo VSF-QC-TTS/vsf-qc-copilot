@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="x-apple-disable-message-reformatting">
+    <title>{{appName}}</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f5f7fb;color:#162033;font-family:Arial,Helvetica,sans-serif;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
+      {{preheader}}
+    </div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#f5f7fb;">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;max-width:640px;background:#ffffff;border:1px solid #d9e1ee;border-radius:8px;">
+            <tr>
+              <td style="padding:28px 32px 18px 32px;border-bottom:1px solid #e7edf5;">
+                <p style="margin:0 0 8px 0;font-size:13px;line-height:18px;color:#516173;">{{appName}}</p>
+                <h1 style="margin:0;font-size:24px;line-height:32px;font-weight:700;color:#162033;">Workspace ready</h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:28px 32px;">
+                <p style="margin:0 0 16px 0;font-size:16px;line-height:24px;color:#243044;">Hi {{displayName}},</p>
+                <p style="margin:0 0 20px 0;font-size:15px;line-height:24px;color:#344258;">
+                  Your VSF QC Copilot account has been created. You can now sign in and start preparing chatbot quality-control evaluations.
+                </p>
+                <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 0 24px 0;">
+                  <tr>
+                    <td style="border-radius:6px;background:#1f6feb;">
+                      <a href="{{dashboardUrl}}" style="display:inline-block;padding:12px 18px;font-size:15px;line-height:20px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:6px;">Open workspace</a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:0;font-size:13px;line-height:20px;color:#69778c;">
+                  If the button does not work, paste this URL into your browser:<br>
+                  <a href="{{dashboardUrl}}" style="color:#1f6feb;text-decoration:underline;word-break:break-all;">{{dashboardUrl}}</a>
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:18px 32px;background:#f8fafd;border-top:1px solid #e7edf5;border-radius:0 0 8px 8px;">
+                <p style="margin:0;font-size:12px;line-height:18px;color:#7a8798;">
+                  This is an automated message from {{appName}}.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

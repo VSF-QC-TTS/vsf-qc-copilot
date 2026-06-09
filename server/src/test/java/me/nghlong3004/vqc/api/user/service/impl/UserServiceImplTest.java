@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import me.nghlong3004.vqc.api.auth.request.RegisterRequest;
 import me.nghlong3004.vqc.api.exception.ResourceException;
+import me.nghlong3004.vqc.api.mail.service.MailService;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.enums.Role;
 import me.nghlong3004.vqc.api.user.mapper.UserMapper;
@@ -31,11 +32,13 @@ class UserServiceImplTest {
     UserResponse mappedResponse =
         new UserResponse(null, "qc.demo@example.com", "qc.demo", Role.QC_MEMBER, null, null);
     AtomicReference<User> savedUser = new AtomicReference<>();
+    RecordingMailService mailService = new RecordingMailService();
     UserServiceImpl userService =
         new UserServiceImpl(
             repository(false, savedUser, null),
             user -> mappedResponse,
-            passwordEncoder("encoded-password"));
+            passwordEncoder("encoded-password"),
+            mailService);
 
     UserResponse response = userService.register(request);
 
@@ -43,6 +46,8 @@ class UserServiceImplTest {
     assertThat(savedUser.get().getPasswordHash()).isEqualTo("encoded-password");
     assertThat(savedUser.get().getDisplayName()).isEqualTo("qc.demo");
     assertThat(savedUser.get().getRole()).isEqualTo(Role.QC_MEMBER);
+    assertThat(mailService.to).isEqualTo("qc.demo@example.com");
+    assertThat(mailService.displayName).isEqualTo("qc.demo");
     assertThat(response).isSameAs(mappedResponse);
   }
 
@@ -54,7 +59,8 @@ class UserServiceImplTest {
         new UserServiceImpl(
             repository(true, savedUser, null),
             ignoredMapper(),
-            passwordEncoder("encoded-password"));
+            passwordEncoder("encoded-password"),
+            ignoredMailService());
 
     assertThatThrownBy(() -> userService.register(request))
         .isInstanceOf(ResourceException.class)
@@ -74,7 +80,8 @@ class UserServiceImplTest {
                 new AtomicReference<>(),
                 new DataIntegrityViolationException("duplicate username")),
             ignoredMapper(),
-            passwordEncoder("encoded-password"));
+            passwordEncoder("encoded-password"),
+            ignoredMailService());
 
     assertThatThrownBy(() -> userService.register(request))
         .isInstanceOf(ResourceException.class)
@@ -125,5 +132,22 @@ class UserServiceImplTest {
         return false;
       }
     };
+  }
+
+  private MailService ignoredMailService() {
+    return (to, displayName) -> {
+      throw new AssertionError("Mail service should not be called");
+    };
+  }
+
+  private static class RecordingMailService implements MailService {
+    private String to;
+    private String displayName;
+
+    @Override
+    public void sendRegistrationWelcome(String to, String displayName) {
+      this.to = to;
+      this.displayName = displayName;
+    }
   }
 }

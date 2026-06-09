@@ -22,16 +22,27 @@ Implemented:
 - User has `role` field; default is `QC_MEMBER`.
 - `UserDetailsServiceImpl` uses `user.getRole()` instead of string authorities.
 - Flyway `V2__create_users.sql` includes `role VARCHAR(50) NOT NULL DEFAULT 'QC_MEMBER'`.
+- Mail config maps `.env` keys `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM`.
+- Registration dispatches an async welcome email after user creation.
+- Welcome email template: `src/main/resources/templates/mail/registration-welcome.html`.
+- HTML email template uses email-safe table markup, preheader text, and inline CSS.
+- Auth register endpoint has OpenAPI annotations with request/response/error examples.
+- Errors use Problem Details shape: `type`, `title`, `status`, `detail`, `instance`, plus `code` and optional `errors`.
+- Request DTO validation annotations should include explicit messages; `GlobalException` returns these messages in `errors`.
+- Service interfaces should declare validation contracts with `@Validated` and `@Valid` on request parameters where applicable.
+- Controllers should expose Swagger/OpenAPI request, success response, and error response examples for public APIs.
 
 Tests:
 - Added focused non-Testcontainers tests:
   - `RoleTest`
   - `UserMapperTest`
   - `UserServiceImplTest`
+  - `HtmlMailTemplateRendererTest`
+  - `ErrorResponseTest`
 - Avoid Mockito in service test because inline ByteBuddy self-attach fails on this WSL/JDK setup.
 - Verified with:
-  `rtk bash mvnw -Dtest=RoleTest,UserServiceImplTest,UserMapperTest test`
-- Result: build success, 5 tests passed.
+  `rtk bash mvnw -Dtest=RoleTest,UserMapperTest,UserServiceImplTest,HtmlMailTemplateRendererTest,ErrorResponseTest test`
+- Result: build success, 7 tests passed.
 
 Known caveats:
 - Full `mvn test` starts `ServerApplicationTests` with Testcontainers and is slow.

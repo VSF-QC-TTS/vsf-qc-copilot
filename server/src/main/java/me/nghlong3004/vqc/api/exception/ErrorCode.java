@@ -85,4 +85,8 @@ public enum ErrorCode {
   public ErrorResponse toErrorResponse() {
     return new ErrorResponse(message, status, code);
   }
+
+  public ErrorResponse toErrorResponse(String instance) {
+    return toErrorResponse().withInstance(instance);
+  }
 }
