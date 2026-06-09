@@ -46,6 +46,7 @@ public class SecurityConfig {
     API_BASE_PATH + "/auth/reset-password",
     API_BASE_PATH + "/auth/refresh-token",
     API_BASE_PATH + "/auth/logout",
+    "/mock-chatbot/chat",
   };
 
   private static final String[] API_GET_PUBLIC = {};
