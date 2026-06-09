@@ -1,0 +1,85 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  threads:
+    virtual:
+      enabled: true
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/vqc_dev}
+    username: ${DB_USERNAME:vqc}
+    password: ${DB_PASSWORD:vqc}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        highlight_sql: true
+    show-sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+    validate-on-migrate: true
+
+  ai:
+    google:
+      genai:
+        api-key: ${GEMINI_API_KEY:}
+        chat:
+          model: ${GEMINI_MODEL:gemini-2.5-flash}
+          temperature: 0
+          max-output-tokens: ${GEMINI_MAX_TOKENS:1024}
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:}
+            client-secret: ${GOOGLE_CLIENT_SECRET:}
+            scope: openid,profile,email
+            redirect-uri: "{baseUrl}/api/v1/login/oauth2/code/{registrationId}"
+          github:
+            client-id: ${GITHUB_CLIENT_ID:}
+            client-secret: ${GITHUB_CLIENT_SECRET:}
+            scope: read:user,user:email
+            redirect-uri: "{baseUrl}/api/v1/login/oauth2/code/{registrationId}"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: INFO
+    me.nghlong3004.vqc: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+    org.telegram: INFO
+
+vqc:
+  client:
+    base-url: ${WEB_BASE_URL}
+  server:
+    base-url: ${SERVER_BASE_URL}
+  security:
+    access-expiration: 15
+    refresh-expiration: 10080
+    jwt:
+      secret-key: ${JWT_SECRET_KEY}
+    cookie:
+      secure: false
+      same-site: lax
