@@ -2,6 +2,7 @@ package me.nghlong3004.vqc.api.targetconnector.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItems;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -17,6 +18,8 @@ import me.nghlong3004.vqc.api.targetconnector.enums.HttpMethodType;
 import me.nghlong3004.vqc.api.targetconnector.enums.ResponseFormat;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateTargetApiConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.response.SecretRefResponse;
+import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorListItemResponse;
+import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorPageResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorResponse;
 import me.nghlong3004.vqc.api.targetconnector.service.TargetApiConnectorService;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +32,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.test.web.servlet.MockMvc;
@@ -157,6 +161,53 @@ class TargetApiConnectorControllerTest {
     assertThat(RecordingTargetApiConnectorService.request).isNull();
   }
 
+  @Test
+  void listConnectorsReturnsConnectorPage() throws Exception {
+    RecordingTargetApiConnectorService.pageResponse =
+        new TargetApiConnectorPageResponse(
+            List.of(
+                new TargetApiConnectorListItemResponse(
+                    UUID.fromString("f5f77e84-b3be-48bb-9081-f1dd190f8c61"),
+                    UUID.fromString(PROJECT_ID),
+                    "Mock Health Chatbot",
+                    HttpMethodType.POST,
+                    "http://localhost:8080/mock-chatbot/chat",
+                    "$.answer",
+                    false,
+                    true,
+                    null)),
+            0,
+            20,
+            1,
+            1);
+
+    mockMvc
+        .perform(
+            get("/api/v1/projects/" + PROJECT_ID + "/target-api-connectors")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .queryParam("page", "0")
+                .queryParam("size", "20"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[0].publicId").value("f5f77e84-b3be-48bb-9081-f1dd190f8c61"))
+        .andExpect(jsonPath("$.items[0].projectPublicId").value(PROJECT_ID))
+        .andExpect(jsonPath("$.items[0].name").value("Mock Health Chatbot"))
+        .andExpect(jsonPath("$.items[0].method").value("POST"))
+        .andExpect(jsonPath("$.items[0].url").value("http://localhost:8080/mock-chatbot/chat"))
+        .andExpect(jsonPath("$.items[0].responseSelector").value("$.answer"))
+        .andExpect(jsonPath("$.items[0].isStreaming").value(false))
+        .andExpect(jsonPath("$.items[0].active").value(true))
+        .andExpect(jsonPath("$.page").value(0))
+        .andExpect(jsonPath("$.size").value(20))
+        .andExpect(jsonPath("$.totalItems").value(1))
+        .andExpect(jsonPath("$.totalPages").value(1));
+
+    assertThat(RecordingTargetApiConnectorService.projectPublicId)
+        .isEqualTo(UUID.fromString(PROJECT_ID));
+    assertThat(RecordingTargetApiConnectorService.pageable.getPageNumber()).isZero();
+    assertThat(RecordingTargetApiConnectorService.pageable.getPageSize()).isEqualTo(20);
+    assertThat(RecordingTargetApiConnectorService.username).isEqualTo("qc.demo@example.com");
+  }
+
   @TestConfiguration
   static class MockBeans {
 
@@ -169,8 +220,10 @@ class TargetApiConnectorControllerTest {
   static class RecordingTargetApiConnectorService implements TargetApiConnectorService {
     private static UUID projectPublicId;
     private static CreateTargetApiConnectorRequest request;
+    private static Pageable pageable;
     private static String username;
     private static TargetApiConnectorResponse response;
+    private static TargetApiConnectorPageResponse pageResponse;
 
     @Override
     public TargetApiConnectorResponse createConnector(
@@ -181,11 +234,22 @@ class TargetApiConnectorControllerTest {
       return response;
     }
 
+    @Override
+    public TargetApiConnectorPageResponse listConnectors(
+        UUID projectPublicId, Pageable pageable, String username) {
+      RecordingTargetApiConnectorService.projectPublicId = projectPublicId;
+      RecordingTargetApiConnectorService.pageable = pageable;
+      RecordingTargetApiConnectorService.username = username;
+      return pageResponse;
+    }
+
     private static void reset() {
       projectPublicId = null;
       request = null;
+      pageable = null;
       username = null;
       response = null;
+      pageResponse = null;
     }
   }
 }

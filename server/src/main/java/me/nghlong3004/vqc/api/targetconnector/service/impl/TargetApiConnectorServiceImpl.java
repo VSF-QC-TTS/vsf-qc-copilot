@@ -17,10 +17,14 @@ import me.nghlong3004.vqc.api.targetconnector.enums.ResponseFormat;
 import me.nghlong3004.vqc.api.targetconnector.mapper.TargetApiConnectorMapper;
 import me.nghlong3004.vqc.api.targetconnector.repository.TargetApiConnectorRepository;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateTargetApiConnectorRequest;
+import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorListItemResponse;
+import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorPageResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorResponse;
 import me.nghlong3004.vqc.api.targetconnector.service.TargetApiConnectorService;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,10 +46,7 @@ public class TargetApiConnectorServiceImpl implements TargetApiConnectorService 
   public TargetApiConnectorResponse createConnector(
       UUID projectPublicId, CreateTargetApiConnectorRequest request, String username) {
     User creator = findCreator(username);
-    Project project =
-        projectRepository
-            .findByPublicIdAndCreatedBy(projectPublicId, creator)
-            .orElseThrow(() -> new ResourceException(ErrorCode.PROJECT_NOT_FOUND));
+    Project project = findProject(projectPublicId, creator);
     TargetApiConnector connector =
         TargetApiConnector.builder()
             .project(project)
@@ -78,6 +79,29 @@ public class TargetApiConnectorServiceImpl implements TargetApiConnectorService 
             .build();
     TargetApiConnector saved = targetApiConnectorRepository.save(connector);
     return targetApiConnectorMapper.toResponse(saved);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public TargetApiConnectorPageResponse listConnectors(
+      UUID projectPublicId, Pageable pageable, String username) {
+    User creator = findCreator(username);
+    Project project = findProject(projectPublicId, creator);
+    Page<TargetApiConnector> connectors = targetApiConnectorRepository.findByProject(project, pageable);
+    List<TargetApiConnectorListItemResponse> items =
+        connectors.getContent().stream().map(targetApiConnectorMapper::toListItemResponse).toList();
+    return new TargetApiConnectorPageResponse(
+        items,
+        connectors.getNumber(),
+        connectors.getSize(),
+        connectors.getTotalElements(),
+        connectors.getTotalPages());
+  }
+
+  private Project findProject(UUID projectPublicId, User creator) {
+    return projectRepository
+        .findByPublicIdAndCreatedBy(projectPublicId, creator)
+        .orElseThrow(() -> new ResourceException(ErrorCode.PROJECT_NOT_FOUND));
   }
 
   private User findCreator(String username) {

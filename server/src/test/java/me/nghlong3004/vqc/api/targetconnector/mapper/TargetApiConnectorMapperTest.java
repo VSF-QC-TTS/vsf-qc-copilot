@@ -62,4 +62,30 @@ class TargetApiConnectorMapperTest {
     assertThat(response.secretRefs().getFirst().secretKey()).isEqualTo("CHATBOT_API_TOKEN");
     assertThat(response.secretRefs().getFirst().maskedValue()).isEqualTo("****alue");
   }
+
+  @Test
+  void toListItemResponseMapsListFields() {
+    Project project = new Project();
+    TargetApiConnector connector = new TargetApiConnector();
+    connector.setProject(project);
+    connector.setName("Mock Health Chatbot");
+    connector.setMethod(HttpMethodType.POST);
+    connector.setUrl("http://localhost:8080/mock-chatbot/chat");
+    connector.setResponseSelector("$.answer");
+    connector.setStreaming(false);
+    connector.setActive(true);
+    connector.setCreatedAt(OffsetDateTime.parse("2026-06-08T10:30:00Z"));
+
+    var response = mapper.toListItemResponse(connector);
+
+    assertThat(response.publicId()).isEqualTo(connector.getPublicId());
+    assertThat(response.projectPublicId()).isEqualTo(project.getPublicId());
+    assertThat(response.name()).isEqualTo("Mock Health Chatbot");
+    assertThat(response.method()).isEqualTo(HttpMethodType.POST);
+    assertThat(response.url()).isEqualTo("http://localhost:8080/mock-chatbot/chat");
+    assertThat(response.responseSelector()).isEqualTo("$.answer");
+    assertThat(response.isStreaming()).isFalse();
+    assertThat(response.active()).isTrue();
+    assertThat(response.createdAt()).isEqualTo(connector.getCreatedAt());
+  }
 }

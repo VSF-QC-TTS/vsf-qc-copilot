@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import me.nghlong3004.vqc.api.targetconnector.entity.TargetApiConnector;
 import me.nghlong3004.vqc.api.targetconnector.response.SecretRefResponse;
+import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorListItemResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorResponse;
 import org.springframework.stereotype.Component;
 
@@ -49,6 +50,25 @@ public class TargetApiConnectorMapper {
         connector.getActive(),
         connector.getCreatedAt(),
         connector.getUpdatedAt());
+  }
+
+  /**
+   * Maps an internal {@link TargetApiConnector} to a public list item response.
+   *
+   * @param connector internal connector entity
+   * @return public connector list item response
+   */
+  public TargetApiConnectorListItemResponse toListItemResponse(TargetApiConnector connector) {
+    return new TargetApiConnectorListItemResponse(
+        connector.getPublicId(),
+        connector.getProject().getPublicId(),
+        connector.getName(),
+        connector.getMethod(),
+        connector.getUrl(),
+        connector.getResponseSelector(),
+        connector.getStreaming(),
+        connector.getActive(),
+        connector.getCreatedAt());
   }
 
   private List<SecretRefResponse> secretRefs(List<Map<String, Object>> secretRefs) {

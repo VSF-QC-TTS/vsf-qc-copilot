@@ -20,8 +20,12 @@ import me.nghlong3004.vqc.api.targetconnector.mapper.TargetApiConnectorMapper;
 import me.nghlong3004.vqc.api.targetconnector.repository.TargetApiConnectorRepository;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateTargetApiConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorResponse;
+import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorListItemResponse;
+import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorPageResponse;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -93,6 +97,52 @@ class TargetApiConnectorServiceImplTest {
         .isEqualTo("PROJECT_NOT_FOUND");
   }
 
+  @Test
+  void listConnectorsLoadsOwnerScopedProjectAndReturnsPage() {
+    User creator = new User();
+    creator.setUsername("qc.demo@example.com");
+    Project project = new Project();
+    TargetApiConnector connector = new TargetApiConnector();
+    connector.setProject(project);
+    connector.setName("Mock Health Chatbot");
+    AtomicReference<String> lookedUpUsername = new AtomicReference<>();
+    AtomicReference<ProjectLookup> projectLookup = new AtomicReference<>();
+    AtomicReference<Project> connectorProject = new AtomicReference<>();
+    TargetApiConnectorListItemResponse itemResponse =
+        new TargetApiConnectorListItemResponse(
+            connector.getPublicId(),
+            project.getPublicId(),
+            "Mock Health Chatbot",
+            HttpMethodType.POST,
+            "http://localhost:8080/mock-chatbot/chat",
+            "$.answer",
+            false,
+            true,
+            null);
+    TargetApiConnectorServiceImpl service =
+        new TargetApiConnectorServiceImpl(
+            connectorRepository(
+                new AtomicReference<>(),
+                new PageImpl<>(java.util.List.of(connector), PageRequest.of(0, 20), 1),
+                connectorProject),
+            projectRepository(Optional.of(project), projectLookup),
+            userRepository(Optional.of(creator), lookedUpUsername),
+            mapper(null, itemResponse));
+
+    TargetApiConnectorPageResponse response =
+        service.listConnectors(project.getPublicId(), PageRequest.of(0, 20), " QC.Demo@Example.COM ");
+
+    assertThat(lookedUpUsername).hasValue("qc.demo@example.com");
+    assertThat(projectLookup.get().publicId()).isEqualTo(project.getPublicId());
+    assertThat(projectLookup.get().createdBy()).isSameAs(creator);
+    assertThat(connectorProject).hasValue(project);
+    assertThat(response.items()).containsExactly(itemResponse);
+    assertThat(response.page()).isZero();
+    assertThat(response.size()).isEqualTo(20);
+    assertThat(response.totalItems()).isEqualTo(1);
+    assertThat(response.totalPages()).isEqualTo(1);
+  }
+
   private CreateTargetApiConnectorRequest request() {
     return new CreateTargetApiConnectorRequest(
         "  Mock Health Chatbot  ",
@@ -124,6 +174,13 @@ class TargetApiConnectorServiceImplTest {
 
   private TargetApiConnectorRepository connectorRepository(
       AtomicReference<TargetApiConnector> savedConnector) {
+    return connectorRepository(savedConnector, null, new AtomicReference<>());
+  }
+
+  private TargetApiConnectorRepository connectorRepository(
+      AtomicReference<TargetApiConnector> savedConnector,
+      PageImpl<TargetApiConnector> connectorPage,
+      AtomicReference<Project> connectorProject) {
     return (TargetApiConnectorRepository)
         Proxy.newProxyInstance(
             TargetApiConnectorRepository.class.getClassLoader(),
@@ -133,6 +190,10 @@ class TargetApiConnectorServiceImplTest {
                 case "save" -> {
                   savedConnector.set((TargetApiConnector) args[0]);
                   yield args[0];
+                }
+                case "findByProject" -> {
+                  connectorProject.set((Project) args[0]);
+                  yield connectorPage;
                 }
                 case "toString" -> "TargetApiConnectorRepositoryTestDouble";
                 default -> throw new UnsupportedOperationException(method.getName());
@@ -180,10 +241,20 @@ class TargetApiConnectorServiceImplTest {
   }
 
   private TargetApiConnectorMapper mapper(TargetApiConnectorResponse response) {
+    return mapper(response, null);
+  }
+
+  private TargetApiConnectorMapper mapper(
+      TargetApiConnectorResponse response, TargetApiConnectorListItemResponse itemResponse) {
     return new TargetApiConnectorMapper() {
       @Override
       public TargetApiConnectorResponse toResponse(TargetApiConnector connector) {
         return response;
+      }
+
+      @Override
+      public TargetApiConnectorListItemResponse toListItemResponse(TargetApiConnector connector) {
+        return itemResponse;
       }
     };
   }

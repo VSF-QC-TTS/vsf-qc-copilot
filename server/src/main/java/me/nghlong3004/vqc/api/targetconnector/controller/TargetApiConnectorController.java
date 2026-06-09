@@ -12,10 +12,15 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import me.nghlong3004.vqc.api.exception.ErrorResponse;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateTargetApiConnectorRequest;
+import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorPageResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorResponse;
 import me.nghlong3004.vqc.api.targetconnector.service.TargetApiConnectorService;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -73,5 +78,45 @@ public class TargetApiConnectorController {
       @Valid @RequestBody CreateTargetApiConnectorRequest request,
       Principal principal) {
     return targetApiConnectorService.createConnector(projectPublicId, request, principal.getName());
+  }
+
+  @Operation(summary = "List target connectors", description = "Lists connectors under a project.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Connector page",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = TargetApiConnectorPageResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Invalid project identifier or pagination request",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Authentication is required",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Project not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+  public TargetApiConnectorPageResponse listConnectors(
+      @PathVariable UUID projectPublicId,
+      @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+          Pageable pageable,
+      Principal principal) {
+    return targetApiConnectorService.listConnectors(projectPublicId, pageable, principal.getName());
   }
 }

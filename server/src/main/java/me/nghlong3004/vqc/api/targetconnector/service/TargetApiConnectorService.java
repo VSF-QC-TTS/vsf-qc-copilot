@@ -3,7 +3,9 @@ package me.nghlong3004.vqc.api.targetconnector.service;
 import java.util.UUID;
 import me.nghlong3004.vqc.api.targetconnector.entity.TargetApiConnector;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateTargetApiConnectorRequest;
+import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorPageResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorResponse;
+import org.springframework.data.domain.Pageable;
 
 /**
  * @author nghlong3004 (Long Nguyen Hoang)
@@ -21,4 +23,15 @@ public interface TargetApiConnectorService {
    */
   TargetApiConnectorResponse createConnector(
       UUID projectPublicId, CreateTargetApiConnectorRequest request, String username);
+
+  /**
+   * Lists target connectors under a project owned by the authenticated user.
+   *
+   * @param projectPublicId public project identifier
+   * @param pageable page and sort request
+   * @param username normalized or raw username from the authenticated principal
+   * @return paginated public {@link TargetApiConnectorPageResponse}
+   */
+  TargetApiConnectorPageResponse listConnectors(
+      UUID projectPublicId, Pageable pageable, String username);
 }
