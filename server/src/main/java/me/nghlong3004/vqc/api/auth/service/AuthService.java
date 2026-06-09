@@ -25,6 +25,14 @@ public interface AuthService {
   LoginResult login(@Valid LoginRequest request);
 
   /**
+   * Renews an authenticated session using a refresh token cookie.
+   *
+   * @param refreshToken refresh JWT read from the HttpOnly cookie
+   * @return {@link LoginResult} containing a new access token and refresh token cookie metadata
+   */
+  LoginResult refreshToken(String refreshToken);
+
+  /**
    * Verifies a pending account email address using a token from {@link VerifyEmailRequest}.
    *
    * @param request validated {@link VerifyEmailRequest}

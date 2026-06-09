@@ -1,13 +1,15 @@
 package me.nghlong3004.vqc.api.auth.token.impl;
 
 import java.time.Instant;
-import lombok.RequiredArgsConstructor;
 import me.nghlong3004.vqc.api.auth.token.JwtTokenService;
 import me.nghlong3004.vqc.api.user.entity.User;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
@@ -17,7 +19,6 @@ import org.springframework.stereotype.Service;
  * @since 6/9/2026
  */
 @Service
-@RequiredArgsConstructor
 public class JwtTokenServiceImpl implements JwtTokenService {
 
   private static final String ISSUER = "vqc-api";
@@ -31,6 +32,13 @@ public class JwtTokenServiceImpl implements JwtTokenService {
   private long refreshExpirationMinutes;
 
   private final JwtEncoder jwtEncoder;
+  private final JwtDecoder refreshTokenJwtDecoder;
+
+  public JwtTokenServiceImpl(
+      JwtEncoder jwtEncoder, @Qualifier("refreshTokenJwtDecoder") JwtDecoder refreshTokenJwtDecoder) {
+    this.jwtEncoder = jwtEncoder;
+    this.refreshTokenJwtDecoder = refreshTokenJwtDecoder;
+  }
 
   @Override
   public String createAccessToken(User user) {
@@ -40,6 +48,15 @@ public class JwtTokenServiceImpl implements JwtTokenService {
   @Override
   public String createRefreshToken(User user) {
     return createToken(user, REFRESH_TOKEN_TYPE, refreshTokenExpiresInSeconds());
+  }
+
+  @Override
+  public String readRefreshTokenSubject(String refreshToken) {
+    String subject = refreshTokenJwtDecoder.decode(refreshToken).getSubject();
+    if (subject == null || subject.isBlank()) {
+      throw new BadJwtException("Refresh token subject is missing");
+    }
+    return subject;
   }
 
   @Override

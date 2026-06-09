@@ -44,6 +44,7 @@ public class SecurityConfig {
     API_BASE_PATH + "/auth/verify-email",
     API_BASE_PATH + "/auth/forgot-password",
     API_BASE_PATH + "/auth/reset-password",
+    API_BASE_PATH + "/auth/refresh-token",
   };
 
   private static final String[] API_GET_PUBLIC = {};
@@ -117,11 +118,7 @@ public class SecurityConfig {
       if (isPublicRequest(request)) {
         return null;
       }
-      String token = headerResolver.resolve(request);
-      if (token != null) {
-        return token;
-      }
-      return null;
+      return headerResolver.resolve(request);
     };
   }
 

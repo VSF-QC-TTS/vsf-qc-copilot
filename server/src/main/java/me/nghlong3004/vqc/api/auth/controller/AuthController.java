@@ -24,6 +24,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -147,6 +148,38 @@ public class AuthController {
       produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
     var result = authService.login(request);
+    var refreshCookie =
+        authCookieFactory.refreshTokenCookie(
+            result.refreshToken(), result.refreshTokenMaxAgeSeconds());
+    return ResponseEntity.ok()
+        .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+        .body(result.response());
+  }
+
+  @Operation(
+      summary = "Refresh access token",
+      description =
+          "Uses the HttpOnly refresh_token cookie to issue a new access token and rotate the refresh token cookie.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Token refresh successful. New refresh token is returned only in Set-Cookie.",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = LoginResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Missing, invalid, or expired refresh token",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @PostMapping(value = "/refresh-token", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<LoginResponse> refreshToken(
+      @CookieValue(name = "refresh_token", required = false) String refreshToken) {
+    var result = authService.refreshToken(refreshToken);
     var refreshCookie =
         authCookieFactory.refreshTokenCookie(
             result.refreshToken(), result.refreshTokenMaxAgeSeconds());

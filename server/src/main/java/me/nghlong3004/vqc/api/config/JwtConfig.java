@@ -11,11 +11,7 @@ import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.JwtValidators;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.jwt.*;
 
 /**
  * @author nghlong3004 (Nguyen Hoang Long)
@@ -39,20 +35,26 @@ public class JwtConfig {
   @Bean
   public JwtDecoder jwtDecoder(SecretKey secretKey) {
     NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(secretKey).build();
-    decoder.setJwtValidator(accessTokenValidator());
+    decoder.setJwtValidator(tokenTypeValidator("access", "Only access tokens can authenticate API requests."));
     return decoder;
   }
 
-  private OAuth2TokenValidator<org.springframework.security.oauth2.jwt.Jwt> accessTokenValidator() {
-    OAuth2TokenValidator<org.springframework.security.oauth2.jwt.Jwt> tokenTypeValidator =
+  @Bean("refreshTokenJwtDecoder")
+  public JwtDecoder refreshTokenJwtDecoder(SecretKey secretKey) {
+    NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(secretKey).build();
+    decoder.setJwtValidator(tokenTypeValidator("refresh", "Only refresh tokens can renew sessions."));
+    return decoder;
+  }
+
+  private OAuth2TokenValidator<Jwt> tokenTypeValidator(String expectedType, String errorDescription) {
+    OAuth2TokenValidator<Jwt> validator =
         jwt -> {
-          if ("access".equals(jwt.getClaimAsString("token_type"))) {
+          if (expectedType.equals(jwt.getClaimAsString("token_type"))) {
             return OAuth2TokenValidatorResult.success();
           }
           return OAuth2TokenValidatorResult.failure(
-              new OAuth2Error(
-                  "invalid_token", "Only access tokens can authenticate API requests.", null));
+              new OAuth2Error("invalid_token", errorDescription, null));
         };
-    return new DelegatingOAuth2TokenValidator<>(JwtValidators.createDefault(), tokenTypeValidator);
+    return new DelegatingOAuth2TokenValidator<>(JwtValidators.createDefault(), validator);
   }
 }

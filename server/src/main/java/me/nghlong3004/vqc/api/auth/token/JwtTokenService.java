@@ -25,6 +25,14 @@ public interface JwtTokenService {
   String createRefreshToken(User user);
 
   /**
+   * Validates a refresh JWT and returns its subject.
+   *
+   * @param refreshToken refresh JWT from the HttpOnly cookie
+   * @return normalized email stored as the token subject
+   */
+  String readRefreshTokenSubject(String refreshToken);
+
+  /**
    * Returns access token TTL.
    *
    * @return access token lifetime in seconds

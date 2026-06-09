@@ -26,6 +26,7 @@ import me.nghlong3004.vqc.api.user.response.UserResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -75,13 +76,41 @@ public class AuthServiceImpl implements AuthService {
 
     String accessToken = jwtTokenService.createAccessToken(saved);
     String refreshToken = jwtTokenService.createRefreshToken(saved);
-    LoginResponse response =
-        new LoginResponse(
-            accessToken,
-            TOKEN_TYPE,
-            jwtTokenService.accessTokenExpiresInSeconds(),
-            userMapper.toResponse(saved));
+    LoginResponse response = buildLoginResponse(saved, accessToken);
     return new LoginResult(response, refreshToken, jwtTokenService.refreshTokenExpiresInSeconds());
+  }
+
+  @Override
+  @Transactional
+  public LoginResult refreshToken(String refreshToken) {
+    if (refreshToken == null || refreshToken.isBlank()) {
+      throw new ResourceException(ErrorCode.INVALID_REFRESH_TOKEN);
+    }
+
+    String email;
+    try {
+      email = jwtTokenService.readRefreshTokenSubject(refreshToken);
+    } catch (JwtException ex) {
+      throw new ResourceException(resolveRefreshTokenError(ex));
+    }
+
+    User user =
+        userRepository
+            .findByUsername(normalizeEmail(email))
+            .orElseThrow(() -> new ResourceException(ErrorCode.INVALID_REFRESH_TOKEN));
+    if (user.getStatus() == UserStatus.PENDING_EMAIL_VERIFICATION) {
+      throw new ResourceException(ErrorCode.EMAIL_NOT_VERIFIED);
+    }
+    if (user.getStatus() != UserStatus.ACTIVE) {
+      throw new ResourceException(ErrorCode.ACCOUNT_LOCKED);
+    }
+
+    String newAccessToken = jwtTokenService.createAccessToken(user);
+    String newRefreshToken = jwtTokenService.createRefreshToken(user);
+    return new LoginResult(
+        buildLoginResponse(user, newAccessToken),
+        newRefreshToken,
+        jwtTokenService.refreshTokenExpiresInSeconds());
   }
 
   @Override
@@ -106,6 +135,22 @@ public class AuthServiceImpl implements AuthService {
 
   private String normalizeEmail(String email) {
     return email.trim().toLowerCase();
+  }
+
+  private LoginResponse buildLoginResponse(User user, String accessToken) {
+    return new LoginResponse(
+        accessToken,
+        TOKEN_TYPE,
+        jwtTokenService.accessTokenExpiresInSeconds(),
+        userMapper.toResponse(user));
+  }
+
+  private ErrorCode resolveRefreshTokenError(JwtException ex) {
+    String message = ex.getMessage();
+    if (message != null && message.toLowerCase().contains("expired")) {
+      return ErrorCode.REFRESH_TOKEN_EXPIRED;
+    }
+    return ErrorCode.INVALID_REFRESH_TOKEN;
   }
 
   private void sendPasswordReset(User user) {
