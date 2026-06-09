@@ -50,11 +50,13 @@ public class UserServiceImpl implements UserService {
     }
 
     log.debug("Creating local user account");
-    User user = new User();
-    user.setUsername(email);
-    user.setPasswordHash(passwordEncoder.encode(request.password()));
-    user.setDisplayName(resolveDisplayName(request.displayName(), email));
-    user.setStatus(UserStatus.PENDING_EMAIL_VERIFICATION);
+    User user =
+        User.builder()
+            .username(email)
+            .passwordHash(passwordEncoder.encode(request.password()))
+            .displayName(resolveDisplayName(request.displayName(), email))
+            .status(UserStatus.PENDING_EMAIL_VERIFICATION)
+            .build();
 
     User saved;
     try {

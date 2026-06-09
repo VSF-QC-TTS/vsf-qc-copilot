@@ -1,10 +1,10 @@
 package me.nghlong3004.vqc.api.user.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.enums.UserStatus;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
 import org.jspecify.annotations.NonNull;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -23,12 +23,12 @@ public class UserDetailsServiceImpl implements UserDetailsService {
   @Override
   public @NonNull UserDetails loadUserByUsername(@NonNull String username)
       throws UsernameNotFoundException {
-    User user =
+    var user =
         userRepository
             .findByUsername(username.trim().toLowerCase())
             .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-    return org.springframework.security.core.userdetails.User.withUsername(user.getUsername())
+    return User.withUsername(user.getUsername())
         .password(user.getPasswordHash())
         .authorities(user.getRole())
         .disabled(user.getStatus() != UserStatus.ACTIVE)

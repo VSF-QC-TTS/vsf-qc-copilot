@@ -13,9 +13,7 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
 import java.util.UUID;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import me.nghlong3004.vqc.api.user.enums.Role;
 import me.nghlong3004.vqc.api.user.enums.UserStatus;
 
@@ -29,7 +27,9 @@ import me.nghlong3004.vqc.api.user.enums.UserStatus;
     indexes = {@Index(name = "idx_users_status", columnList = "status")})
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 public class User {
 
   @Id
@@ -37,6 +37,7 @@ public class User {
   private Long id;
 
   @Column(name = "public_id", nullable = false, updatable = false, unique = true)
+  @Builder.Default
   private UUID publicId = UUID.randomUUID();
 
   @Column(nullable = false, unique = true, length = 100)
@@ -50,20 +51,24 @@ public class User {
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 50)
+  @Builder.Default
   private Role role = Role.QC_MEMBER;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 50)
+  @Builder.Default
   private UserStatus status = UserStatus.ACTIVE;
 
   @Column(name = "last_login_at")
   private OffsetDateTime lastLoginAt;
 
   @Column(name = "created_at", nullable = false, updatable = false)
-  private OffsetDateTime createdAt;
+  @Builder.Default
+  private OffsetDateTime createdAt = OffsetDateTime.now();
 
   @Column(name = "updated_at", nullable = false)
-  private OffsetDateTime updatedAt;
+  @Builder.Default
+  private OffsetDateTime updatedAt = OffsetDateTime.now();
 
   @PrePersist
   void prePersist() {

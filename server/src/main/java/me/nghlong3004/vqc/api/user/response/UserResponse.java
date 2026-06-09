@@ -20,5 +20,8 @@ public record UserResponse(
     @Schema(description = "User display name.", example = "QC Demo") String displayName,
     @Schema(description = "Application role.", example = "QC_MEMBER") Role role,
     @Schema(description = "User account status.", example = "ACTIVE") UserStatus status,
-    @Schema(description = "Last successful login time.", example = "2026-06-09T10:00:00Z", nullable = true)
+    @Schema(
+            description = "Last successful login time.",
+            example = "2026-06-09T10:00:00Z",
+            nullable = true)
         OffsetDateTime lastLoginAt) {}

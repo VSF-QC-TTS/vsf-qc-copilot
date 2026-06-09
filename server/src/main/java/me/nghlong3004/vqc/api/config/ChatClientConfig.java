@@ -18,7 +18,7 @@ public class ChatClientConfig {
 
   @Bean
   @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-  ChatClient.Builder chatClientBuilder(ChatModel chatModel) {
+  public ChatClient.Builder chatClientBuilder(ChatModel chatModel) {
     return ChatClient.builder(chatModel);
   }
 }
