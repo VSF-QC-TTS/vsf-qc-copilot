@@ -44,4 +44,21 @@ class ProjectMapperTest {
     assertThat(response.createdAt()).isEqualTo(project.getCreatedAt());
     assertThat(response.updatedAt()).isEqualTo(project.getUpdatedAt());
   }
+
+  @Test
+  void toListItemResponseMapsListFieldsOnly() {
+    Project project = new Project();
+    project.setName("AI Health Chatbot Demo");
+    project.setStatus(ProjectStatus.ACTIVE);
+    project.setCreatedAt(OffsetDateTime.parse("2026-06-08T10:30:00Z"));
+    project.setUpdatedAt(OffsetDateTime.parse("2026-06-08T10:35:00Z"));
+
+    var response = projectMapper.toListItemResponse(project);
+
+    assertThat(response.publicId()).isEqualTo(project.getPublicId());
+    assertThat(response.name()).isEqualTo("AI Health Chatbot Demo");
+    assertThat(response.status()).isEqualTo(ProjectStatus.ACTIVE);
+    assertThat(response.createdAt()).isEqualTo(project.getCreatedAt());
+    assertThat(response.updatedAt()).isEqualTo(project.getUpdatedAt());
+  }
 }

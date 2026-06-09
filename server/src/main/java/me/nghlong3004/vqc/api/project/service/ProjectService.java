@@ -1,8 +1,11 @@
 package me.nghlong3004.vqc.api.project.service;
 
 import me.nghlong3004.vqc.api.project.entity.Project;
+import me.nghlong3004.vqc.api.project.enums.ProjectStatus;
 import me.nghlong3004.vqc.api.project.request.CreateProjectRequest;
+import me.nghlong3004.vqc.api.project.response.ProjectPageResponse;
 import me.nghlong3004.vqc.api.project.response.ProjectResponse;
+import org.springframework.data.domain.Pageable;
 
 /**
  * @author nghlong3004 (Long Nguyen Hoang)
@@ -18,4 +21,14 @@ public interface ProjectService {
    * @return created public {@link ProjectResponse}
    */
   ProjectResponse createProject(CreateProjectRequest request, String username);
+
+  /**
+   * Lists projects owned by the authenticated user.
+   *
+   * @param status optional project status filter
+   * @param pageable page and sort request
+   * @param username normalized or raw username from the authenticated principal
+   * @return paginated public {@link ProjectPageResponse}
+   */
+  ProjectPageResponse listProjects(ProjectStatus status, Pageable pageable, String username);
 }

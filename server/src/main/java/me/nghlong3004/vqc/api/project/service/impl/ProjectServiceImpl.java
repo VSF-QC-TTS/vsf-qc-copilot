@@ -1,5 +1,6 @@
 package me.nghlong3004.vqc.api.project.service.impl;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.nghlong3004.vqc.api.exception.ErrorCode;
@@ -9,10 +10,14 @@ import me.nghlong3004.vqc.api.project.enums.ProjectStatus;
 import me.nghlong3004.vqc.api.project.mapper.ProjectMapper;
 import me.nghlong3004.vqc.api.project.repository.ProjectRepository;
 import me.nghlong3004.vqc.api.project.request.CreateProjectRequest;
+import me.nghlong3004.vqc.api.project.response.ProjectListItemResponse;
+import me.nghlong3004.vqc.api.project.response.ProjectPageResponse;
 import me.nghlong3004.vqc.api.project.response.ProjectResponse;
 import me.nghlong3004.vqc.api.project.service.ProjectService;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,10 +39,7 @@ public class ProjectServiceImpl implements ProjectService {
   @Override
   @Transactional
   public ProjectResponse createProject(CreateProjectRequest request, String username) {
-    User creator =
-        userRepository
-            .findByUsername(normalizeEmail(username))
-            .orElseThrow(() -> new ResourceException(ErrorCode.USER_NOT_FOUND));
+    User creator = findCreator(username);
     Project project =
         Project.builder()
             .name(request.name().trim())
@@ -51,6 +53,30 @@ public class ProjectServiceImpl implements ProjectService {
     Project saved = projectRepository.save(project);
     log.info("Created project {} by user {}", saved.getPublicId(), creator.getPublicId());
     return projectMapper.toResponse(saved);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public ProjectPageResponse listProjects(ProjectStatus status, Pageable pageable, String username) {
+    User creator = findCreator(username);
+    Page<Project> projects =
+        status == null
+            ? projectRepository.findByCreatedBy(creator, pageable)
+            : projectRepository.findByCreatedByAndStatus(creator, status, pageable);
+    List<ProjectListItemResponse> items =
+        projects.getContent().stream().map(projectMapper::toListItemResponse).toList();
+    return new ProjectPageResponse(
+        items,
+        projects.getNumber(),
+        projects.getSize(),
+        projects.getTotalElements(),
+        projects.getTotalPages());
+  }
+
+  private User findCreator(String username) {
+    return userRepository
+        .findByUsername(normalizeEmail(username))
+        .orElseThrow(() -> new ResourceException(ErrorCode.USER_NOT_FOUND));
   }
 
   private String normalizeEmail(String email) {

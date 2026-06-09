@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.lang.reflect.Proxy;
+import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import me.nghlong3004.vqc.api.exception.ResourceException;
@@ -13,9 +15,13 @@ import me.nghlong3004.vqc.api.project.mapper.ProjectMapper;
 import me.nghlong3004.vqc.api.project.repository.ProjectRepository;
 import me.nghlong3004.vqc.api.project.request.CreateProjectRequest;
 import me.nghlong3004.vqc.api.project.response.ProjectCreatorResponse;
+import me.nghlong3004.vqc.api.project.response.ProjectListItemResponse;
+import me.nghlong3004.vqc.api.project.response.ProjectPageResponse;
 import me.nghlong3004.vqc.api.project.response.ProjectResponse;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -82,7 +88,71 @@ class ProjectServiceImplTest {
         .isEqualTo("USER_NOT_FOUND");
   }
 
+  @Test
+  void listProjectsLoadsCreatorAndReturnsFilteredPage() {
+    User creator = new User();
+    creator.setUsername("qc.demo@example.com");
+    Project project = new Project();
+    project.setName("AI Health Chatbot Demo");
+    project.setStatus(ProjectStatus.ACTIVE);
+    project.setCreatedBy(creator);
+    project.setCreatedAt(OffsetDateTime.parse("2026-06-08T10:30:00Z"));
+    project.setUpdatedAt(OffsetDateTime.parse("2026-06-08T10:35:00Z"));
+    AtomicReference<String> lookedUpUsername = new AtomicReference<>();
+    AtomicReference<ProjectQuery> projectQuery = new AtomicReference<>();
+    ProjectListItemResponse itemResponse =
+        new ProjectListItemResponse(
+            project.getPublicId(),
+            "AI Health Chatbot Demo",
+            ProjectStatus.ACTIVE,
+            project.getCreatedAt(),
+            project.getUpdatedAt());
+    ProjectServiceImpl projectService =
+        new ProjectServiceImpl(
+            projectRepository(
+                new AtomicReference<>(),
+                new PageImpl<>(List.of(project), PageRequest.of(0, 20), 1),
+                projectQuery),
+            userRepository(Optional.of(creator), lookedUpUsername),
+            mapper(null, itemResponse));
+
+    ProjectPageResponse response =
+        projectService.listProjects(
+            ProjectStatus.ACTIVE, PageRequest.of(0, 20), "  QC.Demo@Example.COM  ");
+
+    assertThat(lookedUpUsername).hasValue("qc.demo@example.com");
+    assertThat(projectQuery.get().createdBy()).isSameAs(creator);
+    assertThat(projectQuery.get().status()).isEqualTo(ProjectStatus.ACTIVE);
+    assertThat(response.items()).containsExactly(itemResponse);
+    assertThat(response.page()).isZero();
+    assertThat(response.size()).isEqualTo(20);
+    assertThat(response.totalItems()).isEqualTo(1);
+    assertThat(response.totalPages()).isEqualTo(1);
+  }
+
+  @Test
+  void listProjectsRejectsMissingCreator() {
+    ProjectServiceImpl projectService =
+        new ProjectServiceImpl(
+            ignoredProjectRepository(),
+            userRepository(Optional.empty(), new AtomicReference<>()),
+            ignoredMapper());
+
+    assertThatThrownBy(
+            () -> projectService.listProjects(null, PageRequest.of(0, 20), "missing@example.com"))
+        .isInstanceOf(ResourceException.class)
+        .extracting("response.code")
+        .isEqualTo("USER_NOT_FOUND");
+  }
+
   private ProjectRepository projectRepository(AtomicReference<Project> savedProject) {
+    return projectRepository(savedProject, null, new AtomicReference<>());
+  }
+
+  private ProjectRepository projectRepository(
+      AtomicReference<Project> savedProject,
+      PageImpl<Project> projectPage,
+      AtomicReference<ProjectQuery> projectQuery) {
     return (ProjectRepository)
         Proxy.newProxyInstance(
             ProjectRepository.class.getClassLoader(),
@@ -92,6 +162,14 @@ class ProjectServiceImplTest {
                 case "save" -> {
                   savedProject.set((Project) args[0]);
                   yield args[0];
+                }
+                case "findByCreatedBy" -> {
+                  projectQuery.set(new ProjectQuery((User) args[0], null));
+                  yield projectPage;
+                }
+                case "findByCreatedByAndStatus" -> {
+                  projectQuery.set(new ProjectQuery((User) args[0], (ProjectStatus) args[1]));
+                  yield projectPage;
                 }
                 case "toString" -> "ProjectRepositoryTestDouble";
                 default -> throw new UnsupportedOperationException(method.getName());
@@ -122,10 +200,19 @@ class ProjectServiceImplTest {
   }
 
   private ProjectMapper mapper(ProjectResponse response) {
+    return mapper(response, null);
+  }
+
+  private ProjectMapper mapper(ProjectResponse response, ProjectListItemResponse itemResponse) {
     return new ProjectMapper() {
       @Override
       public ProjectResponse toResponse(Project project) {
         return response;
+      }
+
+      @Override
+      public ProjectListItemResponse toListItemResponse(Project project) {
+        return itemResponse;
       }
 
       @Override
@@ -143,9 +230,16 @@ class ProjectServiceImplTest {
       }
 
       @Override
+      public ProjectListItemResponse toListItemResponse(Project project) {
+        throw new AssertionError("Mapper should not be called");
+      }
+
+      @Override
       public ProjectCreatorResponse toCreatorResponse(User user) {
         throw new AssertionError("Mapper should not be called");
       }
     };
   }
+
+  private record ProjectQuery(User createdBy, ProjectStatus status) {}
 }
