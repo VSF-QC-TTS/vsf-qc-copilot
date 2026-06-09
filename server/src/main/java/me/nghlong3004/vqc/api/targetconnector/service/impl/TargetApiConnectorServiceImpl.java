@@ -98,6 +98,17 @@ public class TargetApiConnectorServiceImpl implements TargetApiConnectorService 
         connectors.getTotalPages());
   }
 
+  @Override
+  @Transactional(readOnly = true)
+  public TargetApiConnectorResponse getConnector(UUID connectorPublicId, String username) {
+    User creator = findCreator(username);
+    TargetApiConnector connector =
+        targetApiConnectorRepository
+            .findByPublicIdAndCreatedBy(connectorPublicId, creator)
+            .orElseThrow(() -> new ResourceException(ErrorCode.TARGET_CONNECTOR_NOT_FOUND));
+    return targetApiConnectorMapper.toResponse(connector);
+  }
+
   private Project findProject(UUID projectPublicId, User creator) {
     return projectRepository
         .findByPublicIdAndCreatedBy(projectPublicId, creator)

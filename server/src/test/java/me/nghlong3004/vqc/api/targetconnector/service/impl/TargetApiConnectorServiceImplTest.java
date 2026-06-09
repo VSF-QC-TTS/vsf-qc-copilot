@@ -143,6 +143,53 @@ class TargetApiConnectorServiceImplTest {
     assertThat(response.totalPages()).isEqualTo(1);
   }
 
+  @Test
+  void getConnectorLoadsCreatorScopedConnector() {
+    User creator = new User();
+    creator.setUsername("qc.demo@example.com");
+    TargetApiConnector connector = new TargetApiConnector();
+    AtomicReference<String> lookedUpUsername = new AtomicReference<>();
+    AtomicReference<ConnectorLookup> connectorLookup = new AtomicReference<>();
+    TargetApiConnectorResponse mappedResponse =
+        new TargetApiConnectorResponse(
+            connector.getPublicId(), null, "Mock Health Chatbot", null, HttpMethodType.POST, null,
+            null, "http://localhost:8080/mock-chatbot/chat", Map.of(), Map.of(), Map.of(),
+            BodyType.RAW_JSON, Map.of(), null, AuthType.NONE, Map.of(), java.util.List.of(),
+            ResponseFormat.JSON, "$.answer", false, null, null, 60, 1, true, null, null);
+    TargetApiConnectorServiceImpl service =
+        new TargetApiConnectorServiceImpl(
+            connectorRepository(
+                new AtomicReference<>(), null, new AtomicReference<>(), Optional.of(connector), connectorLookup),
+            projectRepository(Optional.empty(), new AtomicReference<>()),
+            userRepository(Optional.of(creator), lookedUpUsername),
+            mapper(mappedResponse));
+
+    TargetApiConnectorResponse response =
+        service.getConnector(connector.getPublicId(), " QC.Demo@Example.COM ");
+
+    assertThat(lookedUpUsername).hasValue("qc.demo@example.com");
+    assertThat(connectorLookup.get().publicId()).isEqualTo(connector.getPublicId());
+    assertThat(connectorLookup.get().createdBy()).isSameAs(creator);
+    assertThat(response).isSameAs(mappedResponse);
+  }
+
+  @Test
+  void getConnectorRejectsMissingConnector() {
+    User creator = new User();
+    TargetApiConnectorServiceImpl service =
+        new TargetApiConnectorServiceImpl(
+            connectorRepository(
+                new AtomicReference<>(), null, new AtomicReference<>(), Optional.empty(), new AtomicReference<>()),
+            projectRepository(Optional.empty(), new AtomicReference<>()),
+            userRepository(Optional.of(creator), new AtomicReference<>()),
+            mapper(null));
+
+    assertThatThrownBy(() -> service.getConnector(UUID.randomUUID(), "qc.demo@example.com"))
+        .isInstanceOf(ResourceException.class)
+        .extracting("response.code")
+        .isEqualTo("TARGET_CONNECTOR_NOT_FOUND");
+  }
+
   private CreateTargetApiConnectorRequest request() {
     return new CreateTargetApiConnectorRequest(
         "  Mock Health Chatbot  ",
@@ -181,6 +228,16 @@ class TargetApiConnectorServiceImplTest {
       AtomicReference<TargetApiConnector> savedConnector,
       PageImpl<TargetApiConnector> connectorPage,
       AtomicReference<Project> connectorProject) {
+    return connectorRepository(
+        savedConnector, connectorPage, connectorProject, Optional.empty(), new AtomicReference<>());
+  }
+
+  private TargetApiConnectorRepository connectorRepository(
+      AtomicReference<TargetApiConnector> savedConnector,
+      PageImpl<TargetApiConnector> connectorPage,
+      AtomicReference<Project> connectorProject,
+      Optional<TargetApiConnector> foundConnector,
+      AtomicReference<ConnectorLookup> connectorLookup) {
     return (TargetApiConnectorRepository)
         Proxy.newProxyInstance(
             TargetApiConnectorRepository.class.getClassLoader(),
@@ -194,6 +251,10 @@ class TargetApiConnectorServiceImplTest {
                 case "findByProject" -> {
                   connectorProject.set((Project) args[0]);
                   yield connectorPage;
+                }
+                case "findByPublicIdAndCreatedBy" -> {
+                  connectorLookup.set(new ConnectorLookup((UUID) args[0], (User) args[1]));
+                  yield foundConnector;
                 }
                 case "toString" -> "TargetApiConnectorRepositoryTestDouble";
                 default -> throw new UnsupportedOperationException(method.getName());
@@ -260,4 +321,6 @@ class TargetApiConnectorServiceImplTest {
   }
 
   private record ProjectLookup(UUID publicId, User createdBy) {}
+
+  private record ConnectorLookup(UUID publicId, User createdBy) {}
 }

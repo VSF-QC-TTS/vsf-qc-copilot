@@ -208,6 +208,67 @@ class TargetApiConnectorControllerTest {
     assertThat(RecordingTargetApiConnectorService.username).isEqualTo("qc.demo@example.com");
   }
 
+  @Test
+  void getConnectorReturnsConnectorDetail() throws Exception {
+    RecordingTargetApiConnectorService.response =
+        new TargetApiConnectorResponse(
+            UUID.fromString("f5f77e84-b3be-48bb-9081-f1dd190f8c61"),
+            UUID.fromString(PROJECT_ID),
+            "Mock Health Chatbot",
+            "Local mock chatbot for demo.",
+            HttpMethodType.POST,
+            "http://localhost:8080",
+            "/mock-chatbot/chat",
+            "http://localhost:8080/mock-chatbot/chat",
+            Map.of("Authorization", "Bearer {{secret:CHATBOT_API_TOKEN}}"),
+            Map.of(),
+            Map.of(),
+            BodyType.RAW_JSON,
+            Map.of("message", "{{question}}"),
+            null,
+            AuthType.BEARER,
+            Map.of("tokenRef", "{{secret:CHATBOT_API_TOKEN}}"),
+            List.of(new SecretRefResponse("CHATBOT_API_TOKEN", "****alue")),
+            ResponseFormat.JSON,
+            "$.answer",
+            false,
+            null,
+            null,
+            60,
+            1,
+            true,
+            null,
+            null);
+
+    mockMvc
+        .perform(
+            get("/api/v1/target-api-connectors/f5f77e84-b3be-48bb-9081-f1dd190f8c61")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.publicId").value("f5f77e84-b3be-48bb-9081-f1dd190f8c61"))
+        .andExpect(jsonPath("$.name").value("Mock Health Chatbot"))
+        .andExpect(jsonPath("$.headers.Authorization").value("Bearer {{secret:CHATBOT_API_TOKEN}}"))
+        .andExpect(jsonPath("$.secretRefs[0].maskedValue").value("****alue"));
+
+    assertThat(RecordingTargetApiConnectorService.connectorPublicId)
+        .isEqualTo(UUID.fromString("f5f77e84-b3be-48bb-9081-f1dd190f8c61"));
+    assertThat(RecordingTargetApiConnectorService.username).isEqualTo("qc.demo@example.com");
+  }
+
+  @Test
+  void getConnectorReturnsValidationProblemDetailsForInvalidPublicId() throws Exception {
+    mockMvc
+        .perform(
+            get("/api/v1/target-api-connectors/not-a-uuid")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null)))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+        .andExpect(jsonPath("$.instance").value("/api/v1/target-api-connectors/not-a-uuid"));
+
+    assertThat(RecordingTargetApiConnectorService.connectorPublicId).isNull();
+  }
+
   @TestConfiguration
   static class MockBeans {
 
@@ -219,6 +280,7 @@ class TargetApiConnectorControllerTest {
 
   static class RecordingTargetApiConnectorService implements TargetApiConnectorService {
     private static UUID projectPublicId;
+    private static UUID connectorPublicId;
     private static CreateTargetApiConnectorRequest request;
     private static Pageable pageable;
     private static String username;
@@ -243,8 +305,16 @@ class TargetApiConnectorControllerTest {
       return pageResponse;
     }
 
+    @Override
+    public TargetApiConnectorResponse getConnector(UUID connectorPublicId, String username) {
+      RecordingTargetApiConnectorService.connectorPublicId = connectorPublicId;
+      RecordingTargetApiConnectorService.username = username;
+      return response;
+    }
+
     private static void reset() {
       projectPublicId = null;
+      connectorPublicId = null;
       request = null;
       pageable = null;
       username = null;

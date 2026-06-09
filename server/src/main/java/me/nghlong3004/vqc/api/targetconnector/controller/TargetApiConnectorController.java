@@ -33,7 +33,6 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 6/10/2026
  */
 @RestController
-@RequestMapping("/api/v1/projects/{projectPublicId}/target-api-connectors")
 @RequiredArgsConstructor
 @Tag(name = "Target API Connectors", description = "Target chatbot/API connector APIs")
 public class TargetApiConnectorController {
@@ -71,7 +70,10 @@ public class TargetApiConnectorController {
                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                 schema = @Schema(implementation = ErrorResponse.class)))
   })
-  @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @PostMapping(
+      value = "/api/v1/projects/{projectPublicId}/target-api-connectors",
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseStatus(HttpStatus.CREATED)
   public TargetApiConnectorResponse createConnector(
       @PathVariable UUID projectPublicId,
@@ -111,12 +113,51 @@ public class TargetApiConnectorController {
                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                 schema = @Schema(implementation = ErrorResponse.class)))
   })
-  @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+  @GetMapping(
+      value = "/api/v1/projects/{projectPublicId}/target-api-connectors",
+      produces = MediaType.APPLICATION_JSON_VALUE)
   public TargetApiConnectorPageResponse listConnectors(
       @PathVariable UUID projectPublicId,
       @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
           Pageable pageable,
       Principal principal) {
     return targetApiConnectorService.listConnectors(projectPublicId, pageable, principal.getName());
+  }
+
+  @Operation(summary = "Get target connector detail", description = "Returns a connector owned by the authenticated user.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Connector detail",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = TargetApiConnectorResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Invalid connector identifier",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Authentication is required",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Connector not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @GetMapping(value = "/api/v1/target-api-connectors/{connectorPublicId}", produces = MediaType.APPLICATION_JSON_VALUE)
+  public TargetApiConnectorResponse getConnector(
+      @PathVariable UUID connectorPublicId, Principal principal) {
+    return targetApiConnectorService.getConnector(connectorPublicId, principal.getName());
   }
 }

@@ -79,6 +79,10 @@ public enum ErrorCode {
   // ── Projects ──
   PROJECT_NOT_FOUND(
       HttpStatus.NOT_FOUND.value(), "PROJECT_NOT_FOUND", "No project found with the provided ID."),
+  TARGET_CONNECTOR_NOT_FOUND(
+      HttpStatus.NOT_FOUND.value(),
+      "TARGET_CONNECTOR_NOT_FOUND",
+      "No target connector found with the provided ID."),
 
   // ── User Administration ──
   CANNOT_DELETE_SELF(

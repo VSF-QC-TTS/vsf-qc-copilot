@@ -34,4 +34,13 @@ public interface TargetApiConnectorService {
    */
   TargetApiConnectorPageResponse listConnectors(
       UUID projectPublicId, Pageable pageable, String username);
+
+  /**
+   * Gets a target connector owned by the authenticated user.
+   *
+   * @param connectorPublicId public connector identifier
+   * @param username normalized or raw username from the authenticated principal
+   * @return public {@link TargetApiConnectorResponse}
+   */
+  TargetApiConnectorResponse getConnector(UUID connectorPublicId, String username);
 }
