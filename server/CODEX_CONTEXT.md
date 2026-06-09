@@ -27,6 +27,13 @@ Implemented:
 - Welcome email template: `src/main/resources/templates/mail/registration-welcome.html`.
 - HTML email template uses email-safe table markup, preheader text, and inline CSS.
 - Auth register endpoint has OpenAPI annotations with request/response/error examples.
+- Local login endpoint: `POST /api/v1/auth/login`.
+- Login returns access token in response body and refresh token only as HttpOnly `refresh_token` cookie.
+- CSRF is disabled; API auth uses `Authorization: Bearer ...`, and bearer resolver no longer reads access tokens from cookies.
+- `JwtDecoder` validates `token_type=access`; refresh JWTs must not authenticate protected APIs.
+- Register creates `PENDING_EMAIL_VERIFICATION` users and sends a verification link to `${WEB_BASE_URL}/verify-email?token=...`.
+- Email verification tokens are opaque random values; only SHA-256 hashes are stored in `email_verification_tokens`.
+- Mail module uses Strategy + Factory + lightweight builders: `MailType`, `MailRequest`, `MailMessage`, `MailStrategy`, `MailStrategyFactory`.
 - Errors use Problem Details shape: `type`, `title`, `status`, `detail`, `instance`, plus `code` and optional `errors`.
 - Request DTO validation annotations should include explicit messages; `GlobalException` returns these messages in `errors`.
 - Service interfaces should declare validation contracts with `@Validated` and `@Valid` on request parameters where applicable.
@@ -39,10 +46,13 @@ Tests:
   - `UserServiceImplTest`
   - `HtmlMailTemplateRendererTest`
   - `ErrorResponseTest`
+  - `AuthServiceImplTest`
+  - `EmailVerificationServiceImplTest`
+  - `EmailVerificationMailStrategyTest`
 - Avoid Mockito in service test because inline ByteBuddy self-attach fails on this WSL/JDK setup.
 - Verified with:
-  `rtk bash mvnw -Dtest=RoleTest,UserMapperTest,UserServiceImplTest,HtmlMailTemplateRendererTest,ErrorResponseTest test`
-- Result: build success, 7 tests passed.
+  `rtk bash mvnw -Dtest=RoleTest,UserMapperTest,UserServiceImplTest,HtmlMailTemplateRendererTest,EmailVerificationMailStrategyTest,ErrorResponseTest,AuthServiceImplTest,EmailVerificationServiceImplTest test`
+- Result: build success, 10 tests passed.
 
 Known caveats:
 - Full `mvn test` starts `ServerApplicationTests` with Testcontainers and is slow.

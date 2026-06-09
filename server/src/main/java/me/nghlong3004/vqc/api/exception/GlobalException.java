@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -111,6 +112,13 @@ public class GlobalException {
       AccessDeniedException e, HttpServletRequest request) {
     log.warn("Access denied: {}", e.getMessage());
     return buildResponse(ErrorCode.ACCESS_DENIED, request);
+  }
+
+  @ExceptionHandler(AuthenticationException.class)
+  public ResponseEntity<ErrorResponse> handleAuthenticationException(
+      AuthenticationException e, HttpServletRequest request) {
+    log.warn("Authentication failed: {}", e.getMessage());
+    return buildResponse(ErrorCode.BAD_CREDENTIALS, request);
   }
 
   @ExceptionHandler({NoHandlerFoundException.class, NoSuchElementException.class})

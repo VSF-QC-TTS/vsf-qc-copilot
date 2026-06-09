@@ -8,10 +8,14 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import me.nghlong3004.vqc.api.auth.request.RegisterRequest;
+import me.nghlong3004.vqc.api.auth.service.EmailVerificationService;
 import me.nghlong3004.vqc.api.exception.ResourceException;
+import me.nghlong3004.vqc.api.mail.model.MailRequest;
+import me.nghlong3004.vqc.api.mail.model.MailType;
 import me.nghlong3004.vqc.api.mail.service.MailService;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.enums.Role;
+import me.nghlong3004.vqc.api.user.enums.UserStatus;
 import me.nghlong3004.vqc.api.user.mapper.UserMapper;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
 import me.nghlong3004.vqc.api.user.response.UserResponse;
@@ -33,12 +37,15 @@ class UserServiceImplTest {
         new UserResponse(null, "qc.demo@example.com", "qc.demo", Role.QC_MEMBER, null, null);
     AtomicReference<User> savedUser = new AtomicReference<>();
     RecordingMailService mailService = new RecordingMailService();
+    RecordingEmailVerificationService emailVerificationService =
+        new RecordingEmailVerificationService("raw-token");
     UserServiceImpl userService =
         new UserServiceImpl(
             repository(false, savedUser, null),
             user -> mappedResponse,
             passwordEncoder("encoded-password"),
-            mailService);
+            mailService,
+            emailVerificationService);
 
     UserResponse response = userService.register(request);
 
@@ -46,8 +53,13 @@ class UserServiceImplTest {
     assertThat(savedUser.get().getPasswordHash()).isEqualTo("encoded-password");
     assertThat(savedUser.get().getDisplayName()).isEqualTo("qc.demo");
     assertThat(savedUser.get().getRole()).isEqualTo(Role.QC_MEMBER);
-    assertThat(mailService.to).isEqualTo("qc.demo@example.com");
-    assertThat(mailService.displayName).isEqualTo("qc.demo");
+    assertThat(savedUser.get().getStatus()).isEqualTo(UserStatus.PENDING_EMAIL_VERIFICATION);
+    assertThat(emailVerificationService.user).isSameAs(savedUser.get());
+    assertThat(mailService.type).isEqualTo(MailType.EMAIL_VERIFICATION);
+    assertThat(mailService.request.to()).isEqualTo("qc.demo@example.com");
+    assertThat(mailService.request.displayName()).isEqualTo("qc.demo");
+    assertThat(mailService.request.verificationUrl())
+        .isEqualTo("http://localhost:5173/verify-email?token=raw-token");
     assertThat(response).isSameAs(mappedResponse);
   }
 
@@ -60,7 +72,8 @@ class UserServiceImplTest {
             repository(true, savedUser, null),
             ignoredMapper(),
             passwordEncoder("encoded-password"),
-            ignoredMailService());
+            ignoredMailService(),
+            ignoredEmailVerificationService());
 
     assertThatThrownBy(() -> userService.register(request))
         .isInstanceOf(ResourceException.class)
@@ -81,7 +94,8 @@ class UserServiceImplTest {
                 new DataIntegrityViolationException("duplicate username")),
             ignoredMapper(),
             passwordEncoder("encoded-password"),
-            ignoredMailService());
+            ignoredMailService(),
+            ignoredEmailVerificationService());
 
     assertThatThrownBy(() -> userService.register(request))
         .isInstanceOf(ResourceException.class)
@@ -135,19 +149,53 @@ class UserServiceImplTest {
   }
 
   private MailService ignoredMailService() {
-    return (to, displayName) -> {
+    return (type, request) -> {
       throw new AssertionError("Mail service should not be called");
     };
   }
 
   private static class RecordingMailService implements MailService {
-    private String to;
-    private String displayName;
+    private MailType type;
+    private MailRequest request;
 
     @Override
-    public void sendRegistrationWelcome(String to, String displayName) {
-      this.to = to;
-      this.displayName = displayName;
+    public void send(MailType type, MailRequest request) {
+      this.type = type;
+      this.request = request;
+    }
+  }
+
+  private EmailVerificationService ignoredEmailVerificationService() {
+    return new EmailVerificationService() {
+      @Override
+      public String createVerificationToken(User user) {
+        throw new AssertionError("Email verification service should not be called");
+      }
+
+      @Override
+      public User verifyEmail(String rawToken) {
+        throw new AssertionError("Email verification service should not be called");
+      }
+    };
+  }
+
+  private static class RecordingEmailVerificationService implements EmailVerificationService {
+    private final String rawToken;
+    private User user;
+
+    private RecordingEmailVerificationService(String rawToken) {
+      this.rawToken = rawToken;
+    }
+
+    @Override
+    public String createVerificationToken(User user) {
+      this.user = user;
+      return rawToken;
+    }
+
+    @Override
+    public User verifyEmail(String rawToken) {
+      throw new AssertionError("Verify email should not be called");
     }
   }
 }

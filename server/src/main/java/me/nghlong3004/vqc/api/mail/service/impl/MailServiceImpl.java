@@ -2,13 +2,15 @@ package me.nghlong3004.vqc.api.mail.service.impl;
 
 import jakarta.mail.MessagingException;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.nghlong3004.vqc.api.mail.config.MailProperties;
+import me.nghlong3004.vqc.api.mail.factory.MailStrategyFactory;
+import me.nghlong3004.vqc.api.mail.model.MailMessage;
+import me.nghlong3004.vqc.api.mail.model.MailRequest;
+import me.nghlong3004.vqc.api.mail.model.MailType;
 import me.nghlong3004.vqc.api.mail.service.MailService;
 import me.nghlong3004.vqc.api.mail.template.HtmlMailTemplateRenderer;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -24,43 +26,32 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class MailServiceImpl implements MailService {
 
-  private static final String REGISTRATION_WELCOME_TEMPLATE =
-      "templates/mail/registration-welcome.html";
-  private static final String REGISTRATION_WELCOME_SUBJECT = "Welcome to VSF QC Copilot";
-
-  @Value("${vqc.client.base-url}")
-  private String clientBaseUrl;
-
   private final JavaMailSender mailSender;
   private final MailProperties mailProperties;
   private final HtmlMailTemplateRenderer templateRenderer;
+  private final MailStrategyFactory mailStrategyFactory;
 
   @Async
   @Override
-  public void sendRegistrationWelcome(String to, String displayName) {
+  public void send(MailType type, MailRequest request) {
     try {
+      MailMessage mailMessage = mailStrategyFactory.get(type).buildMessage(request);
       var message = mailSender.createMimeMessage();
       var helper =
           new MimeMessageHelper(message, false, StandardCharsets.UTF_8.name());
       helper.setFrom(mailProperties.from());
-      helper.setTo(to);
-      helper.setSubject(REGISTRATION_WELCOME_SUBJECT);
-      helper.setText(renderRegistrationWelcome(displayName), true);
+      helper.setTo(mailMessage.to());
+      helper.setSubject(mailMessage.subject());
+      helper.setText(render(mailMessage), true);
 
       mailSender.send(message);
-      log.info("Sent registration welcome email");
+      log.info("Sent {} mail message", type);
     } catch (IllegalStateException | MailException | MessagingException ex) {
-      log.warn("Failed to send registration welcome email: {}", ex.getMessage());
+      log.warn("Failed to send {} mail message: {}", type, ex.getMessage());
     }
   }
 
-  private String renderRegistrationWelcome(String displayName) {
-    return templateRenderer.render(
-        REGISTRATION_WELCOME_TEMPLATE,
-        Map.of(
-            "appName", "VSF QC Copilot",
-            "displayName", displayName,
-            "dashboardUrl", clientBaseUrl,
-            "preheader", "Your VSF QC Copilot workspace is ready."));
+  private String render(MailMessage mailMessage) {
+    return templateRenderer.render(mailMessage.templatePath(), mailMessage.model());
   }
 }

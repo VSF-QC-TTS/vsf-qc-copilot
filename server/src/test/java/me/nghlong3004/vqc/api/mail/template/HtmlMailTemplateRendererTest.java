@@ -19,11 +19,11 @@ class HtmlMailTemplateRendererTest {
   void renderEscapesModelValuesAndKeepsEmailSafeMarkup() {
     String html =
         renderer.render(
-            "templates/mail/registration-welcome.html",
+            "templates/mail/email-verification.html",
             Map.of(
                 "appName", "VSF <QC>",
                 "displayName", "Long <script>",
-                "dashboardUrl", "https://example.test/?a=1&b=2",
+                "verificationUrl", "https://example.test/?a=1&b=2",
                 "preheader", "Ready & waiting"));
 
     assertThat(html).contains("VSF &lt;QC&gt;");

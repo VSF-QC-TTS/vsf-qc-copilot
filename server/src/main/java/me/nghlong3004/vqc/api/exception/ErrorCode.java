@@ -35,6 +35,18 @@ public enum ErrorCode {
   ACCOUNT_LOCKED(HttpStatus.FORBIDDEN.value(), "ACCOUNT_LOCKED", "User account is locked."),
   EMAIL_NOT_VERIFIED(
       HttpStatus.FORBIDDEN.value(), "EMAIL_NOT_VERIFIED", "Account email has not been verified"),
+  INVALID_EMAIL_VERIFICATION_TOKEN(
+      HttpStatus.BAD_REQUEST.value(),
+      "INVALID_EMAIL_VERIFICATION_TOKEN",
+      "Email verification token is invalid."),
+  EMAIL_VERIFICATION_TOKEN_EXPIRED(
+      HttpStatus.BAD_REQUEST.value(),
+      "EMAIL_VERIFICATION_TOKEN_EXPIRED",
+      "Email verification token has expired."),
+  EMAIL_VERIFICATION_TOKEN_USED(
+      HttpStatus.BAD_REQUEST.value(),
+      "EMAIL_VERIFICATION_TOKEN_USED",
+      "Email verification token has already been used."),
   WRONG_PASSWORD(
       HttpStatus.BAD_REQUEST.value(), "WRONG_PASSWORD", "Current password is incorrect."),
   OAUTH_PASSWORD_NOT_ALLOWED(
