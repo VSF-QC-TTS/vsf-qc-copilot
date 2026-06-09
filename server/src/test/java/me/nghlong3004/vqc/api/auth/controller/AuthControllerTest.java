@@ -366,6 +366,11 @@ class AuthControllerTest {
       return registerResponse;
     }
 
+    @Override
+    public UserResponse getCurrentUser(String username) {
+      throw new AssertionError("Get current user should not be called");
+    }
+
     private static void reset() {
       registerRequest = null;
       registerResponse = null;

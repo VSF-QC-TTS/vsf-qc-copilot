@@ -103,8 +103,54 @@ class UserServiceImplTest {
         .isEqualTo("EMAIL_ALREADY_EXISTS");
   }
 
+  @Test
+  void getCurrentUserNormalizesPrincipalUsernameAndReturnsMappedUser() {
+    User user = new User();
+    user.setUsername("qc.demo@example.com");
+    user.setDisplayName("QC Demo");
+    user.setRole(Role.QC_MEMBER);
+    user.setStatus(UserStatus.ACTIVE);
+    UserResponse mappedResponse =
+        new UserResponse(null, "qc.demo@example.com", "QC Demo", Role.QC_MEMBER, UserStatus.ACTIVE, null);
+    UserServiceImpl userService =
+        new UserServiceImpl(
+            repository(false, new AtomicReference<>(), null, Optional.of(user)),
+            userMapper(mappedResponse),
+            passwordEncoder("encoded-password"),
+            ignoredMailService(),
+            ignoredEmailVerificationService());
+
+    UserResponse response = userService.getCurrentUser("  QC.Demo@Example.COM  ");
+
+    assertThat(response).isSameAs(mappedResponse);
+  }
+
+  @Test
+  void getCurrentUserRejectsMissingUser() {
+    UserServiceImpl userService =
+        new UserServiceImpl(
+            repository(false, new AtomicReference<>(), null, Optional.empty()),
+            ignoredMapper(),
+            passwordEncoder("encoded-password"),
+            ignoredMailService(),
+            ignoredEmailVerificationService());
+
+    assertThatThrownBy(() -> userService.getCurrentUser("missing@example.com"))
+        .isInstanceOf(ResourceException.class)
+        .extracting("response.code")
+        .isEqualTo("USER_NOT_FOUND");
+  }
+
   private UserRepository repository(
       boolean existsByUsername, AtomicReference<User> savedUser, RuntimeException saveException) {
+    return repository(existsByUsername, savedUser, saveException, Optional.empty());
+  }
+
+  private UserRepository repository(
+      boolean existsByUsername,
+      AtomicReference<User> savedUser,
+      RuntimeException saveException,
+      Optional<User> foundUser) {
     AtomicBoolean saveCalled = new AtomicBoolean(false);
     return (UserRepository)
         Proxy.newProxyInstance(
@@ -113,7 +159,7 @@ class UserServiceImplTest {
             (proxy, method, args) -> {
               return switch (method.getName()) {
                 case "existsByUsername" -> existsByUsername;
-                case "findByUsername" -> Optional.empty();
+                case "findByUsername" -> foundUser;
                 case "save" -> {
                   saveCalled.set(true);
                   if (saveException != null) {
@@ -132,6 +178,10 @@ class UserServiceImplTest {
     return user -> {
       throw new AssertionError("Mapper should not be called");
     };
+  }
+
+  private UserMapper userMapper(UserResponse response) {
+    return user -> response;
   }
 
   private PasswordEncoder passwordEncoder(String encodedPassword) {

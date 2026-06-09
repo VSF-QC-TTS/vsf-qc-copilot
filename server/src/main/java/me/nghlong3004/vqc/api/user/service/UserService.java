@@ -18,4 +18,12 @@ public interface UserService {
    * @return created {@link UserResponse}
    */
   UserResponse register(@Valid RegisterRequest request);
+
+  /**
+   * Finds the current authenticated {@link me.nghlong3004.vqc.api.user.entity.User}.
+   *
+   * @param username normalized or raw username from the authenticated principal
+   * @return current {@link UserResponse}
+   */
+  UserResponse getCurrentUser(String username);
 }

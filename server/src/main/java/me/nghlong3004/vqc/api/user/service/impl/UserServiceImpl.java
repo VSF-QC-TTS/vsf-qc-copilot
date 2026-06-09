@@ -72,6 +72,16 @@ public class UserServiceImpl implements UserService {
     return response;
   }
 
+  @Override
+  @Transactional(readOnly = true)
+  public UserResponse getCurrentUser(String username) {
+    User user =
+        userRepository
+            .findByUsername(normalizeEmail(username))
+            .orElseThrow(() -> new ResourceException(ErrorCode.USER_NOT_FOUND));
+    return userMapper.toResponse(user);
+  }
+
   private String normalizeEmail(String email) {
     return email.trim().toLowerCase();
   }
