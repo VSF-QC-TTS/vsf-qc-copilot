@@ -12,9 +12,11 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import me.nghlong3004.vqc.api.exception.ErrorResponse;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateTargetApiConnectorRequest;
+import me.nghlong3004.vqc.api.targetconnector.request.TestTargetConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.UpdateTargetApiConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorPageResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorResponse;
+import me.nghlong3004.vqc.api.targetconnector.response.TestTargetConnectorResponse;
 import me.nghlong3004.vqc.api.targetconnector.service.TargetApiConnectorService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -204,5 +206,47 @@ public class TargetApiConnectorController {
       Principal principal) {
     return targetApiConnectorService.updateConnector(
         connectorPublicId, request, principal.getName());
+  }
+
+  @Operation(summary = "Test target connector", description = "Executes a single test call against a connector.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Connector test result",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = TestTargetConnectorResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Invalid request",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Authentication is required",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Connector not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @PostMapping(
+      value = "/api/v1/target-api-connectors/{connectorPublicId}/test-runs",
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  public TestTargetConnectorResponse testConnector(
+      @PathVariable UUID connectorPublicId,
+      @Valid @RequestBody TestTargetConnectorRequest request,
+      Principal principal) {
+    return targetApiConnectorService.testConnector(connectorPublicId, request, principal.getName());
   }
 }

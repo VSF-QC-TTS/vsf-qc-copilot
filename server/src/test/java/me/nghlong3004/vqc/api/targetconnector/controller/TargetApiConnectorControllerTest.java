@@ -18,11 +18,14 @@ import me.nghlong3004.vqc.api.targetconnector.enums.BodyType;
 import me.nghlong3004.vqc.api.targetconnector.enums.HttpMethodType;
 import me.nghlong3004.vqc.api.targetconnector.enums.ResponseFormat;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateTargetApiConnectorRequest;
+import me.nghlong3004.vqc.api.targetconnector.request.TestTargetConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.UpdateTargetApiConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.response.SecretRefResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorListItemResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorPageResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorResponse;
+import me.nghlong3004.vqc.api.targetconnector.response.TargetConnectorRequestPreview;
+import me.nghlong3004.vqc.api.targetconnector.response.TestTargetConnectorResponse;
 import me.nghlong3004.vqc.api.targetconnector.service.TargetApiConnectorService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -354,6 +357,78 @@ class TargetApiConnectorControllerTest {
     assertThat(RecordingTargetApiConnectorService.updateRequest).isNull();
   }
 
+  @Test
+  void testConnectorReturnsRenderedResult() throws Exception {
+    RecordingTargetApiConnectorService.testResponse =
+        new TestTargetConnectorResponse(
+            true,
+            new TargetConnectorRequestPreview(
+                HttpMethodType.POST,
+                "http://localhost:8080/mock-chatbot/chat",
+                Map.of("Authorization", "Bearer ********"),
+                Map.of(
+                    "message",
+                    "How many steps did I walk today?",
+                    "context",
+                    Map.of("steps", 8200),
+                    "metadata",
+                    Map.of("expectedStatus", "PASS"))),
+            Map.of("answer", "Today you walked 8,200 steps."),
+            "Today you walked 8,200 steps.",
+            120);
+
+    mockMvc
+        .perform(
+            post("/api/v1/target-api-connectors/f5f77e84-b3be-48bb-9081-f1dd190f8c61/test-runs")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "question": "How many steps did I walk today?",
+                      "precondition": {
+                        "steps": 8200
+                      },
+                      "metadata": {
+                        "expectedStatus": "PASS"
+                      }
+                    }
+                    """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.requestPreview.headers.Authorization").value("Bearer ********"))
+        .andExpect(jsonPath("$.rawResponse.answer").value("Today you walked 8,200 steps."))
+        .andExpect(jsonPath("$.extractedAnswer").value("Today you walked 8,200 steps."))
+        .andExpect(jsonPath("$.latencyMs").value(120));
+
+    assertThat(RecordingTargetApiConnectorService.connectorPublicId)
+        .isEqualTo(UUID.fromString("f5f77e84-b3be-48bb-9081-f1dd190f8c61"));
+    assertThat(RecordingTargetApiConnectorService.testRequest.question())
+        .isEqualTo("How many steps did I walk today?");
+    assertThat(RecordingTargetApiConnectorService.username).isEqualTo("qc.demo@example.com");
+  }
+
+  @Test
+  void testConnectorReturnsValidationProblemDetails() throws Exception {
+    mockMvc
+        .perform(
+            post("/api/v1/target-api-connectors/f5f77e84-b3be-48bb-9081-f1dd190f8c61/test-runs")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "question": " "
+                    }
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+        .andExpect(jsonPath("$.errors[*].field", hasItems("question")));
+
+    assertThat(RecordingTargetApiConnectorService.testRequest).isNull();
+  }
+
   @TestConfiguration
   static class MockBeans {
 
@@ -368,10 +443,12 @@ class TargetApiConnectorControllerTest {
     private static UUID connectorPublicId;
     private static CreateTargetApiConnectorRequest request;
     private static UpdateTargetApiConnectorRequest updateRequest;
+    private static TestTargetConnectorRequest testRequest;
     private static Pageable pageable;
     private static String username;
     private static TargetApiConnectorResponse response;
     private static TargetApiConnectorPageResponse pageResponse;
+    private static TestTargetConnectorResponse testResponse;
 
     @Override
     public TargetApiConnectorResponse createConnector(
@@ -407,15 +484,26 @@ class TargetApiConnectorControllerTest {
       return response;
     }
 
+    @Override
+    public TestTargetConnectorResponse testConnector(
+        UUID connectorPublicId, TestTargetConnectorRequest request, String username) {
+      RecordingTargetApiConnectorService.connectorPublicId = connectorPublicId;
+      RecordingTargetApiConnectorService.testRequest = request;
+      RecordingTargetApiConnectorService.username = username;
+      return testResponse;
+    }
+
     private static void reset() {
       projectPublicId = null;
       connectorPublicId = null;
       request = null;
       updateRequest = null;
+      testRequest = null;
       pageable = null;
       username = null;
       response = null;
       pageResponse = null;
+      testResponse = null;
     }
   }
 }

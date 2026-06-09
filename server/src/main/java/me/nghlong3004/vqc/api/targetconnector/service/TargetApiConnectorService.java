@@ -3,9 +3,11 @@ package me.nghlong3004.vqc.api.targetconnector.service;
 import java.util.UUID;
 import me.nghlong3004.vqc.api.targetconnector.entity.TargetApiConnector;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateTargetApiConnectorRequest;
+import me.nghlong3004.vqc.api.targetconnector.request.TestTargetConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.UpdateTargetApiConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorPageResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorResponse;
+import me.nghlong3004.vqc.api.targetconnector.response.TestTargetConnectorResponse;
 import org.springframework.data.domain.Pageable;
 
 /**
@@ -55,4 +57,15 @@ public interface TargetApiConnectorService {
    */
   TargetApiConnectorResponse updateConnector(
       UUID connectorPublicId, UpdateTargetApiConnectorRequest request, String username);
+
+  /**
+   * Executes a test call against a target connector.
+   *
+   * @param connectorPublicId public connector identifier
+   * @param request validated test-run request
+   * @param username normalized or raw username from the authenticated principal
+   * @return target connector test-run response
+   */
+  TestTargetConnectorResponse testConnector(
+      UUID connectorPublicId, TestTargetConnectorRequest request, String username);
 }

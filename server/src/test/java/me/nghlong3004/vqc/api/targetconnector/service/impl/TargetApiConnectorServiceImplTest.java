@@ -11,6 +11,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import me.nghlong3004.vqc.api.exception.ResourceException;
 import me.nghlong3004.vqc.api.project.entity.Project;
 import me.nghlong3004.vqc.api.project.repository.ProjectRepository;
+import me.nghlong3004.vqc.api.targetconnector.client.TargetConnectorClient;
+import me.nghlong3004.vqc.api.targetconnector.client.TargetConnectorClientRequest;
+import me.nghlong3004.vqc.api.targetconnector.client.TargetConnectorClientResult;
 import me.nghlong3004.vqc.api.targetconnector.entity.TargetApiConnector;
 import me.nghlong3004.vqc.api.targetconnector.enums.AuthType;
 import me.nghlong3004.vqc.api.targetconnector.enums.BodyType;
@@ -19,10 +22,12 @@ import me.nghlong3004.vqc.api.targetconnector.enums.ResponseFormat;
 import me.nghlong3004.vqc.api.targetconnector.mapper.TargetApiConnectorMapper;
 import me.nghlong3004.vqc.api.targetconnector.repository.TargetApiConnectorRepository;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateTargetApiConnectorRequest;
+import me.nghlong3004.vqc.api.targetconnector.request.TestTargetConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.UpdateTargetApiConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorListItemResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorPageResponse;
+import me.nghlong3004.vqc.api.targetconnector.response.TestTargetConnectorResponse;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
 import org.springframework.data.domain.PageImpl;
@@ -54,7 +59,8 @@ class TargetApiConnectorServiceImplTest {
             connectorRepository(savedConnector),
             projectRepository(Optional.of(project), projectLookup),
             userRepository(Optional.of(creator), lookedUpUsername),
-            mapper(mappedResponse));
+            mapper(mappedResponse),
+            ignoredClient());
 
     var response =
         service.createConnector(
@@ -90,7 +96,8 @@ class TargetApiConnectorServiceImplTest {
             ignoredConnectorRepository(),
             projectRepository(Optional.empty(), new AtomicReference<>()),
             userRepository(Optional.of(creator), new AtomicReference<>()),
-            mapper(null));
+            mapper(null),
+            ignoredClient());
 
     assertThatThrownBy(() -> service.createConnector(UUID.randomUUID(), request(), "qc.demo@example.com"))
         .isInstanceOf(ResourceException.class)
@@ -128,7 +135,8 @@ class TargetApiConnectorServiceImplTest {
                 connectorProject),
             projectRepository(Optional.of(project), projectLookup),
             userRepository(Optional.of(creator), lookedUpUsername),
-            mapper(null, itemResponse));
+            mapper(null, itemResponse),
+            ignoredClient());
 
     TargetApiConnectorPageResponse response =
         service.listConnectors(project.getPublicId(), PageRequest.of(0, 20), " QC.Demo@Example.COM ");
@@ -163,7 +171,8 @@ class TargetApiConnectorServiceImplTest {
                 new AtomicReference<>(), null, new AtomicReference<>(), Optional.of(connector), connectorLookup),
             projectRepository(Optional.empty(), new AtomicReference<>()),
             userRepository(Optional.of(creator), lookedUpUsername),
-            mapper(mappedResponse));
+            mapper(mappedResponse),
+            ignoredClient());
 
     TargetApiConnectorResponse response =
         service.getConnector(connector.getPublicId(), " QC.Demo@Example.COM ");
@@ -183,7 +192,8 @@ class TargetApiConnectorServiceImplTest {
                 new AtomicReference<>(), null, new AtomicReference<>(), Optional.empty(), new AtomicReference<>()),
             projectRepository(Optional.empty(), new AtomicReference<>()),
             userRepository(Optional.of(creator), new AtomicReference<>()),
-            mapper(null));
+            mapper(null),
+            ignoredClient());
 
     assertThatThrownBy(() -> service.getConnector(UUID.randomUUID(), "qc.demo@example.com"))
         .isInstanceOf(ResourceException.class)
@@ -212,7 +222,8 @@ class TargetApiConnectorServiceImplTest {
                 savedConnector, null, new AtomicReference<>(), Optional.of(connector), new AtomicReference<>()),
             projectRepository(Optional.empty(), new AtomicReference<>()),
             userRepository(Optional.of(creator), new AtomicReference<>()),
-            mapper(mappedResponse));
+            mapper(mappedResponse),
+            ignoredClient());
 
     TargetApiConnectorResponse response =
         service.updateConnector(
@@ -256,6 +267,61 @@ class TargetApiConnectorServiceImplTest {
     assertThat(connector.getSecretRefs().getFirst()).containsEntry("maskedValue", "****alue");
     assertThat(connector.getHeaders().toString()).doesNotContain("new-token-value");
     assertThat(response).isSameAs(mappedResponse);
+  }
+
+  @Test
+  void testConnectorRendersRequestMasksPreviewAndExtractsAnswer() {
+    User creator = new User();
+    TargetApiConnector connector = new TargetApiConnector();
+    connector.setMethod(HttpMethodType.POST);
+    connector.setUrl("http://localhost:8080/mock-chatbot/chat");
+    connector.setHeaders(
+        Map.of(
+            "Content-Type", "application/json",
+            "Authorization", "Bearer {{secret:CHATBOT_API_TOKEN}}"));
+    connector.setBodyTemplate(
+        Map.of(
+            "message", "{{question}}",
+            "context", "{{precondition}}",
+            "metadata", "{{metadata}}"));
+    connector.setResponseSelector("$.answer");
+    connector.setTimeoutSeconds(60);
+    AtomicReference<TargetConnectorClientRequest> clientRequest = new AtomicReference<>();
+    TargetApiConnectorServiceImpl service =
+        new TargetApiConnectorServiceImpl(
+            connectorRepository(
+                new AtomicReference<>(), null, new AtomicReference<>(), Optional.of(connector), new AtomicReference<>()),
+            projectRepository(Optional.empty(), new AtomicReference<>()),
+            userRepository(Optional.of(creator), new AtomicReference<>()),
+            mapper(null),
+            client(clientRequest));
+
+    TestTargetConnectorResponse response =
+        service.testConnector(
+            connector.getPublicId(),
+            new TestTargetConnectorRequest(
+                "How many steps did I walk today?",
+                Map.of("steps", 8200, "date", "2026-06-08"),
+                Map.of("expectedStatus", "PASS")),
+            "qc.demo@example.com");
+
+    assertThat(clientRequest.get().method()).isEqualTo(HttpMethodType.POST);
+    assertThat(clientRequest.get().url()).isEqualTo("http://localhost:8080/mock-chatbot/chat");
+    assertThat(clientRequest.get().body())
+        .isEqualTo(
+            Map.of(
+                "message",
+                "How many steps did I walk today?",
+                "context",
+                Map.of("steps", 8200, "date", "2026-06-08"),
+                "metadata",
+                Map.of("expectedStatus", "PASS")));
+    assertThat(response.success()).isTrue();
+    assertThat(response.requestPreview().headers())
+        .containsEntry("Authorization", "Bearer ********");
+    assertThat(response.rawResponse()).containsEntry("answer", "Today you walked 8,200 steps.");
+    assertThat(response.extractedAnswer()).isEqualTo("Today you walked 8,200 steps.");
+    assertThat(response.latencyMs()).isEqualTo(120);
   }
 
   private CreateTargetApiConnectorRequest request() {
@@ -385,6 +451,20 @@ class TargetApiConnectorServiceImplTest {
       public TargetApiConnectorListItemResponse toListItemResponse(TargetApiConnector connector) {
         return itemResponse;
       }
+    };
+  }
+
+  private TargetConnectorClient ignoredClient() {
+    return (request, timeoutSeconds) -> {
+      throw new AssertionError("Target connector client should not be called");
+    };
+  }
+
+  private TargetConnectorClient client(AtomicReference<TargetConnectorClientRequest> clientRequest) {
+    return (request, timeoutSeconds) -> {
+      clientRequest.set(request);
+      return new TargetConnectorClientResult(
+          Map.of("answer", "Today you walked 8,200 steps."), 120);
     };
   }
 

@@ -9,6 +9,9 @@ import me.nghlong3004.vqc.api.exception.ErrorCode;
 import me.nghlong3004.vqc.api.exception.ResourceException;
 import me.nghlong3004.vqc.api.project.entity.Project;
 import me.nghlong3004.vqc.api.project.repository.ProjectRepository;
+import me.nghlong3004.vqc.api.targetconnector.client.TargetConnectorClient;
+import me.nghlong3004.vqc.api.targetconnector.client.TargetConnectorClientRequest;
+import me.nghlong3004.vqc.api.targetconnector.client.TargetConnectorClientResult;
 import me.nghlong3004.vqc.api.targetconnector.entity.TargetApiConnector;
 import me.nghlong3004.vqc.api.targetconnector.enums.AuthType;
 import me.nghlong3004.vqc.api.targetconnector.enums.BodyType;
@@ -17,10 +20,13 @@ import me.nghlong3004.vqc.api.targetconnector.enums.ResponseFormat;
 import me.nghlong3004.vqc.api.targetconnector.mapper.TargetApiConnectorMapper;
 import me.nghlong3004.vqc.api.targetconnector.repository.TargetApiConnectorRepository;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateTargetApiConnectorRequest;
+import me.nghlong3004.vqc.api.targetconnector.request.TestTargetConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.UpdateTargetApiConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorListItemResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorPageResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorResponse;
+import me.nghlong3004.vqc.api.targetconnector.response.TargetConnectorRequestPreview;
+import me.nghlong3004.vqc.api.targetconnector.response.TestTargetConnectorResponse;
 import me.nghlong3004.vqc.api.targetconnector.service.TargetApiConnectorService;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
@@ -41,6 +47,7 @@ public class TargetApiConnectorServiceImpl implements TargetApiConnectorService 
   private final ProjectRepository projectRepository;
   private final UserRepository userRepository;
   private final TargetApiConnectorMapper targetApiConnectorMapper;
+  private final TargetConnectorClient targetConnectorClient;
 
   @Override
   @Transactional
@@ -190,6 +197,27 @@ public class TargetApiConnectorServiceImpl implements TargetApiConnectorService 
     return targetApiConnectorMapper.toResponse(saved);
   }
 
+  @Override
+  @Transactional(readOnly = true)
+  public TestTargetConnectorResponse testConnector(
+      UUID connectorPublicId, TestTargetConnectorRequest request, String username) {
+    TargetApiConnector connector = findConnector(connectorPublicId, username);
+    Object renderedBody = renderValue(connector.getBodyTemplate(), request);
+    Map<String, Object> headers = connector.getHeaders() == null ? Map.of() : connector.getHeaders();
+    TargetConnectorClientRequest clientRequest =
+        new TargetConnectorClientRequest(
+            connector.getMethod(), connector.getUrl(), headers, renderedBody);
+    TargetConnectorClientResult clientResult =
+        targetConnectorClient.execute(clientRequest, connector.getTimeoutSeconds());
+    return new TestTargetConnectorResponse(
+        true,
+        new TargetConnectorRequestPreview(
+            connector.getMethod(), connector.getUrl(), maskHeaders(headers), renderedBody),
+        clientResult.rawResponse(),
+        extractAnswer(clientResult.rawResponse(), connector.getResponseSelector()),
+        clientResult.latencyMs());
+  }
+
   private TargetApiConnector findConnector(UUID connectorPublicId, String username) {
     User creator = findCreator(username);
     return targetApiConnectorRepository
@@ -242,6 +270,54 @@ public class TargetApiConnectorServiceImpl implements TargetApiConnectorService 
       return list.stream().map(item -> safeValue(item, secretValues)).toList();
     }
     return value;
+  }
+
+  private Object renderValue(Object value, TestTargetConnectorRequest request) {
+    if (value instanceof String text) {
+      return renderString(text, request);
+    }
+    if (value instanceof Map<?, ?> map) {
+      Map<String, Object> rendered = new LinkedHashMap<>();
+      map.forEach((key, item) -> rendered.put(String.valueOf(key), renderValue(item, request)));
+      return rendered;
+    }
+    if (value instanceof List<?> list) {
+      return list.stream().map(item -> renderValue(item, request)).toList();
+    }
+    return value;
+  }
+
+  private Object renderString(String value, TestTargetConnectorRequest request) {
+    return switch (value) {
+      case "{{question}}" -> request.question();
+      case "{{precondition}}" -> request.precondition() == null ? Map.of() : request.precondition();
+      case "{{metadata}}" -> request.metadata() == null ? Map.of() : request.metadata();
+      default ->
+          value
+              .replace("{{question}}", request.question())
+              .replace("{{precondition}}", String.valueOf(request.precondition()))
+              .replace("{{metadata}}", String.valueOf(request.metadata()));
+    };
+  }
+
+  private Map<String, Object> maskHeaders(Map<String, Object> headers) {
+    if (headers == null || headers.isEmpty()) {
+      return Map.of();
+    }
+    Map<String, Object> masked = new LinkedHashMap<>();
+    headers.forEach((name, value) -> masked.put(name, maskSecretPlaceholders(String.valueOf(value))));
+    return masked;
+  }
+
+  private String maskSecretPlaceholders(String value) {
+    return value.replaceAll("\\{\\{secret:[^}]+}}", "********");
+  }
+
+  private String extractAnswer(Map<String, Object> rawResponse, String responseSelector) {
+    if ("$.answer".equals(responseSelector) && rawResponse.get("answer") != null) {
+      return rawResponse.get("answer").toString();
+    }
+    return null;
   }
 
   private String replaceSecrets(String value, Map<String, String> secretValues) {
