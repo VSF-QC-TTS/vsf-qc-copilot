@@ -4,6 +4,7 @@ import java.util.UUID;
 import me.nghlong3004.vqc.api.project.entity.Project;
 import me.nghlong3004.vqc.api.project.enums.ProjectStatus;
 import me.nghlong3004.vqc.api.project.request.CreateProjectRequest;
+import me.nghlong3004.vqc.api.project.request.UpdateProjectRequest;
 import me.nghlong3004.vqc.api.project.response.ProjectPageResponse;
 import me.nghlong3004.vqc.api.project.response.ProjectResponse;
 import org.springframework.data.domain.Pageable;
@@ -41,4 +42,14 @@ public interface ProjectService {
    * @return public {@link ProjectResponse}
    */
   ProjectResponse getProject(UUID publicId, String username);
+
+  /**
+   * Updates a project owned by the authenticated user.
+   *
+   * @param publicId public project identifier
+   * @param request validated update project request
+   * @param username normalized or raw username from the authenticated principal
+   * @return updated public {@link ProjectResponse}
+   */
+  ProjectResponse updateProject(UUID publicId, UpdateProjectRequest request, String username);
 }

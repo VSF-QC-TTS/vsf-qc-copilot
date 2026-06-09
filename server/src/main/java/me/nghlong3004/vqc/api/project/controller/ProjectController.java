@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import me.nghlong3004.vqc.api.exception.ErrorResponse;
 import me.nghlong3004.vqc.api.project.enums.ProjectStatus;
 import me.nghlong3004.vqc.api.project.request.CreateProjectRequest;
+import me.nghlong3004.vqc.api.project.request.UpdateProjectRequest;
 import me.nghlong3004.vqc.api.project.response.ProjectPageResponse;
 import me.nghlong3004.vqc.api.project.response.ProjectResponse;
 import me.nghlong3004.vqc.api.project.service.ProjectService;
@@ -23,6 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -156,5 +158,53 @@ public class ProjectController {
   public ProjectResponse getProject(
       @PathVariable UUID projectPublicId, Principal principal) {
     return projectService.getProject(projectPublicId, principal.getName());
+  }
+
+  @Operation(summary = "Update project", description = "Updates a project owned by the authenticated user.")
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      required = true,
+      content =
+          @Content(
+              mediaType = MediaType.APPLICATION_JSON_VALUE,
+              schema = @Schema(implementation = UpdateProjectRequest.class)))
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Project updated",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ProjectResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Invalid request",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Authentication is required",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Project not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @PatchMapping(
+      value = "/{projectPublicId}",
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  public ProjectResponse updateProject(
+      @PathVariable UUID projectPublicId,
+      @Valid @RequestBody UpdateProjectRequest request,
+      Principal principal) {
+    return projectService.updateProject(projectPublicId, request, principal.getName());
   }
 }

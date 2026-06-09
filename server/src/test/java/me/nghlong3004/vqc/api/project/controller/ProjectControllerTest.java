@@ -3,6 +3,7 @@ package me.nghlong3004.vqc.api.project.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItems;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -14,6 +15,7 @@ import java.util.UUID;
 import me.nghlong3004.vqc.api.exception.GlobalException;
 import me.nghlong3004.vqc.api.project.enums.ProjectStatus;
 import me.nghlong3004.vqc.api.project.request.CreateProjectRequest;
+import me.nghlong3004.vqc.api.project.request.UpdateProjectRequest;
 import me.nghlong3004.vqc.api.project.response.ProjectCreatorResponse;
 import me.nghlong3004.vqc.api.project.response.ProjectListItemResponse;
 import me.nghlong3004.vqc.api.project.response.ProjectPageResponse;
@@ -225,6 +227,72 @@ class ProjectControllerTest {
     assertThat(RecordingProjectService.projectPublicId).isNull();
   }
 
+  @Test
+  void updateProjectReturnsUpdatedProject() throws Exception {
+    RecordingProjectService.projectResponse =
+        new ProjectResponse(
+            UUID.fromString("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"),
+            "AI Health Chatbot Demo v2",
+            "Updated description",
+            "Updated scope",
+            60,
+            ProjectStatus.ACTIVE,
+            new ProjectCreatorResponse(
+                UUID.fromString("7b7b7d42-5f42-4c5a-9281-8d1d36f6f59d"), "QC Demo"),
+            OffsetDateTime.parse("2026-06-08T10:30:00Z"),
+            OffsetDateTime.parse("2026-06-08T10:40:00Z"));
+
+    mockMvc
+        .perform(
+            patch("/api/v1/projects/5a4edcc1-cd1e-44ef-a144-31f5f3d2f653")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "name": "AI Health Chatbot Demo v2",
+                      "description": "Updated description",
+                      "evaluationScope": "Updated scope",
+                      "retentionDays": 60
+                    }
+                    """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.publicId").value("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"))
+        .andExpect(jsonPath("$.name").value("AI Health Chatbot Demo v2"))
+        .andExpect(jsonPath("$.description").value("Updated description"))
+        .andExpect(jsonPath("$.evaluationScope").value("Updated scope"))
+        .andExpect(jsonPath("$.retentionDays").value(60));
+
+    assertThat(RecordingProjectService.updateProjectRequest.name())
+        .isEqualTo("AI Health Chatbot Demo v2");
+    assertThat(RecordingProjectService.projectPublicId)
+        .isEqualTo(UUID.fromString("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"));
+    assertThat(RecordingProjectService.username).isEqualTo("qc.demo@example.com");
+  }
+
+  @Test
+  void updateProjectReturnsValidationProblemDetails() throws Exception {
+    mockMvc
+        .perform(
+            patch("/api/v1/projects/5a4edcc1-cd1e-44ef-a144-31f5f3d2f653")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "name": " ",
+                      "retentionDays": 0
+                    }
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+        .andExpect(jsonPath("$.instance").value("/api/v1/projects/5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"))
+        .andExpect(jsonPath("$.errors[*].field", hasItems("name", "retentionDays")));
+
+    assertThat(RecordingProjectService.updateProjectRequest).isNull();
+  }
+
   @TestConfiguration
   static class MockBeans {
 
@@ -236,6 +304,7 @@ class ProjectControllerTest {
 
   static class RecordingProjectService implements ProjectService {
     private static CreateProjectRequest createProjectRequest;
+    private static UpdateProjectRequest updateProjectRequest;
     private static ProjectResponse createProjectResponse;
     private static ProjectPageResponse projectPageResponse;
     private static ProjectResponse projectResponse;
@@ -267,8 +336,18 @@ class ProjectControllerTest {
       return projectResponse;
     }
 
+    @Override
+    public ProjectResponse updateProject(
+        UUID publicId, UpdateProjectRequest request, String username) {
+      RecordingProjectService.projectPublicId = publicId;
+      RecordingProjectService.updateProjectRequest = request;
+      RecordingProjectService.username = username;
+      return projectResponse;
+    }
+
     private static void reset() {
       createProjectRequest = null;
+      updateProjectRequest = null;
       createProjectResponse = null;
       projectPageResponse = null;
       projectResponse = null;

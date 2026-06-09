@@ -14,6 +14,7 @@ import me.nghlong3004.vqc.api.project.enums.ProjectStatus;
 import me.nghlong3004.vqc.api.project.mapper.ProjectMapper;
 import me.nghlong3004.vqc.api.project.repository.ProjectRepository;
 import me.nghlong3004.vqc.api.project.request.CreateProjectRequest;
+import me.nghlong3004.vqc.api.project.request.UpdateProjectRequest;
 import me.nghlong3004.vqc.api.project.response.ProjectCreatorResponse;
 import me.nghlong3004.vqc.api.project.response.ProjectListItemResponse;
 import me.nghlong3004.vqc.api.project.response.ProjectPageResponse;
@@ -194,6 +195,48 @@ class ProjectServiceImplTest {
         .isInstanceOf(ResourceException.class)
         .extracting("response.code")
         .isEqualTo("PROJECT_NOT_FOUND");
+  }
+
+  @Test
+  void updateProjectAppliesProvidedFieldsAndClearsBlankOptionalFields() {
+    User creator = new User();
+    creator.setUsername("qc.demo@example.com");
+    Project project = new Project();
+    project.setName("AI Health Chatbot Demo");
+    project.setDescription("Old description");
+    project.setEvaluationScope("Old scope");
+    project.setRetentionDays(30);
+    AtomicReference<Project> savedProject = new AtomicReference<>();
+    ProjectResponse mappedResponse =
+        new ProjectResponse(
+            project.getPublicId(),
+            "AI Health Chatbot Demo v2",
+            null,
+            null,
+            60,
+            ProjectStatus.ACTIVE,
+            null,
+            null,
+            null);
+    ProjectServiceImpl projectService =
+        new ProjectServiceImpl(
+            projectRepository(
+                savedProject, null, new AtomicReference<>(), Optional.of(project), new AtomicReference<>()),
+            userRepository(Optional.of(creator), new AtomicReference<>()),
+            mapper(mappedResponse));
+
+    ProjectResponse response =
+        projectService.updateProject(
+            project.getPublicId(),
+            new UpdateProjectRequest("  AI Health Chatbot Demo v2  ", "   ", "", 60),
+            "qc.demo@example.com");
+
+    assertThat(savedProject.get()).isSameAs(project);
+    assertThat(project.getName()).isEqualTo("AI Health Chatbot Demo v2");
+    assertThat(project.getDescription()).isNull();
+    assertThat(project.getEvaluationScope()).isNull();
+    assertThat(project.getRetentionDays()).isEqualTo(60);
+    assertThat(response).isSameAs(mappedResponse);
   }
 
   private ProjectRepository projectRepository(AtomicReference<Project> savedProject) {

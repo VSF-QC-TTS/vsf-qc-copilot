@@ -11,6 +11,7 @@ import me.nghlong3004.vqc.api.project.enums.ProjectStatus;
 import me.nghlong3004.vqc.api.project.mapper.ProjectMapper;
 import me.nghlong3004.vqc.api.project.repository.ProjectRepository;
 import me.nghlong3004.vqc.api.project.request.CreateProjectRequest;
+import me.nghlong3004.vqc.api.project.request.UpdateProjectRequest;
 import me.nghlong3004.vqc.api.project.response.ProjectListItemResponse;
 import me.nghlong3004.vqc.api.project.response.ProjectPageResponse;
 import me.nghlong3004.vqc.api.project.response.ProjectResponse;
@@ -77,12 +78,36 @@ public class ProjectServiceImpl implements ProjectService {
   @Override
   @Transactional(readOnly = true)
   public ProjectResponse getProject(UUID publicId, String username) {
-    User creator = findCreator(username);
-    Project project =
-        projectRepository
-            .findByPublicIdAndCreatedBy(publicId, creator)
-            .orElseThrow(() -> new ResourceException(ErrorCode.PROJECT_NOT_FOUND));
+    Project project = findProject(publicId, username);
     return projectMapper.toResponse(project);
+  }
+
+  @Override
+  @Transactional
+  public ProjectResponse updateProject(
+      UUID publicId, UpdateProjectRequest request, String username) {
+    Project project = findProject(publicId, username);
+    if (request.name() != null) {
+      project.setName(request.name().trim());
+    }
+    if (request.description() != null) {
+      project.setDescription(trimToNull(request.description()));
+    }
+    if (request.evaluationScope() != null) {
+      project.setEvaluationScope(trimToNull(request.evaluationScope()));
+    }
+    if (request.retentionDays() != null) {
+      project.setRetentionDays(request.retentionDays());
+    }
+    Project saved = projectRepository.save(project);
+    return projectMapper.toResponse(saved);
+  }
+
+  private Project findProject(UUID publicId, String username) {
+    User creator = findCreator(username);
+    return projectRepository
+        .findByPublicIdAndCreatedBy(publicId, creator)
+        .orElseThrow(() -> new ResourceException(ErrorCode.PROJECT_NOT_FOUND));
   }
 
   private User findCreator(String username) {
