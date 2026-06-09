@@ -1,5 +1,6 @@
 package me.nghlong3004.vqc.api.project.service;
 
+import java.util.UUID;
 import me.nghlong3004.vqc.api.project.entity.Project;
 import me.nghlong3004.vqc.api.project.enums.ProjectStatus;
 import me.nghlong3004.vqc.api.project.request.CreateProjectRequest;
@@ -31,4 +32,13 @@ public interface ProjectService {
    * @return paginated public {@link ProjectPageResponse}
    */
   ProjectPageResponse listProjects(ProjectStatus status, Pageable pageable, String username);
+
+  /**
+   * Gets a project owned by the authenticated user.
+   *
+   * @param publicId public project identifier
+   * @param username normalized or raw username from the authenticated principal
+   * @return public {@link ProjectResponse}
+   */
+  ProjectResponse getProject(UUID publicId, String username);
 }

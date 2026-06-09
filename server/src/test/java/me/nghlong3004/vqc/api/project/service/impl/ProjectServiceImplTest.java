@@ -145,6 +145,57 @@ class ProjectServiceImplTest {
         .isEqualTo("USER_NOT_FOUND");
   }
 
+  @Test
+  void getProjectLoadsOwnerScopedProject() {
+    User creator = new User();
+    creator.setUsername("qc.demo@example.com");
+    Project project = new Project();
+    project.setName("AI Health Chatbot Demo");
+    AtomicReference<String> lookedUpUsername = new AtomicReference<>();
+    AtomicReference<ProjectLookup> projectLookup = new AtomicReference<>();
+    ProjectResponse mappedResponse =
+        new ProjectResponse(
+            project.getPublicId(),
+            "AI Health Chatbot Demo",
+            null,
+            null,
+            30,
+            ProjectStatus.ACTIVE,
+            null,
+            null,
+            null);
+    ProjectServiceImpl projectService =
+        new ProjectServiceImpl(
+            projectRepository(new AtomicReference<>(), null, new AtomicReference<>(), Optional.of(project), projectLookup),
+            userRepository(Optional.of(creator), lookedUpUsername),
+            mapper(mappedResponse));
+
+    ProjectResponse response =
+        projectService.getProject(project.getPublicId(), "  QC.Demo@Example.COM  ");
+
+    assertThat(lookedUpUsername).hasValue("qc.demo@example.com");
+    assertThat(projectLookup.get().publicId()).isEqualTo(project.getPublicId());
+    assertThat(projectLookup.get().createdBy()).isSameAs(creator);
+    assertThat(response).isSameAs(mappedResponse);
+  }
+
+  @Test
+  void getProjectRejectsMissingProject() {
+    User creator = new User();
+    ProjectServiceImpl projectService =
+        new ProjectServiceImpl(
+            projectRepository(
+                new AtomicReference<>(), null, new AtomicReference<>(), Optional.empty(), new AtomicReference<>()),
+            userRepository(Optional.of(creator), new AtomicReference<>()),
+            ignoredMapper());
+
+    assertThatThrownBy(
+            () -> projectService.getProject(java.util.UUID.randomUUID(), "qc.demo@example.com"))
+        .isInstanceOf(ResourceException.class)
+        .extracting("response.code")
+        .isEqualTo("PROJECT_NOT_FOUND");
+  }
+
   private ProjectRepository projectRepository(AtomicReference<Project> savedProject) {
     return projectRepository(savedProject, null, new AtomicReference<>());
   }
@@ -153,6 +204,15 @@ class ProjectServiceImplTest {
       AtomicReference<Project> savedProject,
       PageImpl<Project> projectPage,
       AtomicReference<ProjectQuery> projectQuery) {
+    return projectRepository(savedProject, projectPage, projectQuery, Optional.empty(), new AtomicReference<>());
+  }
+
+  private ProjectRepository projectRepository(
+      AtomicReference<Project> savedProject,
+      PageImpl<Project> projectPage,
+      AtomicReference<ProjectQuery> projectQuery,
+      Optional<Project> foundProject,
+      AtomicReference<ProjectLookup> projectLookup) {
     return (ProjectRepository)
         Proxy.newProxyInstance(
             ProjectRepository.class.getClassLoader(),
@@ -170,6 +230,11 @@ class ProjectServiceImplTest {
                 case "findByCreatedByAndStatus" -> {
                   projectQuery.set(new ProjectQuery((User) args[0], (ProjectStatus) args[1]));
                   yield projectPage;
+                }
+                case "findByPublicIdAndCreatedBy" -> {
+                  projectLookup.set(
+                      new ProjectLookup((java.util.UUID) args[0], (User) args[1]));
+                  yield foundProject;
                 }
                 case "toString" -> "ProjectRepositoryTestDouble";
                 default -> throw new UnsupportedOperationException(method.getName());
@@ -242,4 +307,6 @@ class ProjectServiceImplTest {
   }
 
   private record ProjectQuery(User createdBy, ProjectStatus status) {}
+
+  private record ProjectLookup(java.util.UUID publicId, User createdBy) {}
 }

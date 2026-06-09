@@ -1,6 +1,7 @@
 package me.nghlong3004.vqc.api.project.service.impl;
 
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.nghlong3004.vqc.api.exception.ErrorCode;
@@ -71,6 +72,17 @@ public class ProjectServiceImpl implements ProjectService {
         projects.getSize(),
         projects.getTotalElements(),
         projects.getTotalPages());
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public ProjectResponse getProject(UUID publicId, String username) {
+    User creator = findCreator(username);
+    Project project =
+        projectRepository
+            .findByPublicIdAndCreatedBy(publicId, creator)
+            .orElseThrow(() -> new ResourceException(ErrorCode.PROJECT_NOT_FOUND));
+    return projectMapper.toResponse(project);
   }
 
   private User findCreator(String username) {

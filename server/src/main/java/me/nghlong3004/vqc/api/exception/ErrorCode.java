@@ -75,6 +75,12 @@ public enum ErrorCode {
   EMAIL_ALREADY(HttpStatus.CONFLICT.value(), "EMAIL_ALREADY_EXISTS", "Email is already in use."),
   USERNAME_ALREADY_EXISTS(
       HttpStatus.CONFLICT.value(), "USERNAME_ALREADY_EXISTS", "Username is already in use."),
+
+  // ── Projects ──
+  PROJECT_NOT_FOUND(
+      HttpStatus.NOT_FOUND.value(), "PROJECT_NOT_FOUND", "No project found with the provided ID."),
+
+  // ── User Administration ──
   CANNOT_DELETE_SELF(
       HttpStatus.BAD_REQUEST.value(), "CANNOT_DELETE_SELF", "You cannot disable your own account."),
   CANNOT_MODIFY_SUPER_ADMIN(

@@ -179,6 +179,52 @@ class ProjectControllerTest {
     assertThat(RecordingProjectService.projectPageResponse).isNull();
   }
 
+  @Test
+  void getProjectReturnsProjectDetail() throws Exception {
+    RecordingProjectService.projectResponse =
+        new ProjectResponse(
+            UUID.fromString("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"),
+            "AI Health Chatbot Demo",
+            "Evaluate health chatbot answers.",
+            "Health assistant QA evaluation",
+            30,
+            ProjectStatus.ACTIVE,
+            new ProjectCreatorResponse(
+                UUID.fromString("7b7b7d42-5f42-4c5a-9281-8d1d36f6f59d"), "QC Demo"),
+            OffsetDateTime.parse("2026-06-08T10:30:00Z"),
+            OffsetDateTime.parse("2026-06-08T10:35:00Z"));
+
+    mockMvc
+        .perform(
+            get("/api/v1/projects/5a4edcc1-cd1e-44ef-a144-31f5f3d2f653")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.publicId").value("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"))
+        .andExpect(jsonPath("$.name").value("AI Health Chatbot Demo"))
+        .andExpect(jsonPath("$.description").value("Evaluate health chatbot answers."))
+        .andExpect(jsonPath("$.evaluationScope").value("Health assistant QA evaluation"))
+        .andExpect(jsonPath("$.retentionDays").value(30))
+        .andExpect(jsonPath("$.status").value("ACTIVE"));
+
+    assertThat(RecordingProjectService.projectPublicId)
+        .isEqualTo(UUID.fromString("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"));
+    assertThat(RecordingProjectService.username).isEqualTo("qc.demo@example.com");
+  }
+
+  @Test
+  void getProjectReturnsValidationProblemDetailsForInvalidPublicId() throws Exception {
+    mockMvc
+        .perform(
+            get("/api/v1/projects/not-a-uuid")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null)))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+        .andExpect(jsonPath("$.instance").value("/api/v1/projects/not-a-uuid"));
+
+    assertThat(RecordingProjectService.projectPublicId).isNull();
+  }
+
   @TestConfiguration
   static class MockBeans {
 
@@ -192,8 +238,10 @@ class ProjectControllerTest {
     private static CreateProjectRequest createProjectRequest;
     private static ProjectResponse createProjectResponse;
     private static ProjectPageResponse projectPageResponse;
+    private static ProjectResponse projectResponse;
     private static ProjectStatus status;
     private static Pageable pageable;
+    private static UUID projectPublicId;
     private static String username;
 
     @Override
@@ -212,12 +260,21 @@ class ProjectControllerTest {
       return projectPageResponse;
     }
 
+    @Override
+    public ProjectResponse getProject(UUID publicId, String username) {
+      RecordingProjectService.projectPublicId = publicId;
+      RecordingProjectService.username = username;
+      return projectResponse;
+    }
+
     private static void reset() {
       createProjectRequest = null;
       createProjectResponse = null;
       projectPageResponse = null;
+      projectResponse = null;
       status = null;
       pageable = null;
+      projectPublicId = null;
       username = null;
     }
   }

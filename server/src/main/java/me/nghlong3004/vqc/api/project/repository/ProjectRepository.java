@@ -1,5 +1,7 @@
 package me.nghlong3004.vqc.api.project.repository;
 
+import java.util.Optional;
+import java.util.UUID;
 import me.nghlong3004.vqc.api.project.entity.Project;
 import me.nghlong3004.vqc.api.project.enums.ProjectStatus;
 import me.nghlong3004.vqc.api.user.entity.User;
@@ -31,4 +33,13 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
    * @return page of matching {@link Project} entities
    */
   Page<Project> findByCreatedByAndStatus(User createdBy, ProjectStatus status, Pageable pageable);
+
+  /**
+   * Finds a project by public id and creator.
+   *
+   * @param publicId public project identifier
+   * @param createdBy creator {@link User}
+   * @return {@link Optional} containing the matching {@link Project} when present
+   */
+  Optional<Project> findByPublicIdAndCreatedBy(UUID publicId, User createdBy);
 }
