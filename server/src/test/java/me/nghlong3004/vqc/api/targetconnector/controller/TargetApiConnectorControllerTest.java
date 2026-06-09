@@ -3,6 +3,7 @@ package me.nghlong3004.vqc.api.targetconnector.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItems;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -17,6 +18,7 @@ import me.nghlong3004.vqc.api.targetconnector.enums.BodyType;
 import me.nghlong3004.vqc.api.targetconnector.enums.HttpMethodType;
 import me.nghlong3004.vqc.api.targetconnector.enums.ResponseFormat;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateTargetApiConnectorRequest;
+import me.nghlong3004.vqc.api.targetconnector.request.UpdateTargetApiConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.response.SecretRefResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorListItemResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorPageResponse;
@@ -269,6 +271,89 @@ class TargetApiConnectorControllerTest {
     assertThat(RecordingTargetApiConnectorService.connectorPublicId).isNull();
   }
 
+  @Test
+  void updateConnectorReturnsUpdatedConnector() throws Exception {
+    RecordingTargetApiConnectorService.response =
+        new TargetApiConnectorResponse(
+            UUID.fromString("f5f77e84-b3be-48bb-9081-f1dd190f8c61"),
+            UUID.fromString(PROJECT_ID),
+            "Mock Health Chatbot v2",
+            null,
+            HttpMethodType.POST,
+            "http://localhost:8080",
+            "/mock-chatbot/chat",
+            "http://localhost:8080/mock-chatbot/chat",
+            Map.of(),
+            Map.of(),
+            Map.of(),
+            BodyType.RAW_JSON,
+            Map.of(),
+            null,
+            AuthType.BEARER,
+            Map.of(),
+            List.of(),
+            ResponseFormat.JSON,
+            "$.answer",
+            false,
+            null,
+            null,
+            90,
+            2,
+            true,
+            null,
+            null);
+
+    mockMvc
+        .perform(
+            patch("/api/v1/target-api-connectors/f5f77e84-b3be-48bb-9081-f1dd190f8c61")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "name": "Mock Health Chatbot v2",
+                      "timeoutSeconds": 90,
+                      "retryCount": 2,
+                      "active": true
+                    }
+                    """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name").value("Mock Health Chatbot v2"))
+        .andExpect(jsonPath("$.timeoutSeconds").value(90))
+        .andExpect(jsonPath("$.retryCount").value(2))
+        .andExpect(jsonPath("$.active").value(true));
+
+    assertThat(RecordingTargetApiConnectorService.connectorPublicId)
+        .isEqualTo(UUID.fromString("f5f77e84-b3be-48bb-9081-f1dd190f8c61"));
+    assertThat(RecordingTargetApiConnectorService.updateRequest.name())
+        .isEqualTo("Mock Health Chatbot v2");
+    assertThat(RecordingTargetApiConnectorService.username).isEqualTo("qc.demo@example.com");
+  }
+
+  @Test
+  void updateConnectorReturnsValidationProblemDetails() throws Exception {
+    mockMvc
+        .perform(
+            patch("/api/v1/target-api-connectors/f5f77e84-b3be-48bb-9081-f1dd190f8c61")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "name": " ",
+                      "timeoutSeconds": 0,
+                      "retryCount": 6
+                    }
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+        .andExpect(
+            jsonPath("$.errors[*].field", hasItems("name", "timeoutSeconds", "retryCount")));
+
+    assertThat(RecordingTargetApiConnectorService.updateRequest).isNull();
+  }
+
   @TestConfiguration
   static class MockBeans {
 
@@ -282,6 +367,7 @@ class TargetApiConnectorControllerTest {
     private static UUID projectPublicId;
     private static UUID connectorPublicId;
     private static CreateTargetApiConnectorRequest request;
+    private static UpdateTargetApiConnectorRequest updateRequest;
     private static Pageable pageable;
     private static String username;
     private static TargetApiConnectorResponse response;
@@ -312,10 +398,20 @@ class TargetApiConnectorControllerTest {
       return response;
     }
 
+    @Override
+    public TargetApiConnectorResponse updateConnector(
+        UUID connectorPublicId, UpdateTargetApiConnectorRequest request, String username) {
+      RecordingTargetApiConnectorService.connectorPublicId = connectorPublicId;
+      RecordingTargetApiConnectorService.updateRequest = request;
+      RecordingTargetApiConnectorService.username = username;
+      return response;
+    }
+
     private static void reset() {
       projectPublicId = null;
       connectorPublicId = null;
       request = null;
+      updateRequest = null;
       pageable = null;
       username = null;
       response = null;

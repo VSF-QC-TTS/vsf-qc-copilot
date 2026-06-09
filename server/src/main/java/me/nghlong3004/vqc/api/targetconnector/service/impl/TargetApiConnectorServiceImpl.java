@@ -17,6 +17,7 @@ import me.nghlong3004.vqc.api.targetconnector.enums.ResponseFormat;
 import me.nghlong3004.vqc.api.targetconnector.mapper.TargetApiConnectorMapper;
 import me.nghlong3004.vqc.api.targetconnector.repository.TargetApiConnectorRepository;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateTargetApiConnectorRequest;
+import me.nghlong3004.vqc.api.targetconnector.request.UpdateTargetApiConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorListItemResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorPageResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorResponse;
@@ -101,12 +102,99 @@ public class TargetApiConnectorServiceImpl implements TargetApiConnectorService 
   @Override
   @Transactional(readOnly = true)
   public TargetApiConnectorResponse getConnector(UUID connectorPublicId, String username) {
-    User creator = findCreator(username);
-    TargetApiConnector connector =
-        targetApiConnectorRepository
-            .findByPublicIdAndCreatedBy(connectorPublicId, creator)
-            .orElseThrow(() -> new ResourceException(ErrorCode.TARGET_CONNECTOR_NOT_FOUND));
+    TargetApiConnector connector = findConnector(connectorPublicId, username);
     return targetApiConnectorMapper.toResponse(connector);
+  }
+
+  @Override
+  @Transactional
+  public TargetApiConnectorResponse updateConnector(
+      UUID connectorPublicId, UpdateTargetApiConnectorRequest request, String username) {
+    TargetApiConnector connector = findConnector(connectorPublicId, username);
+    if (request.name() != null) {
+      connector.setName(request.name().trim());
+    }
+    if (request.description() != null) {
+      connector.setDescription(trimToNull(request.description()));
+    }
+    if (request.rawCurl() != null) {
+      connector.setRawCurl(trimToNull(request.rawCurl()));
+    }
+    if (request.protocol() != null) {
+      connector.setProtocol(request.protocol());
+    }
+    if (request.method() != null) {
+      connector.setMethod(request.method());
+    }
+    if (request.baseUrl() != null) {
+      connector.setBaseUrl(trimToNull(request.baseUrl()));
+    }
+    if (request.path() != null) {
+      connector.setPath(trimToNull(request.path()));
+    }
+    if (request.url() != null) {
+      connector.setUrl(request.url().trim());
+    }
+    if (request.headers() != null) {
+      connector.setHeaders(safeMap(request.headers(), request.secretValues()));
+    }
+    if (request.queryParams() != null) {
+      connector.setQueryParams(safeMap(request.queryParams(), request.secretValues()));
+    }
+    if (request.pathParams() != null) {
+      connector.setPathParams(safeMap(request.pathParams(), request.secretValues()));
+    }
+    if (request.bodyType() != null) {
+      connector.setBodyType(request.bodyType());
+    }
+    if (request.bodyTemplate() != null) {
+      connector.setBodyTemplate(safeMap(request.bodyTemplate(), request.secretValues()));
+    }
+    if (request.bodyTemplateText() != null) {
+      connector.setBodyTemplateText(trimToNull(request.bodyTemplateText()));
+    }
+    if (request.authType() != null) {
+      connector.setAuthType(request.authType());
+    }
+    if (request.authConfig() != null) {
+      connector.setAuthConfig(safeMap(request.authConfig(), request.secretValues()));
+    }
+    if (request.secretValues() != null) {
+      connector.setSecretRefs(secretRefs(request.secretValues()));
+    }
+    if (request.responseFormat() != null) {
+      connector.setResponseFormat(request.responseFormat());
+    }
+    if (request.responseSelector() != null) {
+      connector.setResponseSelector(request.responseSelector().trim());
+    }
+    if (request.isStreaming() != null) {
+      connector.setStreaming(request.isStreaming());
+    }
+    if (request.streamingType() != null) {
+      connector.setStreamingType(request.streamingType());
+    }
+    if (request.streamingEventSelector() != null) {
+      connector.setStreamingEventSelector(trimToNull(request.streamingEventSelector()));
+    }
+    if (request.timeoutSeconds() != null) {
+      connector.setTimeoutSeconds(request.timeoutSeconds());
+    }
+    if (request.retryCount() != null) {
+      connector.setRetryCount(request.retryCount());
+    }
+    if (request.active() != null) {
+      connector.setActive(request.active());
+    }
+    TargetApiConnector saved = targetApiConnectorRepository.save(connector);
+    return targetApiConnectorMapper.toResponse(saved);
+  }
+
+  private TargetApiConnector findConnector(UUID connectorPublicId, String username) {
+    User creator = findCreator(username);
+    return targetApiConnectorRepository
+        .findByPublicIdAndCreatedBy(connectorPublicId, creator)
+        .orElseThrow(() -> new ResourceException(ErrorCode.TARGET_CONNECTOR_NOT_FOUND));
   }
 
   private Project findProject(UUID projectPublicId, User creator) {

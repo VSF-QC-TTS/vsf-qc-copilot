@@ -19,6 +19,7 @@ import me.nghlong3004.vqc.api.targetconnector.enums.ResponseFormat;
 import me.nghlong3004.vqc.api.targetconnector.mapper.TargetApiConnectorMapper;
 import me.nghlong3004.vqc.api.targetconnector.repository.TargetApiConnectorRepository;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateTargetApiConnectorRequest;
+import me.nghlong3004.vqc.api.targetconnector.request.UpdateTargetApiConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorListItemResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorPageResponse;
@@ -188,6 +189,73 @@ class TargetApiConnectorServiceImplTest {
         .isInstanceOf(ResourceException.class)
         .extracting("response.code")
         .isEqualTo("TARGET_CONNECTOR_NOT_FOUND");
+  }
+
+  @Test
+  void updateConnectorAppliesProvidedFieldsAndSanitizesSecrets() {
+    User creator = new User();
+    TargetApiConnector connector = new TargetApiConnector();
+    connector.setName("Mock Health Chatbot");
+    connector.setTimeoutSeconds(60);
+    connector.setRetryCount(1);
+    connector.setActive(true);
+    AtomicReference<TargetApiConnector> savedConnector = new AtomicReference<>();
+    TargetApiConnectorResponse mappedResponse =
+        new TargetApiConnectorResponse(
+            connector.getPublicId(), null, "Mock Health Chatbot v2", null, HttpMethodType.POST, null,
+            null, "http://localhost:8080/mock-chatbot/chat", Map.of(), Map.of(), Map.of(),
+            BodyType.RAW_JSON, Map.of(), null, AuthType.BEARER, Map.of(), java.util.List.of(),
+            ResponseFormat.JSON, "$.answer", false, null, null, 90, 2, false, null, null);
+    TargetApiConnectorServiceImpl service =
+        new TargetApiConnectorServiceImpl(
+            connectorRepository(
+                savedConnector, null, new AtomicReference<>(), Optional.of(connector), new AtomicReference<>()),
+            projectRepository(Optional.empty(), new AtomicReference<>()),
+            userRepository(Optional.of(creator), new AtomicReference<>()),
+            mapper(mappedResponse));
+
+    TargetApiConnectorResponse response =
+        service.updateConnector(
+            connector.getPublicId(),
+            new UpdateTargetApiConnectorRequest(
+                "  Mock Health Chatbot v2  ",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                Map.of("Authorization", "Bearer new-token-value"),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                Map.of("tokenRef", "new-token-value"),
+                Map.of("CHATBOT_API_TOKEN", "new-token-value"),
+                null,
+                null,
+                null,
+                null,
+                null,
+                90,
+                2,
+                false),
+            "qc.demo@example.com");
+
+    assertThat(savedConnector.get()).isSameAs(connector);
+    assertThat(connector.getName()).isEqualTo("Mock Health Chatbot v2");
+    assertThat(connector.getTimeoutSeconds()).isEqualTo(90);
+    assertThat(connector.getRetryCount()).isEqualTo(2);
+    assertThat(connector.getActive()).isFalse();
+    assertThat(connector.getHeaders())
+        .containsEntry("Authorization", "Bearer {{secret:CHATBOT_API_TOKEN}}");
+    assertThat(connector.getAuthConfig()).containsEntry("tokenRef", "{{secret:CHATBOT_API_TOKEN}}");
+    assertThat(connector.getSecretRefs().getFirst()).containsEntry("maskedValue", "****alue");
+    assertThat(connector.getHeaders().toString()).doesNotContain("new-token-value");
+    assertThat(response).isSameAs(mappedResponse);
   }
 
   private CreateTargetApiConnectorRequest request() {
