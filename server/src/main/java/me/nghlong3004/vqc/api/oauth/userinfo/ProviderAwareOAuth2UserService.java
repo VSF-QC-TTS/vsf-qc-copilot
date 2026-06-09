@@ -1,7 +1,6 @@
 package me.nghlong3004.vqc.api.oauth.userinfo;
 
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import me.nghlong3004.vqc.api.oauth.AuthProvider;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
@@ -15,12 +14,22 @@ import org.springframework.stereotype.Service;
  * @since 5/24/2026
  */
 @Service
-@RequiredArgsConstructor
 public class ProviderAwareOAuth2UserService
     implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
 
-  private final DefaultOAuth2UserService delegate = new DefaultOAuth2UserService();
+  private final OAuth2UserService<OAuth2UserRequest, OAuth2User> delegate;
   private final List<OAuth2UserEnricher> enrichers;
+
+  public ProviderAwareOAuth2UserService(List<OAuth2UserEnricher> enrichers) {
+    this(new DefaultOAuth2UserService(), enrichers);
+  }
+
+  ProviderAwareOAuth2UserService(
+      OAuth2UserService<OAuth2UserRequest, OAuth2User> delegate,
+      List<OAuth2UserEnricher> enrichers) {
+    this.delegate = delegate;
+    this.enrichers = enrichers;
+  }
 
   @Override
   public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {

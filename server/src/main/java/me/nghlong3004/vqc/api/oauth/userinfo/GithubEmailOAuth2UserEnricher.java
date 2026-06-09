@@ -28,7 +28,15 @@ public class GithubEmailOAuth2UserEnricher implements OAuth2UserEnricher {
   private static final String GITHUB_EMAILS_URL = "https://api.github.com/user/emails";
   private static final String GITHUB_USER_NAME_ATTRIBUTE = "id";
 
-  private final RestTemplate restTemplate = new RestTemplate();
+  private final RestTemplate restTemplate;
+
+  public GithubEmailOAuth2UserEnricher() {
+    this(new RestTemplate());
+  }
+
+  GithubEmailOAuth2UserEnricher(RestTemplate restTemplate) {
+    this.restTemplate = restTemplate;
+  }
 
   @Override
   public boolean supports(AuthProvider provider) {
