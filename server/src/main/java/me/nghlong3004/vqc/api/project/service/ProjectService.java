@@ -52,4 +52,12 @@ public interface ProjectService {
    * @return updated public {@link ProjectResponse}
    */
   ProjectResponse updateProject(UUID publicId, UpdateProjectRequest request, String username);
+
+  /**
+   * Archives a project owned by the authenticated user.
+   *
+   * @param publicId public project identifier
+   * @param username normalized or raw username from the authenticated principal
+   */
+  void archiveProject(UUID publicId, String username);
 }

@@ -239,6 +239,26 @@ class ProjectServiceImplTest {
     assertThat(response).isSameAs(mappedResponse);
   }
 
+  @Test
+  void archiveProjectMarksProjectArchived() {
+    User creator = new User();
+    Project project = new Project();
+    project.setStatus(ProjectStatus.ACTIVE);
+    AtomicReference<Project> savedProject = new AtomicReference<>();
+    ProjectServiceImpl projectService =
+        new ProjectServiceImpl(
+            projectRepository(
+                savedProject, null, new AtomicReference<>(), Optional.of(project), new AtomicReference<>()),
+            userRepository(Optional.of(creator), new AtomicReference<>()),
+            ignoredMapper());
+
+    projectService.archiveProject(project.getPublicId(), "qc.demo@example.com");
+
+    assertThat(savedProject.get()).isSameAs(project);
+    assertThat(project.getStatus()).isEqualTo(ProjectStatus.ARCHIVED);
+    assertThat(project.getArchivedAt()).isNotNull();
+  }
+
   private ProjectRepository projectRepository(AtomicReference<Project> savedProject) {
     return projectRepository(savedProject, null, new AtomicReference<>());
   }

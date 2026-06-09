@@ -1,5 +1,6 @@
 package me.nghlong3004.vqc.api.project.service.impl;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -101,6 +102,17 @@ public class ProjectServiceImpl implements ProjectService {
     }
     Project saved = projectRepository.save(project);
     return projectMapper.toResponse(saved);
+  }
+
+  @Override
+  @Transactional
+  public void archiveProject(UUID publicId, String username) {
+    Project project = findProject(publicId, username);
+    project.setStatus(ProjectStatus.ARCHIVED);
+    if (project.getArchivedAt() == null) {
+      project.setArchivedAt(OffsetDateTime.now());
+    }
+    projectRepository.save(project);
   }
 
   private Project findProject(UUID publicId, String username) {

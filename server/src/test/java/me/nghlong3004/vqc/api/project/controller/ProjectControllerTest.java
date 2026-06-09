@@ -2,6 +2,7 @@ package me.nghlong3004.vqc.api.project.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItems;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -293,6 +294,21 @@ class ProjectControllerTest {
     assertThat(RecordingProjectService.updateProjectRequest).isNull();
   }
 
+  @Test
+  void archiveProjectReturnsNoContent() throws Exception {
+    mockMvc
+        .perform(
+            delete("/api/v1/projects/5a4edcc1-cd1e-44ef-a144-31f5f3d2f653")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null)))
+        .andExpect(status().isNoContent())
+        .andExpect(content().string(""));
+
+    assertThat(RecordingProjectService.projectPublicId)
+        .isEqualTo(UUID.fromString("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"));
+    assertThat(RecordingProjectService.username).isEqualTo("qc.demo@example.com");
+    assertThat(RecordingProjectService.archiveProjectCalled).isTrue();
+  }
+
   @TestConfiguration
   static class MockBeans {
 
@@ -312,6 +328,7 @@ class ProjectControllerTest {
     private static Pageable pageable;
     private static UUID projectPublicId;
     private static String username;
+    private static boolean archiveProjectCalled;
 
     @Override
     public ProjectResponse createProject(CreateProjectRequest request, String username) {
@@ -345,6 +362,13 @@ class ProjectControllerTest {
       return projectResponse;
     }
 
+    @Override
+    public void archiveProject(UUID publicId, String username) {
+      RecordingProjectService.projectPublicId = publicId;
+      RecordingProjectService.username = username;
+      RecordingProjectService.archiveProjectCalled = true;
+    }
+
     private static void reset() {
       createProjectRequest = null;
       updateProjectRequest = null;
@@ -355,6 +379,7 @@ class ProjectControllerTest {
       pageable = null;
       projectPublicId = null;
       username = null;
+      archiveProjectCalled = false;
     }
   }
 }
