@@ -1,8 +1,11 @@
 package me.nghlong3004.vqc.api.dataset.repository;
 
+import java.util.Optional;
+import java.util.UUID;
 import me.nghlong3004.vqc.api.dataset.entity.Dataset;
 import me.nghlong3004.vqc.api.dataset.enums.DatasetStatus;
 import me.nghlong3004.vqc.api.project.entity.Project;
+import me.nghlong3004.vqc.api.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -31,4 +34,13 @@ public interface DatasetRepository extends JpaRepository<Dataset, Long> {
    * @return page of matching {@link Dataset} entities
    */
   Page<Dataset> findByProjectAndStatus(Project project, DatasetStatus status, Pageable pageable);
+
+  /**
+   * Finds a dataset by public id and creator.
+   *
+   * @param publicId public dataset identifier
+   * @param createdBy creator {@link User}
+   * @return {@link Optional} containing the matching {@link Dataset} when present
+   */
+  Optional<Dataset> findByPublicIdAndCreatedBy(UUID publicId, User createdBy);
 }

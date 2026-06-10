@@ -97,6 +97,25 @@ public class DatasetServiceImpl implements DatasetService {
         datasets.getTotalPages());
   }
 
+  @Override
+  @Transactional(readOnly = true)
+  public DatasetResponse getDataset(UUID datasetPublicId, String username) {
+    Dataset dataset = findDataset(datasetPublicId, username);
+    log.info(
+        "Loaded dataset {} under project {} by user {}",
+        dataset.getPublicId(),
+        dataset.getProject().getPublicId(),
+        dataset.getCreatedBy().getPublicId());
+    return datasetMapper.toResponse(dataset, 0);
+  }
+
+  private Dataset findDataset(UUID datasetPublicId, String username) {
+    User creator = findCreator(username);
+    return datasetRepository
+        .findByPublicIdAndCreatedBy(datasetPublicId, creator)
+        .orElseThrow(() -> new ResourceException(ErrorCode.DATASET_NOT_FOUND));
+  }
+
   private BusinessRequirement findRequirement(
       UUID requirementPublicId, User creator, Project project) {
     if (requirementPublicId == null) {

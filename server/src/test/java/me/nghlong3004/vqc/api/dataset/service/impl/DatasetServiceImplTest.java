@@ -260,6 +260,60 @@ class DatasetServiceImplTest {
     assertThat(datasetQuery.get().status()).isNull();
   }
 
+  @Test
+  void getDatasetLoadsOwnerScopedDataset() {
+    User creator = user();
+    Project project = project(creator);
+    Dataset dataset = dataset(project, creator);
+    AtomicReference<DatasetLookup> datasetLookup = new AtomicReference<>();
+    DatasetServiceImpl datasetService =
+        new DatasetServiceImpl(
+            datasetRepository(
+                new AtomicReference<>(),
+                null,
+                new AtomicReference<>(),
+                Optional.of(dataset),
+                datasetLookup),
+            ignoredProjectRepository(),
+            ignoredRequirementRepository(),
+            userRepository(Optional.of(creator)),
+            new DatasetMapper());
+
+    DatasetResponse response =
+        datasetService.getDataset(dataset.getPublicId(), "  QC.Demo@Example.COM  ");
+
+    assertThat(datasetLookup.get().publicId()).isEqualTo(dataset.getPublicId());
+    assertThat(datasetLookup.get().createdBy()).isSameAs(creator);
+    assertThat(response.publicId()).isEqualTo(dataset.getPublicId());
+    assertThat(response.projectPublicId()).isEqualTo(project.getPublicId());
+  }
+
+  @Test
+  void getDatasetRejectsMissingDataset() {
+    User creator = user();
+    AtomicReference<DatasetLookup> datasetLookup = new AtomicReference<>();
+    DatasetServiceImpl datasetService =
+        new DatasetServiceImpl(
+            datasetRepository(
+                new AtomicReference<>(),
+                null,
+                new AtomicReference<>(),
+                Optional.empty(),
+                datasetLookup),
+            ignoredProjectRepository(),
+            ignoredRequirementRepository(),
+            userRepository(Optional.of(creator)),
+            new DatasetMapper());
+    UUID datasetPublicId = UUID.randomUUID();
+
+    assertThatThrownBy(() -> datasetService.getDataset(datasetPublicId, "qc.demo@example.com"))
+        .isInstanceOf(ResourceException.class)
+        .extracting(error -> ((ResourceException) error).getResponse().code())
+        .isEqualTo("DATASET_NOT_FOUND");
+    assertThat(datasetLookup.get().publicId()).isEqualTo(datasetPublicId);
+    assertThat(datasetLookup.get().createdBy()).isSameAs(creator);
+  }
+
   private DatasetRepository datasetRepository(AtomicReference<Dataset> savedDataset) {
     return datasetRepository(savedDataset, null, new AtomicReference<>());
   }
@@ -268,13 +322,23 @@ class DatasetServiceImplTest {
       AtomicReference<Dataset> savedDataset,
       PageImpl<Dataset> datasetPage,
       AtomicReference<DatasetQuery> datasetQuery) {
+    return datasetRepository(
+        savedDataset, datasetPage, datasetQuery, Optional.empty(), new AtomicReference<>());
+  }
+
+  private DatasetRepository datasetRepository(
+      AtomicReference<Dataset> savedDataset,
+      PageImpl<Dataset> datasetPage,
+      AtomicReference<DatasetQuery> datasetQuery,
+      Optional<Dataset> datasetLookupResult,
+      AtomicReference<DatasetLookup> datasetLookup) {
     return proxy(
         DatasetRepository.class,
         (proxy, method, args) -> {
           if ("save".equals(method.getName())) {
-            Dataset dataset = (Dataset) args[0];
-            savedDataset.set(dataset);
-            return dataset;
+            Dataset saved = (Dataset) args[0];
+            savedDataset.set(saved);
+            return saved;
           }
           if ("findByProject".equals(method.getName())) {
             datasetQuery.set(new DatasetQuery((Project) args[0], null));
@@ -283,6 +347,10 @@ class DatasetServiceImplTest {
           if ("findByProjectAndStatus".equals(method.getName())) {
             datasetQuery.set(new DatasetQuery((Project) args[0], (DatasetStatus) args[1]));
             return datasetPage;
+          }
+          if ("findByPublicIdAndCreatedBy".equals(method.getName())) {
+            datasetLookup.set(new DatasetLookup((UUID) args[0], (User) args[1]));
+            return datasetLookupResult;
           }
           throw new UnsupportedOperationException(method.getName());
         });
@@ -404,4 +472,6 @@ class DatasetServiceImplTest {
   private record RequirementLookup(UUID publicId, User createdBy) {}
 
   private record DatasetQuery(Project project, DatasetStatus status) {}
+
+  private record DatasetLookup(UUID publicId, User createdBy) {}
 }

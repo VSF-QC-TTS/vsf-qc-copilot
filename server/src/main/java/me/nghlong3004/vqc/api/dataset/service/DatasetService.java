@@ -37,4 +37,13 @@ public interface DatasetService {
    */
   DatasetPageResponse listDatasets(
       UUID projectPublicId, DatasetStatus status, Pageable pageable, String username);
+
+  /**
+   * Gets a dataset owned by the authenticated user.
+   *
+   * @param datasetPublicId public dataset identifier
+   * @param username authenticated principal username/email
+   * @return dataset detail response
+   */
+  DatasetResponse getDataset(UUID datasetPublicId, String username);
 }

@@ -125,4 +125,42 @@ public class DatasetController {
       Principal principal) {
     return datasetService.listDatasets(projectPublicId, status, pageable, principal.getName());
   }
+
+  @Operation(summary = "Get dataset detail", description = "Returns a dataset owned by the authenticated user.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Dataset detail",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = DatasetResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Invalid dataset identifier",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Authentication is required",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Dataset not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @GetMapping(
+      value = "/api/v1/datasets/{datasetPublicId}",
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  public DatasetResponse getDataset(@PathVariable UUID datasetPublicId, Principal principal) {
+    return datasetService.getDataset(datasetPublicId, principal.getName());
+  }
 }

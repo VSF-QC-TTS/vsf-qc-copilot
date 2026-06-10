@@ -219,6 +219,54 @@ class DatasetControllerTest {
     assertThat(RecordingDatasetService.datasetPageResponse).isNull();
   }
 
+  @Test
+  void getDatasetReturnsDatasetDetail() throws Exception {
+    RecordingDatasetService.datasetResponse =
+        new DatasetResponse(
+            UUID.fromString("0f6d90c2-7410-4db2-86be-8adfd3140f63"),
+            UUID.fromString("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"),
+            null,
+            "Health Demo Dataset",
+            "Sample dataset for Week 4 demo.",
+            1,
+            DatasetSourceType.SAMPLE_DEMO,
+            DatasetStatus.DRAFT,
+            0,
+            OffsetDateTime.parse("2026-06-08T10:30:00Z"),
+            OffsetDateTime.parse("2026-06-08T10:35:00Z"));
+
+    mockMvc
+        .perform(
+            get("/api/v1/datasets/0f6d90c2-7410-4db2-86be-8adfd3140f63")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.publicId").value("0f6d90c2-7410-4db2-86be-8adfd3140f63"))
+        .andExpect(
+            jsonPath("$.projectPublicId").value("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"))
+        .andExpect(jsonPath("$.requirementPublicId").isEmpty())
+        .andExpect(jsonPath("$.name").value("Health Demo Dataset"))
+        .andExpect(jsonPath("$.sourceType").value("SAMPLE_DEMO"))
+        .andExpect(jsonPath("$.status").value("DRAFT"));
+
+    assertThat(RecordingDatasetService.datasetPublicId)
+        .isEqualTo(UUID.fromString("0f6d90c2-7410-4db2-86be-8adfd3140f63"));
+    assertThat(RecordingDatasetService.username).isEqualTo("qc.demo@example.com");
+  }
+
+  @Test
+  void getDatasetReturnsValidationProblemDetailsForInvalidPublicId() throws Exception {
+    mockMvc
+        .perform(
+            get("/api/v1/datasets/not-a-uuid")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null)))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+        .andExpect(jsonPath("$.instance").value("/api/v1/datasets/not-a-uuid"));
+
+    assertThat(RecordingDatasetService.datasetPublicId).isNull();
+  }
+
   @TestConfiguration
   static class MockBeans {
 
@@ -231,6 +279,7 @@ class DatasetControllerTest {
   static class RecordingDatasetService implements DatasetService {
 
     static UUID projectPublicId;
+    static UUID datasetPublicId;
     static CreateDatasetRequest createDatasetRequest;
     static DatasetStatus status;
     static Pageable pageable;
@@ -240,6 +289,7 @@ class DatasetControllerTest {
 
     static void reset() {
       projectPublicId = null;
+      datasetPublicId = null;
       createDatasetRequest = null;
       status = null;
       pageable = null;
@@ -265,6 +315,13 @@ class DatasetControllerTest {
       RecordingDatasetService.pageable = pageable;
       RecordingDatasetService.username = username;
       return datasetPageResponse;
+    }
+
+    @Override
+    public DatasetResponse getDataset(UUID datasetPublicId, String username) {
+      RecordingDatasetService.datasetPublicId = datasetPublicId;
+      RecordingDatasetService.username = username;
+      return datasetResponse;
     }
   }
 }
