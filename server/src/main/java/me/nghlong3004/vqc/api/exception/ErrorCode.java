@@ -103,6 +103,30 @@ public enum ErrorCode {
       HttpStatus.NOT_FOUND.value(),
       "TEST_CASE_NOT_FOUND",
       "No test case found with the provided ID."),
+  RUBRIC_NOT_FOUND(
+      HttpStatus.NOT_FOUND.value(), "RUBRIC_NOT_FOUND", "No rubric found with the provided ID."),
+  RUBRIC_ARCHIVED(
+      HttpStatus.CONFLICT.value(), "RUBRIC_ARCHIVED", "Archived rubric cannot be modified."),
+  RUBRIC_VERSION_NOT_FOUND(
+      HttpStatus.NOT_FOUND.value(),
+      "RUBRIC_VERSION_NOT_FOUND",
+      "No rubric version found with the provided ID."),
+  RUBRIC_VERSION_IMMUTABLE(
+      HttpStatus.CONFLICT.value(),
+      "RUBRIC_VERSION_IMMUTABLE",
+      "Rubric version cannot be modified in its current status."),
+  RUBRIC_VERSION_PUBLISH_INVALID(
+      422,
+      "RUBRIC_VERSION_PUBLISH_INVALID",
+      "Rubric version cannot be published with the current criteria."),
+  RUBRIC_CRITERION_NOT_FOUND(
+      HttpStatus.NOT_FOUND.value(),
+      "RUBRIC_CRITERION_NOT_FOUND",
+      "No rubric criterion found with the provided ID."),
+  RUBRIC_CRITERION_METRIC_KEY_CONFLICT(
+      HttpStatus.CONFLICT.value(),
+      "RUBRIC_CRITERION_METRIC_KEY_CONFLICT",
+      "Rubric criterion metric key already exists in this version."),
 
   // ── User Administration ──
   CANNOT_DELETE_SELF(
