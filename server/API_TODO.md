@@ -13,6 +13,7 @@ Purpose: track API slices while keeping `CODEX_CONTEXT.md` short. Update this fi
 - Target API connector: create, list, detail, update, test-run.
 - Requirement: create, list, detail, update.
 - Dataset/Test Case: dataset create/list/detail/update; test case create/list/update/delete.
+- Rubric/Criteria: rubric create/list/detail/update/archive; version create/list/detail/publish/archive; criteria create/list/update/delete.
 
 ## In Progress
 
@@ -20,5 +21,4 @@ Purpose: track API slices while keeping `CODEX_CONTEXT.md` short. Update this fi
 
 ## Next
 
-- Rubric/Criteria API.
 - Evaluation run/job skeleton.

@@ -46,7 +46,7 @@ Domain choices in current code:
 Persistence now vs target:
 - Current Flyway is intentionally squashed into one initial migration: `V1__init_schema.sql`.
 - The old incremental migrations (`V1__enable_extensions.sql` through `V5__create_business_requirements.sql`) were merged because product/Flyway has not been run yet and the current database is empty.
-- `V1__init_schema.sql` creates `pgcrypto`, `users`, `email_verification_tokens`, `password_reset_tokens`, `projects`, `target_api_connectors`, `business_requirements`, `datasets`, and `test_cases`.
+- `V1__init_schema.sql` creates `pgcrypto`, `users`, `email_verification_tokens`, `password_reset_tokens`, `projects`, `target_api_connectors`, `business_requirements`, `datasets`, `test_cases`, `rubrics`, `rubric_versions`, and `rubric_criteria`.
 - Email verification and password reset tokens are opaque raw values; only SHA-256 hashes are stored.
 - `OpaqueTokenService` owns raw token generation and hashing for one-time email tokens.
 - Future MVP docs expect main tables to use internal `BIGINT id` plus public `UUID public_id`; APIs should expose `publicId`, not internal `id`.
@@ -78,12 +78,25 @@ Implemented API slices after auth:
   - Datasets support `DRAFT`, `APPROVED`, and `ARCHIVED`; approving requires 1-100 active test cases.
   - Test cases support `ACTIVE` and `INACTIVE`; `DELETE` hard-deletes a test case per current API contract.
   - Archived datasets reject test case create/update/delete.
+- Rubrics, rubric versions, and criteria:
+  - Rubric create/list are nested under `/api/v1/projects/{projectPublicId}/rubrics`.
+  - Rubric detail/update/archive use `/api/v1/rubrics/{rubricPublicId}`; `DELETE` soft-archives with status `ARCHIVED`.
+  - Version create/list are nested under `/api/v1/rubrics/{rubricPublicId}/versions`.
+  - Version detail/update use `/api/v1/rubric-versions/{rubricVersionPublicId}`.
+  - Criteria create/list are nested under `/api/v1/rubric-versions/{rubricVersionPublicId}/criteria`.
+  - Criteria update/delete use `/api/v1/rubric-criteria/{criterionPublicId}`.
+  - Rubric access is owner-scoped by authenticated username/email through `createdBy`.
+  - Version numbers are server-managed and auto-increment from the latest version.
+  - Rubric `currentVersion` starts as `null`; publishing a draft version sets `publishedAt` and the rubric `currentVersion`.
+  - Publishing requires at least one criterion and total criterion weight exactly `1.0000`.
+  - Published/archived versions are immutable for criteria create/update/delete; archived rubrics reject version/criteria mutation.
+  - `metricKey` is unique per rubric version and must be lowercase letters/numbers/underscores.
 
 Known current gaps:
 - Connector secrets are not persisted in a real encrypted secret store yet; placeholder resolution for real outbound auth secrets is future work.
 - OAuth persistence/linking remains incomplete.
 - Connector response extraction only supports the current simple selector path used by tests.
-- Long-running evaluation, rubric, run/job, result/review, and export APIs are still future slices.
+- Long-running evaluation run/job, result/review, and export APIs are still future slices.
 
 Future product direction from docs:
 - MVP flow: Login -> Project -> Dynamic Target API Connector -> Requirement -> Dataset/Test Cases -> Rubric/Criteria -> Evaluation Run/Job -> Results -> QC Review -> Export.
@@ -122,4 +135,6 @@ Focused tests:
   `rtk bash mvnw -Dtest=RequirementControllerTest,RequirementServiceImplTest,RequirementMapperTest test`
 - Dataset/test case focused suite:
   `rtk bash mvnw -Dtest=DatasetControllerTest,DatasetServiceImplTest,DatasetMapperTest,TestCaseControllerTest,TestCaseServiceImplTest,TestCaseMapperTest test`
+- Rubric focused suite:
+  `rtk bash mvnw -Dtest=RubricControllerTest,RubricServiceImplTest,RubricMapperTest,RubricVersionControllerTest,RubricVersionServiceImplTest,RubricCriterionControllerTest,RubricCriterionServiceImplTest test`
 - Public controller tests should cover HTTP status, JSON body, Problem Details validation errors, cookies/headers, and service delegation.
