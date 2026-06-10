@@ -27,6 +27,7 @@ Current implemented auth state:
 - `POST /api/v1/auth/logout` clears `refresh_token` with `Max-Age=0`; no token store/revocation exists yet.
 - Protected APIs use `Authorization: Bearer ...`; CSRF is disabled.
 - Main `JwtDecoder` accepts only JWTs with `token_type=access`; a named `refreshTokenJwtDecoder` accepts only `token_type=refresh`.
+- The access `JwtDecoder` is `@Primary`; keep the refresh decoder named/qualified so Spring Security uses access tokens for protected APIs while refresh-token flow uses refresh tokens.
 - Register creates `PENDING_EMAIL_VERIFICATION` users and emails `${WEB_BASE_URL}/verify-email?token=...`.
 - Forgot password emails `${WEB_BASE_URL}/reset-password?token=...`; the request must not reveal account existence.
 
@@ -43,11 +44,29 @@ Domain choices in current code:
 - `User` uses Lombok builder/defaults; register currently builds users with `User.builder()`.
 
 Persistence now vs target:
-- Current Flyway has `V1__enable_extensions.sql` and `V2__create_users.sql`.
-- `V2__create_users.sql` includes `users`, `email_verification_tokens`, and `password_reset_tokens` because migrations have not been run yet.
+- Current Flyway has `V1__enable_extensions.sql`, `V2__create_users.sql`, `V3__create_projects.sql`, and `V4__create_target_api_connectors.sql`.
+- `V2__create_users.sql` includes `users`, `email_verification_tokens`, and `password_reset_tokens`.
 - Email verification and password reset tokens are opaque raw values; only SHA-256 hashes are stored.
 - `OpaqueTokenService` owns raw token generation and hashing for one-time email tokens.
 - Future MVP docs expect main tables to use internal `BIGINT id` plus public `UUID public_id`; APIs should expose `publicId`, not internal `id`.
+
+Implemented API slices after auth:
+- `GET /api/v1/users/me`: returns the current authenticated user by principal username/email.
+- Projects under `/api/v1/projects`: create, list with optional status/search/page/sort, detail, update, archive. Project access is owner-scoped through `createdBy`; archive sets status `ARCHIVED` and `archivedAt`.
+- Public mock chatbot fallback: `POST /mock-chatbot/chat`; it is intentionally public in `SecurityConfig` so connector test-runs can call it without a JWT.
+- Target API connectors:
+  - Create/list are nested under `/api/v1/projects/{projectPublicId}/target-api-connectors`.
+  - Detail/update/test-run use `/api/v1/target-api-connectors/{connectorPublicId}` and `/test-runs`.
+  - Connector access is owner-scoped by authenticated username/email.
+  - `secretValues` are write-only. Create/update replace raw secret values in headers/body/auth config with placeholders like `{{secret:KEY}}`; responses return masked `secretRefs`, not raw secrets.
+  - Test-run renders `{{question}}`, `{{precondition}}`, and `{{metadata}}`, calls the configured API via `TargetConnectorClient`, and currently extracts `$.answer` only.
+  - `RestClient.Builder` is provided by `ApplicationConfig`; `timeoutSeconds` is accepted but not yet wired into a per-request HTTP timeout.
+
+Known current gaps:
+- Connector secrets are not persisted in a real encrypted secret store yet; placeholder resolution for real outbound auth secrets is future work.
+- OAuth persistence/linking remains incomplete.
+- Connector response extraction only supports the current simple selector path used by tests.
+- Long-running evaluation, requirement, dataset, rubric, run/job, result/review, and export APIs are still future slices.
 
 Future product direction from docs:
 - MVP flow: Login -> Project -> Dynamic Target API Connector -> Requirement -> Dataset/Test Cases -> Rubric/Criteria -> Evaluation Run/Job -> Results -> QC Review -> Export.
@@ -73,8 +92,13 @@ API conventions:
 - Prefer feature-first packages: `<feature>/controller`, `service`, `service/impl`, `repository`, `entity`, `mapper`, `request`, `response`.
 
 Focused tests:
+- Full server suite passed on 2026-06-10 after app-context wiring fixes:
+  `rtk bash mvnw test` -> 87 tests, 0 failures/errors.
+- `ServerApplicationTests` injects dummy test properties for JWT/OAuth/Gemini/base URLs because the full context uses `dev` profile but does not load `server/.env`.
 - Existing safe server suite:
   `rtk bash mvnw -Dtest=RoleTest,UserMapperTest,UserServiceImplTest,HtmlMailTemplateRendererTest,EmailVerificationMailStrategyTest,PasswordResetMailStrategyTest,ErrorResponseTest,AuthServiceImplTest,EmailVerificationServiceImplTest,PasswordResetServiceImplTest,AuthControllerTest,JwtTokenServiceImplTest,RefreshTokenCookieFactoryTest test`
 - OAuth focused suite:
   `rtk bash mvnw -Dtest=AuthProviderTest,OAuth2UserProfileExtractorTest,OAuth2UserProfileServiceTest,ProviderAwareOAuth2UserServiceTest,GithubEmailOAuth2UserEnricherTest,OAuth2LoginSuccessHandlerTest test`
+- Project/connector/mock focused suite:
+  `rtk bash mvnw -Dtest=ProjectControllerTest,ProjectServiceImplTest,ProjectMapperTest,MockChatbotControllerTest,MockChatbotServiceImplTest,TargetApiConnectorControllerTest,TargetApiConnectorServiceImplTest,TargetApiConnectorMapperTest test`
 - Public controller tests should cover HTTP status, JSON body, Problem Details validation errors, cookies/headers, and service delegation.
