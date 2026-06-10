@@ -46,7 +46,7 @@ Domain choices in current code:
 Persistence now vs target:
 - Current Flyway is intentionally squashed into one initial migration: `V1__init_schema.sql`.
 - The old incremental migrations (`V1__enable_extensions.sql` through `V5__create_business_requirements.sql`) were merged because product/Flyway has not been run yet and the current database is empty.
-- `V1__init_schema.sql` creates `pgcrypto`, `users`, `email_verification_tokens`, `password_reset_tokens`, `projects`, `target_api_connectors`, and `business_requirements`.
+- `V1__init_schema.sql` creates `pgcrypto`, `users`, `email_verification_tokens`, `password_reset_tokens`, `projects`, `target_api_connectors`, `business_requirements`, `datasets`, and `test_cases`.
 - Email verification and password reset tokens are opaque raw values; only SHA-256 hashes are stored.
 - `OpaqueTokenService` owns raw token generation and hashing for one-time email tokens.
 - Future MVP docs expect main tables to use internal `BIGINT id` plus public `UUID public_id`; APIs should expose `publicId`, not internal `id`.
@@ -69,12 +69,21 @@ Implemented API slices after auth:
   - `content` is stored trimmed, `version` starts at `1`, and `PATCH` increments `version` only when content changes.
   - `status` supports `ACTIVE` and `ARCHIVED`; use `PATCH status=ARCHIVED` instead of a separate archive endpoint for now.
   - `RequirementServiceImpl` logs each API operation with public IDs/user IDs and never logs raw requirement content.
+- Datasets and test cases:
+  - Dataset create/list are nested under `/api/v1/projects/{projectPublicId}/datasets`.
+  - Dataset detail/update use `/api/v1/datasets/{datasetPublicId}`.
+  - Test case create/list are nested under `/api/v1/datasets/{datasetPublicId}/test-cases`.
+  - Test case update/delete use `/api/v1/test-cases/{testCasePublicId}`.
+  - Dataset/test case access is owner-scoped by authenticated username/email through `createdBy`.
+  - Datasets support `DRAFT`, `APPROVED`, and `ARCHIVED`; approving requires 1-100 active test cases.
+  - Test cases support `ACTIVE` and `INACTIVE`; `DELETE` hard-deletes a test case per current API contract.
+  - Archived datasets reject test case create/update/delete.
 
 Known current gaps:
 - Connector secrets are not persisted in a real encrypted secret store yet; placeholder resolution for real outbound auth secrets is future work.
 - OAuth persistence/linking remains incomplete.
 - Connector response extraction only supports the current simple selector path used by tests.
-- Long-running evaluation, dataset, rubric, run/job, result/review, and export APIs are still future slices.
+- Long-running evaluation, rubric, run/job, result/review, and export APIs are still future slices.
 
 Future product direction from docs:
 - MVP flow: Login -> Project -> Dynamic Target API Connector -> Requirement -> Dataset/Test Cases -> Rubric/Criteria -> Evaluation Run/Job -> Results -> QC Review -> Export.
@@ -111,4 +120,6 @@ Focused tests:
   `rtk bash mvnw -Dtest=ProjectControllerTest,ProjectServiceImplTest,ProjectMapperTest,MockChatbotControllerTest,MockChatbotServiceImplTest,TargetApiConnectorControllerTest,TargetApiConnectorServiceImplTest,TargetApiConnectorMapperTest test`
 - Requirement focused suite:
   `rtk bash mvnw -Dtest=RequirementControllerTest,RequirementServiceImplTest,RequirementMapperTest test`
+- Dataset/test case focused suite:
+  `rtk bash mvnw -Dtest=DatasetControllerTest,DatasetServiceImplTest,DatasetMapperTest,TestCaseControllerTest,TestCaseServiceImplTest,TestCaseMapperTest test`
 - Public controller tests should cover HTTP status, JSON body, Problem Details validation errors, cookies/headers, and service delegation.

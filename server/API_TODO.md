@@ -12,6 +12,7 @@ Purpose: track API slices while keeping `CODEX_CONTEXT.md` short. Update this fi
 - Mock chatbot: public chat fallback (`POST /mock-chatbot/chat`).
 - Target API connector: create, list, detail, update, test-run.
 - Requirement: create, list, detail, update.
+- Dataset/Test Case: dataset create/list/detail/update; test case create/list/update/delete.
 
 ## In Progress
 
@@ -19,6 +20,5 @@ Purpose: track API slices while keeping `CODEX_CONTEXT.md` short. Update this fi
 
 ## Next
 
-- Dataset/Test Case API.
 - Rubric/Criteria API.
 - Evaluation run/job skeleton.
