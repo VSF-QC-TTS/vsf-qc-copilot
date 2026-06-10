@@ -4,6 +4,7 @@ import java.util.UUID;
 import me.nghlong3004.vqc.api.requirement.entity.BusinessRequirement;
 import me.nghlong3004.vqc.api.requirement.enums.RequirementStatus;
 import me.nghlong3004.vqc.api.requirement.request.CreateRequirementRequest;
+import me.nghlong3004.vqc.api.requirement.request.UpdateRequirementRequest;
 import me.nghlong3004.vqc.api.requirement.response.RequirementPageResponse;
 import me.nghlong3004.vqc.api.requirement.response.RequirementResponse;
 import org.springframework.data.domain.Pageable;
@@ -45,4 +46,15 @@ public interface RequirementService {
    * @return public {@link RequirementResponse}
    */
   RequirementResponse getRequirement(UUID requirementPublicId, String username);
+
+  /**
+   * Updates a {@link BusinessRequirement} owned by the authenticated user.
+   *
+   * @param requirementPublicId public requirement identifier
+   * @param request update requirement payload
+   * @param username authenticated username/email
+   * @return updated public {@link RequirementResponse}
+   */
+  RequirementResponse updateRequirement(
+      UUID requirementPublicId, UpdateRequirementRequest request, String username);
 }

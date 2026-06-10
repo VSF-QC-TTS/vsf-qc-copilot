@@ -13,6 +13,7 @@ import me.nghlong3004.vqc.api.requirement.enums.RequirementStatus;
 import me.nghlong3004.vqc.api.requirement.mapper.RequirementMapper;
 import me.nghlong3004.vqc.api.requirement.repository.BusinessRequirementRepository;
 import me.nghlong3004.vqc.api.requirement.request.CreateRequirementRequest;
+import me.nghlong3004.vqc.api.requirement.request.UpdateRequirementRequest;
 import me.nghlong3004.vqc.api.requirement.response.RequirementListItemResponse;
 import me.nghlong3004.vqc.api.requirement.response.RequirementPageResponse;
 import me.nghlong3004.vqc.api.requirement.response.RequirementResponse;
@@ -98,6 +99,32 @@ public class RequirementServiceImpl implements RequirementService {
         requirement.getProject().getPublicId(),
         requirement.getCreatedBy().getPublicId());
     return requirementMapper.toResponse(requirement);
+  }
+
+  @Override
+  @Transactional
+  public RequirementResponse updateRequirement(
+      UUID requirementPublicId, UpdateRequirementRequest request, String username) {
+    BusinessRequirement requirement = findRequirement(requirementPublicId, username);
+    if (request.content() != null) {
+      String nextContent = request.content().trim();
+      if (!nextContent.equals(requirement.getContent())) {
+        requirement.setContent(nextContent);
+        requirement.setVersion(requirement.getVersion() + 1);
+      }
+    }
+    if (request.status() != null) {
+      requirement.setStatus(request.status());
+    }
+    BusinessRequirement saved = businessRequirementRepository.save(requirement);
+    log.info(
+        "Updated requirement {} under project {} by user {} to status {} version {}",
+        saved.getPublicId(),
+        saved.getProject().getPublicId(),
+        saved.getCreatedBy().getPublicId(),
+        saved.getStatus(),
+        saved.getVersion());
+    return requirementMapper.toResponse(saved);
   }
 
   private BusinessRequirement findRequirement(UUID requirementPublicId, String username) {

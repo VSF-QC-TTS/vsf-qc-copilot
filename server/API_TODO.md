@@ -18,7 +18,7 @@ Purpose: track API slices while keeping `CODEX_CONTEXT.md` short. Update this fi
   - [x] Create requirement
   - [x] List requirements
   - [x] Get requirement detail
-  - [ ] Update requirement
+  - [x] Update requirement
 
 ## Next
 

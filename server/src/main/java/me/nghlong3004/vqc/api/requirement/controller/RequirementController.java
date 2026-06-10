@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import me.nghlong3004.vqc.api.exception.ErrorResponse;
 import me.nghlong3004.vqc.api.requirement.enums.RequirementStatus;
 import me.nghlong3004.vqc.api.requirement.request.CreateRequirementRequest;
+import me.nghlong3004.vqc.api.requirement.request.UpdateRequirementRequest;
 import me.nghlong3004.vqc.api.requirement.response.RequirementPageResponse;
 import me.nghlong3004.vqc.api.requirement.response.RequirementResponse;
 import me.nghlong3004.vqc.api.requirement.service.RequirementService;
@@ -23,6 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -163,5 +165,47 @@ public class RequirementController {
   public RequirementResponse getRequirement(
       @PathVariable UUID requirementPublicId, Principal principal) {
     return requirementService.getRequirement(requirementPublicId, principal.getName());
+  }
+
+  @Operation(summary = "Update requirement", description = "Updates a requirement owned by the authenticated user.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Requirement updated",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = RequirementResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Invalid request",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Authentication is required",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Requirement not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @PatchMapping(
+      value = "/api/v1/requirements/{requirementPublicId}",
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  public RequirementResponse updateRequirement(
+      @PathVariable UUID requirementPublicId,
+      @Valid @RequestBody UpdateRequirementRequest request,
+      Principal principal) {
+    return requirementService.updateRequirement(requirementPublicId, request, principal.getName());
   }
 }

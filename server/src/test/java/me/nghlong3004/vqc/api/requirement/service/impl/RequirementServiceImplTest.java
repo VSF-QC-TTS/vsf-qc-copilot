@@ -17,6 +17,7 @@ import me.nghlong3004.vqc.api.requirement.enums.RequirementStatus;
 import me.nghlong3004.vqc.api.requirement.mapper.RequirementMapper;
 import me.nghlong3004.vqc.api.requirement.repository.BusinessRequirementRepository;
 import me.nghlong3004.vqc.api.requirement.request.CreateRequirementRequest;
+import me.nghlong3004.vqc.api.requirement.request.UpdateRequirementRequest;
 import me.nghlong3004.vqc.api.requirement.response.RequirementListItemResponse;
 import me.nghlong3004.vqc.api.requirement.response.RequirementPageResponse;
 import me.nghlong3004.vqc.api.requirement.response.RequirementResponse;
@@ -239,6 +240,105 @@ class RequirementServiceImplTest {
         .isEqualTo("REQUIREMENT_NOT_FOUND");
     assertThat(requirementLookup.get().publicId()).isEqualTo(requirementPublicId);
     assertThat(requirementLookup.get().createdBy()).isSameAs(creator);
+  }
+
+  @Test
+  void updateRequirementChangesContentAndIncrementsVersion() {
+    User creator = user();
+    Project project = project(creator);
+    BusinessRequirement requirement = requirement(project, creator);
+    requirement.setVersion(3);
+    AtomicReference<BusinessRequirement> savedRequirement = new AtomicReference<>();
+    RequirementResponse mappedResponse =
+        new RequirementResponse(
+            requirement.getPublicId(),
+            project.getPublicId(),
+            "Updated requirement content.",
+            4,
+            RequirementStatus.ACTIVE,
+            requirement.getCreatedAt(),
+            requirement.getUpdatedAt());
+    RequirementServiceImpl requirementService =
+        new RequirementServiceImpl(
+            requirementRepository(
+                savedRequirement,
+                null,
+                new AtomicReference<>(),
+                Optional.of(requirement),
+                new AtomicReference<>()),
+            ignoredProjectRepository(),
+            userRepository(Optional.of(creator), new AtomicReference<>()),
+            mapper(mappedResponse));
+
+    RequirementResponse response =
+        requirementService.updateRequirement(
+            requirement.getPublicId(),
+            new UpdateRequirementRequest("  Updated requirement content.  ", null),
+            "qc.demo@example.com");
+
+    assertThat(response).isSameAs(mappedResponse);
+    assertThat(savedRequirement.get()).isSameAs(requirement);
+    assertThat(requirement.getContent()).isEqualTo("Updated requirement content.");
+    assertThat(requirement.getVersion()).isEqualTo(4);
+    assertThat(requirement.getStatus()).isEqualTo(RequirementStatus.ACTIVE);
+  }
+
+  @Test
+  void updateRequirementStatusOnlyDoesNotIncrementVersion() {
+    User creator = user();
+    Project project = project(creator);
+    BusinessRequirement requirement = requirement(project, creator);
+    requirement.setVersion(3);
+    AtomicReference<BusinessRequirement> savedRequirement = new AtomicReference<>();
+    RequirementServiceImpl requirementService =
+        new RequirementServiceImpl(
+            requirementRepository(
+                savedRequirement,
+                null,
+                new AtomicReference<>(),
+                Optional.of(requirement),
+                new AtomicReference<>()),
+            ignoredProjectRepository(),
+            userRepository(Optional.of(creator), new AtomicReference<>()),
+            new RequirementMapper());
+
+    requirementService.updateRequirement(
+        requirement.getPublicId(),
+        new UpdateRequirementRequest(null, RequirementStatus.ARCHIVED),
+        "qc.demo@example.com");
+
+    assertThat(savedRequirement.get()).isSameAs(requirement);
+    assertThat(requirement.getContent()).isEqualTo("Evaluate Apple Health step-count answers.");
+    assertThat(requirement.getVersion()).isEqualTo(3);
+    assertThat(requirement.getStatus()).isEqualTo(RequirementStatus.ARCHIVED);
+  }
+
+  @Test
+  void updateRequirementSameContentDoesNotIncrementVersion() {
+    User creator = user();
+    Project project = project(creator);
+    BusinessRequirement requirement = requirement(project, creator);
+    requirement.setVersion(3);
+    AtomicReference<BusinessRequirement> savedRequirement = new AtomicReference<>();
+    RequirementServiceImpl requirementService =
+        new RequirementServiceImpl(
+            requirementRepository(
+                savedRequirement,
+                null,
+                new AtomicReference<>(),
+                Optional.of(requirement),
+                new AtomicReference<>()),
+            ignoredProjectRepository(),
+            userRepository(Optional.of(creator), new AtomicReference<>()),
+            new RequirementMapper());
+
+    requirementService.updateRequirement(
+        requirement.getPublicId(),
+        new UpdateRequirementRequest("  Evaluate Apple Health step-count answers.  ", null),
+        "qc.demo@example.com");
+
+    assertThat(savedRequirement.get()).isSameAs(requirement);
+    assertThat(requirement.getVersion()).isEqualTo(3);
   }
 
   private BusinessRequirementRepository requirementRepository(

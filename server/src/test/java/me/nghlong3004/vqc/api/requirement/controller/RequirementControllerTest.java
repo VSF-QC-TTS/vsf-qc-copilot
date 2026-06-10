@@ -3,6 +3,7 @@ package me.nghlong3004.vqc.api.requirement.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -14,6 +15,7 @@ import java.util.UUID;
 import me.nghlong3004.vqc.api.exception.GlobalException;
 import me.nghlong3004.vqc.api.requirement.enums.RequirementStatus;
 import me.nghlong3004.vqc.api.requirement.request.CreateRequirementRequest;
+import me.nghlong3004.vqc.api.requirement.request.UpdateRequirementRequest;
 import me.nghlong3004.vqc.api.requirement.response.RequirementListItemResponse;
 import me.nghlong3004.vqc.api.requirement.response.RequirementPageResponse;
 import me.nghlong3004.vqc.api.requirement.response.RequirementResponse;
@@ -244,6 +246,88 @@ class RequirementControllerTest {
     assertThat(RecordingRequirementService.requirementPublicId).isNull();
   }
 
+  @Test
+  void updateRequirementReturnsUpdatedRequirement() throws Exception {
+    RecordingRequirementService.requirementResponse =
+        new RequirementResponse(
+            UUID.fromString("ebd7f0f0-4924-4e81-9795-d1f060bec2f2"),
+            UUID.fromString("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"),
+            "Updated requirement content.",
+            2,
+            RequirementStatus.ACTIVE,
+            OffsetDateTime.parse("2026-06-08T10:30:00Z"),
+            OffsetDateTime.parse("2026-06-08T10:40:00Z"));
+
+    mockMvc
+        .perform(
+            patch("/api/v1/requirements/ebd7f0f0-4924-4e81-9795-d1f060bec2f2")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "content": "Updated requirement content.",
+                      "status": "ACTIVE"
+                    }
+                    """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.publicId").value("ebd7f0f0-4924-4e81-9795-d1f060bec2f2"))
+        .andExpect(jsonPath("$.content").value("Updated requirement content."))
+        .andExpect(jsonPath("$.version").value(2))
+        .andExpect(jsonPath("$.status").value("ACTIVE"));
+
+    assertThat(RecordingRequirementService.requirementPublicId)
+        .isEqualTo(UUID.fromString("ebd7f0f0-4924-4e81-9795-d1f060bec2f2"));
+    assertThat(RecordingRequirementService.updateRequirementRequest.content())
+        .isEqualTo("Updated requirement content.");
+    assertThat(RecordingRequirementService.updateRequirementRequest.status())
+        .isEqualTo(RequirementStatus.ACTIVE);
+    assertThat(RecordingRequirementService.username).isEqualTo("qc.demo@example.com");
+  }
+
+  @Test
+  void updateRequirementReturnsValidationProblemDetailsForBlankContent() throws Exception {
+    mockMvc
+        .perform(
+            patch("/api/v1/requirements/ebd7f0f0-4924-4e81-9795-d1f060bec2f2")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "content": " "
+                    }
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+        .andExpect(jsonPath("$.instance").value("/api/v1/requirements/ebd7f0f0-4924-4e81-9795-d1f060bec2f2"))
+        .andExpect(jsonPath("$.errors[*].field", hasItem("content")));
+
+    assertThat(RecordingRequirementService.updateRequirementRequest).isNull();
+  }
+
+  @Test
+  void updateRequirementReturnsValidationProblemDetailsForInvalidPublicId() throws Exception {
+    mockMvc
+        .perform(
+            patch("/api/v1/requirements/not-a-uuid")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "status": "ARCHIVED"
+                    }
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+        .andExpect(jsonPath("$.instance").value("/api/v1/requirements/not-a-uuid"));
+
+    assertThat(RecordingRequirementService.updateRequirementRequest).isNull();
+  }
+
   @TestConfiguration
   static class MockBeans {
     @Bean
@@ -261,6 +345,7 @@ class RequirementControllerTest {
     private static Pageable pageable;
     private static RequirementResponse requirementResponse;
     private static RequirementPageResponse requirementPageResponse;
+    private static UpdateRequirementRequest updateRequirementRequest;
 
     private static void reset() {
       projectPublicId = null;
@@ -271,6 +356,7 @@ class RequirementControllerTest {
       pageable = null;
       requirementResponse = null;
       requirementPageResponse = null;
+      updateRequirementRequest = null;
     }
 
     @Override
@@ -295,6 +381,15 @@ class RequirementControllerTest {
     @Override
     public RequirementResponse getRequirement(UUID requirementPublicId, String username) {
       RecordingRequirementService.requirementPublicId = requirementPublicId;
+      RecordingRequirementService.username = username;
+      return requirementResponse;
+    }
+
+    @Override
+    public RequirementResponse updateRequirement(
+        UUID requirementPublicId, UpdateRequirementRequest request, String username) {
+      RecordingRequirementService.requirementPublicId = requirementPublicId;
+      RecordingRequirementService.updateRequirementRequest = request;
       RecordingRequirementService.username = username;
       return requirementResponse;
     }
