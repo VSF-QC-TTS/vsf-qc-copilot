@@ -3,6 +3,7 @@ package me.nghlong3004.vqc.api.testcase.service;
 import java.util.UUID;
 import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
 import me.nghlong3004.vqc.api.testcase.request.CreateTestCaseRequest;
+import me.nghlong3004.vqc.api.testcase.request.UpdateTestCaseRequest;
 import me.nghlong3004.vqc.api.testcase.response.TestCasePageResponse;
 import me.nghlong3004.vqc.api.testcase.response.TestCaseResponse;
 import org.springframework.data.domain.Pageable;
@@ -37,4 +38,15 @@ public interface TestCaseService {
    */
   TestCasePageResponse listTestCases(
       UUID datasetPublicId, TestCaseStatus status, Pageable pageable, String username);
+
+  /**
+   * Updates a test case owned by the authenticated user.
+   *
+   * @param testCasePublicId public test case identifier
+   * @param request update test case payload
+   * @param username authenticated principal username/email
+   * @return updated test case response
+   */
+  TestCaseResponse updateTestCase(
+      UUID testCasePublicId, UpdateTestCaseRequest request, String username);
 }

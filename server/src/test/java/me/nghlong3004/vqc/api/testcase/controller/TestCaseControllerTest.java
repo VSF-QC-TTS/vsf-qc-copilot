@@ -3,6 +3,7 @@ package me.nghlong3004.vqc.api.testcase.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -15,6 +16,7 @@ import java.util.UUID;
 import me.nghlong3004.vqc.api.exception.GlobalException;
 import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
 import me.nghlong3004.vqc.api.testcase.request.CreateTestCaseRequest;
+import me.nghlong3004.vqc.api.testcase.request.UpdateTestCaseRequest;
 import me.nghlong3004.vqc.api.testcase.response.TestCasePageResponse;
 import me.nghlong3004.vqc.api.testcase.response.TestCaseResponse;
 import me.nghlong3004.vqc.api.testcase.service.TestCaseService;
@@ -221,6 +223,79 @@ class TestCaseControllerTest {
     assertThat(RecordingTestCaseService.testCasePageResponse).isNull();
   }
 
+  @Test
+  void updateTestCaseReturnsUpdatedTestCase() throws Exception {
+    RecordingTestCaseService.testCaseResponse =
+        new TestCaseResponse(
+            UUID.fromString("b4788db3-6cf3-47df-8ae1-4c73dbb7d0a8"),
+            UUID.fromString("0f6d90c2-7410-4db2-86be-8adfd3140f63"),
+            "HEALTH_002",
+            "How many active calories today?",
+            Map.of("calories", 500),
+            "The user burned 500 active calories today.",
+            Map.of("userId", "demo-user-1"),
+            TestCaseStatus.INACTIVE,
+            2,
+            OffsetDateTime.parse("2026-06-08T10:30:00Z"),
+            OffsetDateTime.parse("2026-06-08T10:35:00Z"));
+
+    mockMvc
+        .perform(
+            patch("/api/v1/test-cases/b4788db3-6cf3-47df-8ae1-4c73dbb7d0a8")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "externalId": "HEALTH_002",
+                      "question": "How many active calories today?",
+                      "precondition": {
+                        "calories": 500
+                      },
+                      "groundTruth": "The user burned 500 active calories today.",
+                      "metadata": {
+                        "userId": "demo-user-1"
+                      },
+                      "status": "INACTIVE",
+                      "sortOrder": 2
+                    }
+                    """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.publicId").value("b4788db3-6cf3-47df-8ae1-4c73dbb7d0a8"))
+        .andExpect(jsonPath("$.externalId").value("HEALTH_002"))
+        .andExpect(jsonPath("$.question").value("How many active calories today?"))
+        .andExpect(jsonPath("$.status").value("INACTIVE"))
+        .andExpect(jsonPath("$.sortOrder").value(2));
+
+    assertThat(RecordingTestCaseService.testCasePublicId)
+        .isEqualTo(UUID.fromString("b4788db3-6cf3-47df-8ae1-4c73dbb7d0a8"));
+    assertThat(RecordingTestCaseService.updateTestCaseRequest.status())
+        .isEqualTo(TestCaseStatus.INACTIVE);
+    assertThat(RecordingTestCaseService.username).isEqualTo("qc.demo@example.com");
+  }
+
+  @Test
+  void updateTestCaseReturnsValidationProblemDetails() throws Exception {
+    mockMvc
+        .perform(
+            patch("/api/v1/test-cases/b4788db3-6cf3-47df-8ae1-4c73dbb7d0a8")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "question": " "
+                    }
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+        .andExpect(jsonPath("$.instance").value("/api/v1/test-cases/b4788db3-6cf3-47df-8ae1-4c73dbb7d0a8"))
+        .andExpect(jsonPath("$.errors[*].field", hasItem("question")));
+
+    assertThat(RecordingTestCaseService.updateTestCaseRequest).isNull();
+  }
+
   @TestConfiguration
   static class MockBeans {
 
@@ -233,7 +308,9 @@ class TestCaseControllerTest {
   static class RecordingTestCaseService implements TestCaseService {
 
     static UUID datasetPublicId;
+    static UUID testCasePublicId;
     static CreateTestCaseRequest createTestCaseRequest;
+    static UpdateTestCaseRequest updateTestCaseRequest;
     static TestCaseStatus status;
     static Pageable pageable;
     static String username;
@@ -242,7 +319,9 @@ class TestCaseControllerTest {
 
     static void reset() {
       datasetPublicId = null;
+      testCasePublicId = null;
       createTestCaseRequest = null;
+      updateTestCaseRequest = null;
       status = null;
       pageable = null;
       username = null;
@@ -267,6 +346,15 @@ class TestCaseControllerTest {
       RecordingTestCaseService.pageable = pageable;
       RecordingTestCaseService.username = username;
       return testCasePageResponse;
+    }
+
+    @Override
+    public TestCaseResponse updateTestCase(
+        UUID testCasePublicId, UpdateTestCaseRequest request, String username) {
+      RecordingTestCaseService.testCasePublicId = testCasePublicId;
+      RecordingTestCaseService.updateTestCaseRequest = request;
+      RecordingTestCaseService.username = username;
+      return testCaseResponse;
     }
   }
 }

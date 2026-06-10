@@ -1,8 +1,11 @@
 package me.nghlong3004.vqc.api.testcase.repository;
 
+import java.util.Optional;
+import java.util.UUID;
 import me.nghlong3004.vqc.api.dataset.entity.Dataset;
 import me.nghlong3004.vqc.api.testcase.entity.TestCase;
 import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
+import me.nghlong3004.vqc.api.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -41,4 +44,13 @@ public interface TestCaseRepository extends JpaRepository<TestCase, Long> {
    */
   Page<TestCase> findByDatasetAndStatus(
       Dataset dataset, TestCaseStatus status, Pageable pageable);
+
+  /**
+   * Finds a test case by public id and dataset creator.
+   *
+   * @param publicId public test case identifier
+   * @param createdBy dataset creator {@link User}
+   * @return {@link Optional} containing the matching {@link TestCase} when present
+   */
+  Optional<TestCase> findByPublicIdAndDatasetCreatedBy(UUID publicId, User createdBy);
 }

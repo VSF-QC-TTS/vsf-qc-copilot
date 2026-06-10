@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import me.nghlong3004.vqc.api.exception.ErrorResponse;
 import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
 import me.nghlong3004.vqc.api.testcase.request.CreateTestCaseRequest;
+import me.nghlong3004.vqc.api.testcase.request.UpdateTestCaseRequest;
 import me.nghlong3004.vqc.api.testcase.response.TestCasePageResponse;
 import me.nghlong3004.vqc.api.testcase.response.TestCaseResponse;
 import me.nghlong3004.vqc.api.testcase.service.TestCaseService;
@@ -23,6 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -124,5 +126,47 @@ public class TestCaseController {
           Pageable pageable,
       Principal principal) {
     return testCaseService.listTestCases(datasetPublicId, status, pageable, principal.getName());
+  }
+
+  @Operation(summary = "Update test case", description = "Updates a test case owned by the authenticated user.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Test case updated",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = TestCaseResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Invalid request",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Authentication is required",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Test case not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @PatchMapping(
+      value = "/api/v1/test-cases/{testCasePublicId}",
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  public TestCaseResponse updateTestCase(
+      @PathVariable UUID testCasePublicId,
+      @Valid @RequestBody UpdateTestCaseRequest request,
+      Principal principal) {
+    return testCaseService.updateTestCase(testCasePublicId, request, principal.getName());
   }
 }

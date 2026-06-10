@@ -21,6 +21,7 @@ import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
 import me.nghlong3004.vqc.api.testcase.mapper.TestCaseMapper;
 import me.nghlong3004.vqc.api.testcase.repository.TestCaseRepository;
 import me.nghlong3004.vqc.api.testcase.request.CreateTestCaseRequest;
+import me.nghlong3004.vqc.api.testcase.request.UpdateTestCaseRequest;
 import me.nghlong3004.vqc.api.testcase.response.TestCasePageResponse;
 import me.nghlong3004.vqc.api.testcase.response.TestCaseResponse;
 import me.nghlong3004.vqc.api.user.entity.User;
@@ -194,6 +195,109 @@ class TestCaseServiceImplTest {
     assertThat(testCaseQuery.get().status()).isNull();
   }
 
+  @Test
+  void updateTestCaseChangesEditableFields() {
+    User creator = user();
+    Dataset dataset = dataset(project(creator), creator, DatasetStatus.DRAFT);
+    TestCase testCase = testCase(dataset);
+    AtomicReference<TestCase> savedTestCase = new AtomicReference<>();
+    AtomicReference<TestCaseLookup> testCaseLookup = new AtomicReference<>();
+    TestCaseServiceImpl testCaseService =
+        new TestCaseServiceImpl(
+            testCaseRepository(
+                savedTestCase,
+                null,
+                new AtomicReference<>(),
+                Optional.of(testCase),
+                testCaseLookup),
+            ignoredDatasetRepository(),
+            userRepository(Optional.of(creator)),
+            new TestCaseMapper());
+
+    TestCaseResponse response =
+        testCaseService.updateTestCase(
+            testCase.getPublicId(),
+            new UpdateTestCaseRequest(
+                "  HEALTH_002  ",
+                "  How many active calories today?  ",
+                Map.of("calories", 500),
+                "  The user burned 500 active calories today.  ",
+                Map.of("userId", "demo-user-2"),
+                TestCaseStatus.INACTIVE,
+                2),
+            "qc.demo@example.com");
+
+    assertThat(testCaseLookup.get().publicId()).isEqualTo(testCase.getPublicId());
+    assertThat(testCaseLookup.get().createdBy()).isSameAs(creator);
+    assertThat(savedTestCase.get()).isSameAs(testCase);
+    assertThat(testCase.getExternalId()).isEqualTo("HEALTH_002");
+    assertThat(testCase.getQuestion()).isEqualTo("How many active calories today?");
+    assertThat(testCase.getPrecondition()).containsEntry("calories", 500);
+    assertThat(testCase.getGroundTruth()).isEqualTo("The user burned 500 active calories today.");
+    assertThat(testCase.getMetadata()).containsEntry("userId", "demo-user-2");
+    assertThat(testCase.getStatus()).isEqualTo(TestCaseStatus.INACTIVE);
+    assertThat(testCase.getSortOrder()).isEqualTo(2);
+    assertThat(response.status()).isEqualTo(TestCaseStatus.INACTIVE);
+  }
+
+  @Test
+  void updateTestCaseRejectsMissingTestCase() {
+    User creator = user();
+    AtomicReference<TestCaseLookup> testCaseLookup = new AtomicReference<>();
+    TestCaseServiceImpl testCaseService =
+        new TestCaseServiceImpl(
+            testCaseRepository(
+                new AtomicReference<>(),
+                null,
+                new AtomicReference<>(),
+                Optional.empty(),
+                testCaseLookup),
+            ignoredDatasetRepository(),
+            userRepository(Optional.of(creator)),
+            new TestCaseMapper());
+    UUID testCasePublicId = UUID.randomUUID();
+
+    assertThatThrownBy(
+            () ->
+                testCaseService.updateTestCase(
+                    testCasePublicId,
+                    new UpdateTestCaseRequest(null, "Question?", null, null, null, null, null),
+                    "qc.demo@example.com"))
+        .isInstanceOf(ResourceException.class)
+        .extracting(error -> ((ResourceException) error).getResponse().code())
+        .isEqualTo("TEST_CASE_NOT_FOUND");
+    assertThat(testCaseLookup.get().publicId()).isEqualTo(testCasePublicId);
+    assertThat(testCaseLookup.get().createdBy()).isSameAs(creator);
+  }
+
+  @Test
+  void updateTestCaseRejectsArchivedDataset() {
+    User creator = user();
+    Dataset dataset = dataset(project(creator), creator, DatasetStatus.ARCHIVED);
+    TestCase testCase = testCase(dataset);
+    TestCaseServiceImpl testCaseService =
+        new TestCaseServiceImpl(
+            testCaseRepository(
+                new AtomicReference<>(),
+                null,
+                new AtomicReference<>(),
+                Optional.of(testCase),
+                new AtomicReference<>()),
+            ignoredDatasetRepository(),
+            userRepository(Optional.of(creator)),
+            new TestCaseMapper());
+
+    assertThatThrownBy(
+            () ->
+                testCaseService.updateTestCase(
+                    testCase.getPublicId(),
+                    new UpdateTestCaseRequest(null, "Question?", null, null, null, null, null),
+                    "qc.demo@example.com"))
+        .isInstanceOf(ResourceException.class)
+        .extracting(error -> ((ResourceException) error).getResponse().code())
+        .isEqualTo("DATASET_ARCHIVED");
+  }
+
   private TestCaseRepository testCaseRepository(AtomicReference<TestCase> savedTestCase) {
     return testCaseRepository(savedTestCase, null, new AtomicReference<>());
   }
@@ -202,6 +306,16 @@ class TestCaseServiceImplTest {
       AtomicReference<TestCase> savedTestCase,
       PageImpl<TestCase> testCasePage,
       AtomicReference<TestCaseQuery> testCaseQuery) {
+    return testCaseRepository(
+        savedTestCase, testCasePage, testCaseQuery, Optional.empty(), new AtomicReference<>());
+  }
+
+  private TestCaseRepository testCaseRepository(
+      AtomicReference<TestCase> savedTestCase,
+      PageImpl<TestCase> testCasePage,
+      AtomicReference<TestCaseQuery> testCaseQuery,
+      Optional<TestCase> testCaseLookupResult,
+      AtomicReference<TestCaseLookup> testCaseLookup) {
     return proxy(
         TestCaseRepository.class,
         (proxy, method, args) -> {
@@ -217,6 +331,10 @@ class TestCaseServiceImplTest {
           if ("findByDatasetAndStatus".equals(method.getName())) {
             testCaseQuery.set(new TestCaseQuery((Dataset) args[0], (TestCaseStatus) args[1]));
             return testCasePage;
+          }
+          if ("findByPublicIdAndDatasetCreatedBy".equals(method.getName())) {
+            testCaseLookup.set(new TestCaseLookup((UUID) args[0], (User) args[1]));
+            return testCaseLookupResult;
           }
           throw new UnsupportedOperationException(method.getName());
         });
@@ -317,4 +435,6 @@ class TestCaseServiceImplTest {
   private record DatasetLookup(UUID publicId, User createdBy) {}
 
   private record TestCaseQuery(Dataset dataset, TestCaseStatus status) {}
+
+  private record TestCaseLookup(UUID publicId, User createdBy) {}
 }
