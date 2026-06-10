@@ -85,7 +85,7 @@ public class DatasetServiceImpl implements DatasetService {
             : datasetRepository.findByProjectAndStatus(project, status, pageable);
     List<DatasetListItemResponse> items =
         datasets.getContent().stream()
-            .map(dataset -> datasetMapper.toListItemResponse(dataset, 0))
+            .map(dataset -> datasetMapper.toListItemResponse(dataset, countActiveCases(dataset)))
             .toList();
     log.info(
         "Listed datasets for project {} by user {} with status {} page {} size {}",
@@ -111,7 +111,7 @@ public class DatasetServiceImpl implements DatasetService {
         dataset.getPublicId(),
         dataset.getProject().getPublicId(),
         dataset.getCreatedBy().getPublicId());
-    return datasetMapper.toResponse(dataset, 0);
+    return datasetMapper.toResponse(dataset, countActiveCases(dataset));
   }
 
   @Override

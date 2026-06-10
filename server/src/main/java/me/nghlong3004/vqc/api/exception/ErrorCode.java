@@ -95,6 +95,14 @@ public enum ErrorCode {
       422,
       "DATASET_APPROVAL_INVALID",
       "Dataset cannot be approved with the current test case count."),
+  DATASET_ARCHIVED(
+      HttpStatus.CONFLICT.value(),
+      "DATASET_ARCHIVED",
+      "Archived dataset cannot be modified."),
+  TEST_CASE_NOT_FOUND(
+      HttpStatus.NOT_FOUND.value(),
+      "TEST_CASE_NOT_FOUND",
+      "No test case found with the provided ID."),
 
   // ── User Administration ──
   CANNOT_DELETE_SELF(
