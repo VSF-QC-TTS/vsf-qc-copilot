@@ -201,6 +201,49 @@ class RequirementControllerTest {
     assertThat(RecordingRequirementService.requirementPageResponse).isNull();
   }
 
+  @Test
+  void getRequirementReturnsRequirementDetail() throws Exception {
+    RecordingRequirementService.requirementResponse =
+        new RequirementResponse(
+            UUID.fromString("ebd7f0f0-4924-4e81-9795-d1f060bec2f2"),
+            UUID.fromString("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"),
+            "Evaluate Apple Health step-count answers.",
+            1,
+            RequirementStatus.ACTIVE,
+            OffsetDateTime.parse("2026-06-08T10:30:00Z"),
+            OffsetDateTime.parse("2026-06-08T10:35:00Z"));
+
+    mockMvc
+        .perform(
+            get("/api/v1/requirements/ebd7f0f0-4924-4e81-9795-d1f060bec2f2")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.publicId").value("ebd7f0f0-4924-4e81-9795-d1f060bec2f2"))
+        .andExpect(
+            jsonPath("$.projectPublicId").value("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"))
+        .andExpect(jsonPath("$.content").value("Evaluate Apple Health step-count answers."))
+        .andExpect(jsonPath("$.version").value(1))
+        .andExpect(jsonPath("$.status").value("ACTIVE"));
+
+    assertThat(RecordingRequirementService.requirementPublicId)
+        .isEqualTo(UUID.fromString("ebd7f0f0-4924-4e81-9795-d1f060bec2f2"));
+    assertThat(RecordingRequirementService.username).isEqualTo("qc.demo@example.com");
+  }
+
+  @Test
+  void getRequirementReturnsValidationProblemDetailsForInvalidPublicId() throws Exception {
+    mockMvc
+        .perform(
+            get("/api/v1/requirements/not-a-uuid")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null)))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+        .andExpect(jsonPath("$.instance").value("/api/v1/requirements/not-a-uuid"));
+
+    assertThat(RecordingRequirementService.requirementPublicId).isNull();
+  }
+
   @TestConfiguration
   static class MockBeans {
     @Bean
@@ -211,6 +254,7 @@ class RequirementControllerTest {
 
   private static class RecordingRequirementService implements RequirementService {
     private static UUID projectPublicId;
+    private static UUID requirementPublicId;
     private static CreateRequirementRequest createRequirementRequest;
     private static String username;
     private static RequirementStatus status;
@@ -220,6 +264,7 @@ class RequirementControllerTest {
 
     private static void reset() {
       projectPublicId = null;
+      requirementPublicId = null;
       createRequirementRequest = null;
       username = null;
       status = null;
@@ -245,6 +290,13 @@ class RequirementControllerTest {
       RecordingRequirementService.pageable = pageable;
       RecordingRequirementService.username = username;
       return requirementPageResponse;
+    }
+
+    @Override
+    public RequirementResponse getRequirement(UUID requirementPublicId, String username) {
+      RecordingRequirementService.requirementPublicId = requirementPublicId;
+      RecordingRequirementService.username = username;
+      return requirementResponse;
     }
   }
 }

@@ -1,8 +1,11 @@
 package me.nghlong3004.vqc.api.requirement.repository;
 
+import java.util.Optional;
+import java.util.UUID;
 import me.nghlong3004.vqc.api.project.entity.Project;
 import me.nghlong3004.vqc.api.requirement.entity.BusinessRequirement;
 import me.nghlong3004.vqc.api.requirement.enums.RequirementStatus;
+import me.nghlong3004.vqc.api.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -32,4 +35,13 @@ public interface BusinessRequirementRepository extends JpaRepository<BusinessReq
    */
   Page<BusinessRequirement> findByProjectAndStatus(
       Project project, RequirementStatus status, Pageable pageable);
+
+  /**
+   * Finds a requirement by public id and creator.
+   *
+   * @param publicId public requirement identifier
+   * @param createdBy creator {@link User}
+   * @return {@link Optional} containing the matching {@link BusinessRequirement} when present
+   */
+  Optional<BusinessRequirement> findByPublicIdAndCreatedBy(UUID publicId, User createdBy);
 }

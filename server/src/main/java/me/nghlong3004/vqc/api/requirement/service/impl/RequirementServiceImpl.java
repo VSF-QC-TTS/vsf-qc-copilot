@@ -88,6 +88,25 @@ public class RequirementServiceImpl implements RequirementService {
         requirements.getTotalPages());
   }
 
+  @Override
+  @Transactional(readOnly = true)
+  public RequirementResponse getRequirement(UUID requirementPublicId, String username) {
+    BusinessRequirement requirement = findRequirement(requirementPublicId, username);
+    log.info(
+        "Loaded requirement {} under project {} by user {}",
+        requirement.getPublicId(),
+        requirement.getProject().getPublicId(),
+        requirement.getCreatedBy().getPublicId());
+    return requirementMapper.toResponse(requirement);
+  }
+
+  private BusinessRequirement findRequirement(UUID requirementPublicId, String username) {
+    User creator = findCreator(username);
+    return businessRequirementRepository
+        .findByPublicIdAndCreatedBy(requirementPublicId, creator)
+        .orElseThrow(() -> new ResourceException(ErrorCode.REQUIREMENT_NOT_FOUND));
+  }
+
   private Project findProject(UUID projectPublicId, User creator) {
     return projectRepository
         .findByPublicIdAndCreatedBy(projectPublicId, creator)

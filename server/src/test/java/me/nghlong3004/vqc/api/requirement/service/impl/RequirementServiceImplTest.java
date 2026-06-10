@@ -180,6 +180,67 @@ class RequirementServiceImplTest {
     assertThat(requirementQuery.get().status()).isNull();
   }
 
+  @Test
+  void getRequirementLoadsOwnerScopedRequirement() {
+    User creator = user();
+    Project project = project(creator);
+    BusinessRequirement requirement = requirement(project, creator);
+    AtomicReference<RequirementLookup> requirementLookup = new AtomicReference<>();
+    RequirementResponse mappedResponse =
+        new RequirementResponse(
+            requirement.getPublicId(),
+            project.getPublicId(),
+            requirement.getContent(),
+            requirement.getVersion(),
+            requirement.getStatus(),
+            requirement.getCreatedAt(),
+            requirement.getUpdatedAt());
+    RequirementServiceImpl requirementService =
+        new RequirementServiceImpl(
+            requirementRepository(
+                new AtomicReference<>(),
+                null,
+                new AtomicReference<>(),
+                Optional.of(requirement),
+                requirementLookup),
+            ignoredProjectRepository(),
+            userRepository(Optional.of(creator), new AtomicReference<>()),
+            mapper(mappedResponse));
+
+    RequirementResponse response =
+        requirementService.getRequirement(requirement.getPublicId(), "  QC.Demo@Example.COM  ");
+
+    assertThat(response).isSameAs(mappedResponse);
+    assertThat(requirementLookup.get().publicId()).isEqualTo(requirement.getPublicId());
+    assertThat(requirementLookup.get().createdBy()).isSameAs(creator);
+  }
+
+  @Test
+  void getRequirementRejectsMissingRequirement() {
+    User creator = user();
+    AtomicReference<RequirementLookup> requirementLookup = new AtomicReference<>();
+    RequirementServiceImpl requirementService =
+        new RequirementServiceImpl(
+            requirementRepository(
+                new AtomicReference<>(),
+                null,
+                new AtomicReference<>(),
+                Optional.empty(),
+                requirementLookup),
+            ignoredProjectRepository(),
+            userRepository(Optional.of(creator), new AtomicReference<>()),
+            new RequirementMapper());
+    UUID requirementPublicId = UUID.randomUUID();
+
+    assertThatThrownBy(
+            () -> requirementService.getRequirement(requirementPublicId, "qc.demo@example.com"))
+        .isInstanceOf(ResourceException.class)
+        .extracting(error -> ((ResourceException) error).getResponse().code())
+        .isEqualTo("REQUIREMENT_NOT_FOUND");
+    assertThat(requirementLookup.get().publicId()).isEqualTo(requirementPublicId);
+    assertThat(requirementLookup.get().createdBy()).isSameAs(creator);
+  }
+
   private BusinessRequirementRepository requirementRepository(
       AtomicReference<BusinessRequirement> savedRequirement) {
     return requirementRepository(savedRequirement, null, new AtomicReference<>());
@@ -189,6 +250,16 @@ class RequirementServiceImplTest {
       AtomicReference<BusinessRequirement> savedRequirement,
       PageImpl<BusinessRequirement> requirementPage,
       AtomicReference<RequirementQuery> requirementQuery) {
+    return requirementRepository(
+        savedRequirement, requirementPage, requirementQuery, Optional.empty(), new AtomicReference<>());
+  }
+
+  private BusinessRequirementRepository requirementRepository(
+      AtomicReference<BusinessRequirement> savedRequirement,
+      PageImpl<BusinessRequirement> requirementPage,
+      AtomicReference<RequirementQuery> requirementQuery,
+      Optional<BusinessRequirement> foundRequirement,
+      AtomicReference<RequirementLookup> requirementLookup) {
     return (BusinessRequirementRepository)
         Proxy.newProxyInstance(
             BusinessRequirementRepository.class.getClassLoader(),
@@ -205,6 +276,10 @@ class RequirementServiceImplTest {
               if ("findByProjectAndStatus".equals(method.getName())) {
                 requirementQuery.set(new RequirementQuery((Project) args[0], (RequirementStatus) args[1]));
                 return requirementPage;
+              }
+              if ("findByPublicIdAndCreatedBy".equals(method.getName())) {
+                requirementLookup.set(new RequirementLookup((UUID) args[0], (User) args[1]));
+                return foundRequirement;
               }
               if ("toString".equals(method.getName())) {
                 return "BusinessRequirementRepositoryTestDouble";
@@ -310,4 +385,6 @@ class RequirementServiceImplTest {
   private record ProjectLookup(UUID publicId, User createdBy) {}
 
   private record RequirementQuery(Project project, RequirementStatus status) {}
+
+  private record RequirementLookup(UUID publicId, User createdBy) {}
 }

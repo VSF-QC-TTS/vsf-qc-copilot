@@ -36,4 +36,13 @@ public interface RequirementService {
    */
   RequirementPageResponse listRequirements(
       UUID projectPublicId, RequirementStatus status, Pageable pageable, String username);
+
+  /**
+   * Returns a {@link BusinessRequirement} owned by the authenticated user.
+   *
+   * @param requirementPublicId public requirement identifier
+   * @param username authenticated username/email
+   * @return public {@link RequirementResponse}
+   */
+  RequirementResponse getRequirement(UUID requirementPublicId, String username);
 }

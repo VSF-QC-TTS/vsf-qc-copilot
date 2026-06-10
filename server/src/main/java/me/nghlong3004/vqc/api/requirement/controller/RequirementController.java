@@ -125,4 +125,43 @@ public class RequirementController {
       Principal principal) {
     return requirementService.listRequirements(projectPublicId, status, pageable, principal.getName());
   }
+
+  @Operation(summary = "Get requirement detail", description = "Returns a requirement owned by the authenticated user.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Requirement detail",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = RequirementResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Invalid requirement identifier",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Authentication is required",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Requirement not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @GetMapping(
+      value = "/api/v1/requirements/{requirementPublicId}",
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  public RequirementResponse getRequirement(
+      @PathVariable UUID requirementPublicId, Principal principal) {
+    return requirementService.getRequirement(requirementPublicId, principal.getName());
+  }
 }

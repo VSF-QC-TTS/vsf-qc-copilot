@@ -83,6 +83,10 @@ public enum ErrorCode {
       HttpStatus.NOT_FOUND.value(),
       "TARGET_CONNECTOR_NOT_FOUND",
       "No target connector found with the provided ID."),
+  REQUIREMENT_NOT_FOUND(
+      HttpStatus.NOT_FOUND.value(),
+      "REQUIREMENT_NOT_FOUND",
+      "No requirement found with the provided ID."),
 
   // ── User Administration ──
   CANNOT_DELETE_SELF(
