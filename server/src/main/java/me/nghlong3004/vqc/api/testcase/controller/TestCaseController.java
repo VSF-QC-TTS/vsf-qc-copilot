@@ -11,13 +11,20 @@ import java.security.Principal;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import me.nghlong3004.vqc.api.exception.ErrorResponse;
+import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
 import me.nghlong3004.vqc.api.testcase.request.CreateTestCaseRequest;
+import me.nghlong3004.vqc.api.testcase.response.TestCasePageResponse;
 import me.nghlong3004.vqc.api.testcase.response.TestCaseResponse;
 import me.nghlong3004.vqc.api.testcase.service.TestCaseService;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -74,5 +81,48 @@ public class TestCaseController {
       @Valid @RequestBody CreateTestCaseRequest request,
       Principal principal) {
     return testCaseService.createTestCase(datasetPublicId, request, principal.getName());
+  }
+
+  @Operation(summary = "List test cases", description = "Lists test cases under a dataset.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Test case page",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = TestCasePageResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Invalid dataset identifier, status, or pagination request",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Authentication is required",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Dataset not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @GetMapping(
+      value = "/api/v1/datasets/{datasetPublicId}/test-cases",
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  public TestCasePageResponse listTestCases(
+      @PathVariable UUID datasetPublicId,
+      @RequestParam(required = false) TestCaseStatus status,
+      @PageableDefault(size = 100, sort = "sortOrder", direction = Sort.Direction.ASC)
+          Pageable pageable,
+      Principal principal) {
+    return testCaseService.listTestCases(datasetPublicId, status, pageable, principal.getName());
   }
 }

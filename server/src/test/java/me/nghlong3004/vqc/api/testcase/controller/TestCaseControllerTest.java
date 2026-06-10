@@ -2,17 +2,20 @@ package me.nghlong3004.vqc.api.testcase.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import me.nghlong3004.vqc.api.exception.GlobalException;
 import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
 import me.nghlong3004.vqc.api.testcase.request.CreateTestCaseRequest;
+import me.nghlong3004.vqc.api.testcase.response.TestCasePageResponse;
 import me.nghlong3004.vqc.api.testcase.response.TestCaseResponse;
 import me.nghlong3004.vqc.api.testcase.service.TestCaseService;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +28,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.test.web.servlet.MockMvc;
@@ -152,6 +156,71 @@ class TestCaseControllerTest {
     assertThat(RecordingTestCaseService.createTestCaseRequest).isNull();
   }
 
+  @Test
+  void listTestCasesReturnsTestCasePage() throws Exception {
+    RecordingTestCaseService.testCasePageResponse =
+        new TestCasePageResponse(
+            List.of(
+                new TestCaseResponse(
+                    UUID.fromString("b4788db3-6cf3-47df-8ae1-4c73dbb7d0a8"),
+                    UUID.fromString("0f6d90c2-7410-4db2-86be-8adfd3140f63"),
+                    "HEALTH_001",
+                    "How many steps did I walk today?",
+                    Map.of("steps", 8200),
+                    "The user walked 8,200 steps today.",
+                    Map.of("userId", "demo-user-1"),
+                    TestCaseStatus.ACTIVE,
+                    1,
+                    OffsetDateTime.parse("2026-06-08T10:30:00Z"),
+                    OffsetDateTime.parse("2026-06-08T10:30:00Z"))),
+            0,
+            100,
+            1,
+            1);
+
+    mockMvc
+        .perform(
+            get("/api/v1/datasets/0f6d90c2-7410-4db2-86be-8adfd3140f63/test-cases")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .queryParam("status", "ACTIVE")
+                .queryParam("page", "0")
+                .queryParam("size", "100"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[0].publicId").value("b4788db3-6cf3-47df-8ae1-4c73dbb7d0a8"))
+        .andExpect(
+            jsonPath("$.items[0].datasetPublicId")
+                .value("0f6d90c2-7410-4db2-86be-8adfd3140f63"))
+        .andExpect(jsonPath("$.items[0].externalId").value("HEALTH_001"))
+        .andExpect(jsonPath("$.items[0].status").value("ACTIVE"))
+        .andExpect(jsonPath("$.page").value(0))
+        .andExpect(jsonPath("$.size").value(100))
+        .andExpect(jsonPath("$.totalItems").value(1))
+        .andExpect(jsonPath("$.totalPages").value(1));
+
+    assertThat(RecordingTestCaseService.datasetPublicId)
+        .isEqualTo(UUID.fromString("0f6d90c2-7410-4db2-86be-8adfd3140f63"));
+    assertThat(RecordingTestCaseService.status).isEqualTo(TestCaseStatus.ACTIVE);
+    assertThat(RecordingTestCaseService.pageable.getPageSize()).isEqualTo(100);
+    assertThat(RecordingTestCaseService.username).isEqualTo("qc.demo@example.com");
+  }
+
+  @Test
+  void listTestCasesReturnsValidationProblemDetailsForInvalidStatus() throws Exception {
+    mockMvc
+        .perform(
+            get("/api/v1/datasets/0f6d90c2-7410-4db2-86be-8adfd3140f63/test-cases")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .queryParam("status", "UNKNOWN"))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+        .andExpect(
+            jsonPath("$.instance")
+                .value("/api/v1/datasets/0f6d90c2-7410-4db2-86be-8adfd3140f63/test-cases"));
+
+    assertThat(RecordingTestCaseService.testCasePageResponse).isNull();
+  }
+
   @TestConfiguration
   static class MockBeans {
 
@@ -165,14 +234,20 @@ class TestCaseControllerTest {
 
     static UUID datasetPublicId;
     static CreateTestCaseRequest createTestCaseRequest;
+    static TestCaseStatus status;
+    static Pageable pageable;
     static String username;
     static TestCaseResponse testCaseResponse;
+    static TestCasePageResponse testCasePageResponse;
 
     static void reset() {
       datasetPublicId = null;
       createTestCaseRequest = null;
+      status = null;
+      pageable = null;
       username = null;
       testCaseResponse = null;
+      testCasePageResponse = null;
     }
 
     @Override
@@ -182,6 +257,16 @@ class TestCaseControllerTest {
       RecordingTestCaseService.createTestCaseRequest = request;
       RecordingTestCaseService.username = username;
       return testCaseResponse;
+    }
+
+    @Override
+    public TestCasePageResponse listTestCases(
+        UUID datasetPublicId, TestCaseStatus status, Pageable pageable, String username) {
+      RecordingTestCaseService.datasetPublicId = datasetPublicId;
+      RecordingTestCaseService.status = status;
+      RecordingTestCaseService.pageable = pageable;
+      RecordingTestCaseService.username = username;
+      return testCasePageResponse;
     }
   }
 }

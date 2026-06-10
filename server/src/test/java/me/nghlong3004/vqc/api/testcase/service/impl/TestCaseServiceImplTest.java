@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.lang.reflect.Proxy;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,9 +21,12 @@ import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
 import me.nghlong3004.vqc.api.testcase.mapper.TestCaseMapper;
 import me.nghlong3004.vqc.api.testcase.repository.TestCaseRepository;
 import me.nghlong3004.vqc.api.testcase.request.CreateTestCaseRequest;
+import me.nghlong3004.vqc.api.testcase.response.TestCasePageResponse;
 import me.nghlong3004.vqc.api.testcase.response.TestCaseResponse;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -137,7 +141,67 @@ class TestCaseServiceImplTest {
         .isEqualTo("DATASET_ARCHIVED");
   }
 
+  @Test
+  void listTestCasesLoadsOwnedDatasetAndReturnsFilteredPage() {
+    User creator = user();
+    Dataset dataset = dataset(project(creator), creator, DatasetStatus.DRAFT);
+    TestCase testCase = testCase(dataset);
+    AtomicReference<DatasetLookup> datasetLookup = new AtomicReference<>();
+    AtomicReference<TestCaseQuery> testCaseQuery = new AtomicReference<>();
+    TestCaseServiceImpl testCaseService =
+        new TestCaseServiceImpl(
+            testCaseRepository(
+                new AtomicReference<>(),
+                new PageImpl<>(List.of(testCase), PageRequest.of(0, 100), 1),
+                testCaseQuery),
+            datasetRepository(datasetLookup, Optional.of(dataset)),
+            userRepository(Optional.of(creator)),
+            new TestCaseMapper());
+
+    TestCasePageResponse response =
+        testCaseService.listTestCases(
+            dataset.getPublicId(), TestCaseStatus.ACTIVE, PageRequest.of(0, 100), "  QC.Demo@Example.COM  ");
+
+    assertThat(datasetLookup.get().publicId()).isEqualTo(dataset.getPublicId());
+    assertThat(testCaseQuery.get().dataset()).isSameAs(dataset);
+    assertThat(testCaseQuery.get().status()).isEqualTo(TestCaseStatus.ACTIVE);
+    assertThat(response.items()).hasSize(1);
+    assertThat(response.items().getFirst().publicId()).isEqualTo(testCase.getPublicId());
+    assertThat(response.page()).isZero();
+    assertThat(response.size()).isEqualTo(100);
+    assertThat(response.totalItems()).isEqualTo(1);
+    assertThat(response.totalPages()).isEqualTo(1);
+  }
+
+  @Test
+  void listTestCasesUsesUnfilteredQueryWhenStatusIsMissing() {
+    User creator = user();
+    Dataset dataset = dataset(project(creator), creator, DatasetStatus.DRAFT);
+    AtomicReference<TestCaseQuery> testCaseQuery = new AtomicReference<>();
+    TestCaseServiceImpl testCaseService =
+        new TestCaseServiceImpl(
+            testCaseRepository(
+                new AtomicReference<>(),
+                new PageImpl<>(List.of(), PageRequest.of(0, 100), 0),
+                testCaseQuery),
+            datasetRepository(new AtomicReference<>(), Optional.of(dataset)),
+            userRepository(Optional.of(creator)),
+            new TestCaseMapper());
+
+    testCaseService.listTestCases(dataset.getPublicId(), null, PageRequest.of(0, 100), "qc.demo@example.com");
+
+    assertThat(testCaseQuery.get().dataset()).isSameAs(dataset);
+    assertThat(testCaseQuery.get().status()).isNull();
+  }
+
   private TestCaseRepository testCaseRepository(AtomicReference<TestCase> savedTestCase) {
+    return testCaseRepository(savedTestCase, null, new AtomicReference<>());
+  }
+
+  private TestCaseRepository testCaseRepository(
+      AtomicReference<TestCase> savedTestCase,
+      PageImpl<TestCase> testCasePage,
+      AtomicReference<TestCaseQuery> testCaseQuery) {
     return proxy(
         TestCaseRepository.class,
         (proxy, method, args) -> {
@@ -145,6 +209,14 @@ class TestCaseServiceImplTest {
             TestCase testCase = (TestCase) args[0];
             savedTestCase.set(testCase);
             return testCase;
+          }
+          if ("findByDataset".equals(method.getName())) {
+            testCaseQuery.set(new TestCaseQuery((Dataset) args[0], null));
+            return testCasePage;
+          }
+          if ("findByDatasetAndStatus".equals(method.getName())) {
+            testCaseQuery.set(new TestCaseQuery((Dataset) args[0], (TestCaseStatus) args[1]));
+            return testCasePage;
           }
           throw new UnsupportedOperationException(method.getName());
         });
@@ -226,5 +298,23 @@ class TestCaseServiceImplTest {
         .build();
   }
 
+  private TestCase testCase(Dataset dataset) {
+    return TestCase.builder()
+        .publicId(UUID.fromString("b4788db3-6cf3-47df-8ae1-4c73dbb7d0a8"))
+        .dataset(dataset)
+        .externalId("HEALTH_001")
+        .question("How many steps did I walk today?")
+        .precondition(Map.of("steps", 8200))
+        .groundTruth("The user walked 8,200 steps today.")
+        .metadata(Map.of("userId", "demo-user-1"))
+        .status(TestCaseStatus.ACTIVE)
+        .sortOrder(1)
+        .createdAt(OffsetDateTime.parse("2026-06-08T10:30:00Z"))
+        .updatedAt(OffsetDateTime.parse("2026-06-08T10:30:00Z"))
+        .build();
+  }
+
   private record DatasetLookup(UUID publicId, User createdBy) {}
+
+  private record TestCaseQuery(Dataset dataset, TestCaseStatus status) {}
 }

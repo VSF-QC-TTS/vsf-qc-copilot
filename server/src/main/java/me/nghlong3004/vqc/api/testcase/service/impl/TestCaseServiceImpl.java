@@ -1,6 +1,7 @@
 package me.nghlong3004.vqc.api.testcase.service.impl;
 
 import java.util.UUID;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.nghlong3004.vqc.api.dataset.entity.Dataset;
@@ -13,10 +14,13 @@ import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
 import me.nghlong3004.vqc.api.testcase.mapper.TestCaseMapper;
 import me.nghlong3004.vqc.api.testcase.repository.TestCaseRepository;
 import me.nghlong3004.vqc.api.testcase.request.CreateTestCaseRequest;
+import me.nghlong3004.vqc.api.testcase.response.TestCasePageResponse;
 import me.nghlong3004.vqc.api.testcase.response.TestCaseResponse;
 import me.nghlong3004.vqc.api.testcase.service.TestCaseService;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,6 +65,33 @@ public class TestCaseServiceImpl implements TestCaseService {
         dataset.getPublicId(),
         creator.getPublicId());
     return testCaseMapper.toResponse(saved);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public TestCasePageResponse listTestCases(
+      UUID datasetPublicId, TestCaseStatus status, Pageable pageable, String username) {
+    User creator = findCreator(username);
+    Dataset dataset = findDataset(datasetPublicId, creator);
+    Page<TestCase> testCases =
+        status == null
+            ? testCaseRepository.findByDataset(dataset, pageable)
+            : testCaseRepository.findByDatasetAndStatus(dataset, status, pageable);
+    List<TestCaseResponse> items =
+        testCases.getContent().stream().map(testCaseMapper::toResponse).toList();
+    log.info(
+        "Listed test cases for dataset {} by user {} with status {} page {} size {}",
+        dataset.getPublicId(),
+        creator.getPublicId(),
+        status,
+        testCases.getNumber(),
+        testCases.getSize());
+    return new TestCasePageResponse(
+        items,
+        testCases.getNumber(),
+        testCases.getSize(),
+        testCases.getTotalElements(),
+        testCases.getTotalPages());
   }
 
   private Dataset findDataset(UUID datasetPublicId, User creator) {
