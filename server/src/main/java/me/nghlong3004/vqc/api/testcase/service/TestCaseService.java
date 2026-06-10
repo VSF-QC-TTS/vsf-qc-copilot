@@ -49,4 +49,12 @@ public interface TestCaseService {
    */
   TestCaseResponse updateTestCase(
       UUID testCasePublicId, UpdateTestCaseRequest request, String username);
+
+  /**
+   * Deletes a test case owned by the authenticated user.
+   *
+   * @param testCasePublicId public test case identifier
+   * @param username authenticated principal username/email
+   */
+  void deleteTestCase(UUID testCasePublicId, String username);
 }

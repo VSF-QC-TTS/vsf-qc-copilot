@@ -298,6 +298,83 @@ class TestCaseServiceImplTest {
         .isEqualTo("DATASET_ARCHIVED");
   }
 
+  @Test
+  void deleteTestCaseDeletesOwnedTestCase() {
+    User creator = user();
+    Dataset dataset = dataset(project(creator), creator, DatasetStatus.DRAFT);
+    TestCase testCase = testCase(dataset);
+    AtomicReference<TestCase> deletedTestCase = new AtomicReference<>();
+    AtomicReference<TestCaseLookup> testCaseLookup = new AtomicReference<>();
+    TestCaseServiceImpl testCaseService =
+        new TestCaseServiceImpl(
+            testCaseRepository(
+                new AtomicReference<>(),
+                null,
+                new AtomicReference<>(),
+                Optional.of(testCase),
+                testCaseLookup,
+                deletedTestCase),
+            ignoredDatasetRepository(),
+            userRepository(Optional.of(creator)),
+            new TestCaseMapper());
+
+    testCaseService.deleteTestCase(testCase.getPublicId(), "  QC.Demo@Example.COM  ");
+
+    assertThat(testCaseLookup.get().publicId()).isEqualTo(testCase.getPublicId());
+    assertThat(testCaseLookup.get().createdBy()).isSameAs(creator);
+    assertThat(deletedTestCase.get()).isSameAs(testCase);
+  }
+
+  @Test
+  void deleteTestCaseRejectsMissingTestCase() {
+    User creator = user();
+    AtomicReference<TestCaseLookup> testCaseLookup = new AtomicReference<>();
+    TestCaseServiceImpl testCaseService =
+        new TestCaseServiceImpl(
+            testCaseRepository(
+                new AtomicReference<>(),
+                null,
+                new AtomicReference<>(),
+                Optional.empty(),
+                testCaseLookup,
+                new AtomicReference<>()),
+            ignoredDatasetRepository(),
+            userRepository(Optional.of(creator)),
+            new TestCaseMapper());
+    UUID testCasePublicId = UUID.randomUUID();
+
+    assertThatThrownBy(() -> testCaseService.deleteTestCase(testCasePublicId, "qc.demo@example.com"))
+        .isInstanceOf(ResourceException.class)
+        .extracting(error -> ((ResourceException) error).getResponse().code())
+        .isEqualTo("TEST_CASE_NOT_FOUND");
+    assertThat(testCaseLookup.get().publicId()).isEqualTo(testCasePublicId);
+    assertThat(testCaseLookup.get().createdBy()).isSameAs(creator);
+  }
+
+  @Test
+  void deleteTestCaseRejectsArchivedDataset() {
+    User creator = user();
+    Dataset dataset = dataset(project(creator), creator, DatasetStatus.ARCHIVED);
+    TestCase testCase = testCase(dataset);
+    TestCaseServiceImpl testCaseService =
+        new TestCaseServiceImpl(
+            testCaseRepository(
+                new AtomicReference<>(),
+                null,
+                new AtomicReference<>(),
+                Optional.of(testCase),
+                new AtomicReference<>(),
+                new AtomicReference<>()),
+            ignoredDatasetRepository(),
+            userRepository(Optional.of(creator)),
+            new TestCaseMapper());
+
+    assertThatThrownBy(() -> testCaseService.deleteTestCase(testCase.getPublicId(), "qc.demo@example.com"))
+        .isInstanceOf(ResourceException.class)
+        .extracting(error -> ((ResourceException) error).getResponse().code())
+        .isEqualTo("DATASET_ARCHIVED");
+  }
+
   private TestCaseRepository testCaseRepository(AtomicReference<TestCase> savedTestCase) {
     return testCaseRepository(savedTestCase, null, new AtomicReference<>());
   }
@@ -316,6 +393,22 @@ class TestCaseServiceImplTest {
       AtomicReference<TestCaseQuery> testCaseQuery,
       Optional<TestCase> testCaseLookupResult,
       AtomicReference<TestCaseLookup> testCaseLookup) {
+    return testCaseRepository(
+        savedTestCase,
+        testCasePage,
+        testCaseQuery,
+        testCaseLookupResult,
+        testCaseLookup,
+        new AtomicReference<>());
+  }
+
+  private TestCaseRepository testCaseRepository(
+      AtomicReference<TestCase> savedTestCase,
+      PageImpl<TestCase> testCasePage,
+      AtomicReference<TestCaseQuery> testCaseQuery,
+      Optional<TestCase> testCaseLookupResult,
+      AtomicReference<TestCaseLookup> testCaseLookup,
+      AtomicReference<TestCase> deletedTestCase) {
     return proxy(
         TestCaseRepository.class,
         (proxy, method, args) -> {
@@ -335,6 +428,10 @@ class TestCaseServiceImplTest {
           if ("findByPublicIdAndDatasetCreatedBy".equals(method.getName())) {
             testCaseLookup.set(new TestCaseLookup((UUID) args[0], (User) args[1]));
             return testCaseLookupResult;
+          }
+          if ("delete".equals(method.getName())) {
+            deletedTestCase.set((TestCase) args[0]);
+            return null;
           }
           throw new UnsupportedOperationException(method.getName());
         });

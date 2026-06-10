@@ -2,6 +2,7 @@ package me.nghlong3004.vqc.api.testcase.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -296,6 +297,33 @@ class TestCaseControllerTest {
     assertThat(RecordingTestCaseService.updateTestCaseRequest).isNull();
   }
 
+  @Test
+  void deleteTestCaseReturnsNoContent() throws Exception {
+    mockMvc
+        .perform(
+            delete("/api/v1/test-cases/b4788db3-6cf3-47df-8ae1-4c73dbb7d0a8")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null)))
+        .andExpect(status().isNoContent());
+
+    assertThat(RecordingTestCaseService.testCasePublicId)
+        .isEqualTo(UUID.fromString("b4788db3-6cf3-47df-8ae1-4c73dbb7d0a8"));
+    assertThat(RecordingTestCaseService.username).isEqualTo("qc.demo@example.com");
+  }
+
+  @Test
+  void deleteTestCaseReturnsValidationProblemDetailsForInvalidPublicId() throws Exception {
+    mockMvc
+        .perform(
+            delete("/api/v1/test-cases/not-a-uuid")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null)))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+        .andExpect(jsonPath("$.instance").value("/api/v1/test-cases/not-a-uuid"));
+
+    assertThat(RecordingTestCaseService.testCasePublicId).isNull();
+  }
+
   @TestConfiguration
   static class MockBeans {
 
@@ -355,6 +383,12 @@ class TestCaseControllerTest {
       RecordingTestCaseService.updateTestCaseRequest = request;
       RecordingTestCaseService.username = username;
       return testCaseResponse;
+    }
+
+    @Override
+    public void deleteTestCase(UUID testCasePublicId, String username) {
+      RecordingTestCaseService.testCasePublicId = testCasePublicId;
+      RecordingTestCaseService.username = username;
     }
   }
 }

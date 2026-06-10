@@ -23,6 +23,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -168,5 +169,36 @@ public class TestCaseController {
       @Valid @RequestBody UpdateTestCaseRequest request,
       Principal principal) {
     return testCaseService.updateTestCase(testCasePublicId, request, principal.getName());
+  }
+
+  @Operation(summary = "Delete test case", description = "Deletes a test case owned by the authenticated user.")
+  @ApiResponses({
+    @ApiResponse(responseCode = "204", description = "Test case deleted", content = @Content),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Invalid test case identifier",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Authentication is required",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Test case not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @DeleteMapping("/api/v1/test-cases/{testCasePublicId}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deleteTestCase(@PathVariable UUID testCasePublicId, Principal principal) {
+    testCaseService.deleteTestCase(testCasePublicId, principal.getName());
   }
 }

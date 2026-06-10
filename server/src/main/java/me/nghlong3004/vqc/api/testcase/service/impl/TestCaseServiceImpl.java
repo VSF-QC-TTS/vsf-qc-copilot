@@ -135,6 +135,22 @@ public class TestCaseServiceImpl implements TestCaseService {
     return testCaseMapper.toResponse(saved);
   }
 
+  @Override
+  @Transactional
+  public void deleteTestCase(UUID testCasePublicId, String username) {
+    User creator = findCreator(username);
+    TestCase testCase = findTestCase(testCasePublicId, creator);
+    if (testCase.getDataset().getStatus() == DatasetStatus.ARCHIVED) {
+      throw new ResourceException(ErrorCode.DATASET_ARCHIVED);
+    }
+    testCaseRepository.delete(testCase);
+    log.info(
+        "Deleted test case {} under dataset {} by user {}",
+        testCase.getPublicId(),
+        testCase.getDataset().getPublicId(),
+        creator.getPublicId());
+  }
+
   private Dataset findDataset(UUID datasetPublicId, User creator) {
     return datasetRepository
         .findByPublicIdAndCreatedBy(datasetPublicId, creator)
