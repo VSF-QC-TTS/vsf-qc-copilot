@@ -3,6 +3,7 @@ package me.nghlong3004.vqc.api.dataset.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -14,6 +15,7 @@ import java.util.UUID;
 import me.nghlong3004.vqc.api.dataset.enums.DatasetSourceType;
 import me.nghlong3004.vqc.api.dataset.enums.DatasetStatus;
 import me.nghlong3004.vqc.api.dataset.request.CreateDatasetRequest;
+import me.nghlong3004.vqc.api.dataset.request.UpdateDatasetRequest;
 import me.nghlong3004.vqc.api.dataset.response.DatasetListItemResponse;
 import me.nghlong3004.vqc.api.dataset.response.DatasetPageResponse;
 import me.nghlong3004.vqc.api.dataset.response.DatasetResponse;
@@ -267,6 +269,73 @@ class DatasetControllerTest {
     assertThat(RecordingDatasetService.datasetPublicId).isNull();
   }
 
+  @Test
+  void updateDatasetReturnsUpdatedDataset() throws Exception {
+    RecordingDatasetService.datasetResponse =
+        new DatasetResponse(
+            UUID.fromString("0f6d90c2-7410-4db2-86be-8adfd3140f63"),
+            UUID.fromString("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"),
+            null,
+            "Health Demo Dataset v2",
+            "Updated description",
+            1,
+            DatasetSourceType.SAMPLE_DEMO,
+            DatasetStatus.APPROVED,
+            12,
+            OffsetDateTime.parse("2026-06-08T10:30:00Z"),
+            OffsetDateTime.parse("2026-06-08T10:35:00Z"));
+
+    mockMvc
+        .perform(
+            patch("/api/v1/datasets/0f6d90c2-7410-4db2-86be-8adfd3140f63")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "name": "Health Demo Dataset v2",
+                      "description": "Updated description",
+                      "status": "APPROVED"
+                    }
+                    """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.publicId").value("0f6d90c2-7410-4db2-86be-8adfd3140f63"))
+        .andExpect(jsonPath("$.name").value("Health Demo Dataset v2"))
+        .andExpect(jsonPath("$.description").value("Updated description"))
+        .andExpect(jsonPath("$.status").value("APPROVED"))
+        .andExpect(jsonPath("$.totalCases").value(12));
+
+    assertThat(RecordingDatasetService.datasetPublicId)
+        .isEqualTo(UUID.fromString("0f6d90c2-7410-4db2-86be-8adfd3140f63"));
+    assertThat(RecordingDatasetService.updateDatasetRequest.name())
+        .isEqualTo("Health Demo Dataset v2");
+    assertThat(RecordingDatasetService.updateDatasetRequest.status())
+        .isEqualTo(DatasetStatus.APPROVED);
+    assertThat(RecordingDatasetService.username).isEqualTo("qc.demo@example.com");
+  }
+
+  @Test
+  void updateDatasetReturnsValidationProblemDetails() throws Exception {
+    mockMvc
+        .perform(
+            patch("/api/v1/datasets/0f6d90c2-7410-4db2-86be-8adfd3140f63")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "name": " "
+                    }
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+        .andExpect(jsonPath("$.instance").value("/api/v1/datasets/0f6d90c2-7410-4db2-86be-8adfd3140f63"))
+        .andExpect(jsonPath("$.errors[*].field", hasItem("name")));
+
+    assertThat(RecordingDatasetService.updateDatasetRequest).isNull();
+  }
+
   @TestConfiguration
   static class MockBeans {
 
@@ -281,6 +350,7 @@ class DatasetControllerTest {
     static UUID projectPublicId;
     static UUID datasetPublicId;
     static CreateDatasetRequest createDatasetRequest;
+    static UpdateDatasetRequest updateDatasetRequest;
     static DatasetStatus status;
     static Pageable pageable;
     static String username;
@@ -291,6 +361,7 @@ class DatasetControllerTest {
       projectPublicId = null;
       datasetPublicId = null;
       createDatasetRequest = null;
+      updateDatasetRequest = null;
       status = null;
       pageable = null;
       username = null;
@@ -320,6 +391,15 @@ class DatasetControllerTest {
     @Override
     public DatasetResponse getDataset(UUID datasetPublicId, String username) {
       RecordingDatasetService.datasetPublicId = datasetPublicId;
+      RecordingDatasetService.username = username;
+      return datasetResponse;
+    }
+
+    @Override
+    public DatasetResponse updateDataset(
+        UUID datasetPublicId, UpdateDatasetRequest request, String username) {
+      RecordingDatasetService.datasetPublicId = datasetPublicId;
+      RecordingDatasetService.updateDatasetRequest = request;
       RecordingDatasetService.username = username;
       return datasetResponse;
     }

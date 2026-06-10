@@ -91,6 +91,10 @@ public enum ErrorCode {
       HttpStatus.NOT_FOUND.value(),
       "DATASET_NOT_FOUND",
       "No dataset found with the provided ID."),
+  DATASET_APPROVAL_INVALID(
+      422,
+      "DATASET_APPROVAL_INVALID",
+      "Dataset cannot be approved with the current test case count."),
 
   // ── User Administration ──
   CANNOT_DELETE_SELF(

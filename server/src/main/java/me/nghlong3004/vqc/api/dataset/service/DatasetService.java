@@ -3,6 +3,7 @@ package me.nghlong3004.vqc.api.dataset.service;
 import java.util.UUID;
 import me.nghlong3004.vqc.api.dataset.enums.DatasetStatus;
 import me.nghlong3004.vqc.api.dataset.request.CreateDatasetRequest;
+import me.nghlong3004.vqc.api.dataset.request.UpdateDatasetRequest;
 import me.nghlong3004.vqc.api.dataset.response.DatasetPageResponse;
 import me.nghlong3004.vqc.api.dataset.response.DatasetResponse;
 import org.springframework.data.domain.Pageable;
@@ -46,4 +47,15 @@ public interface DatasetService {
    * @return dataset detail response
    */
   DatasetResponse getDataset(UUID datasetPublicId, String username);
+
+  /**
+   * Updates a dataset owned by the authenticated user.
+   *
+   * @param datasetPublicId public dataset identifier
+   * @param request update dataset payload
+   * @param username authenticated principal username/email
+   * @return updated dataset response
+   */
+  DatasetResponse updateDataset(
+      UUID datasetPublicId, UpdateDatasetRequest request, String username);
 }

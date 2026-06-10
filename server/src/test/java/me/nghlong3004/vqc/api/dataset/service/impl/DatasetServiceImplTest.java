@@ -15,6 +15,7 @@ import me.nghlong3004.vqc.api.dataset.enums.DatasetStatus;
 import me.nghlong3004.vqc.api.dataset.mapper.DatasetMapper;
 import me.nghlong3004.vqc.api.dataset.repository.DatasetRepository;
 import me.nghlong3004.vqc.api.dataset.request.CreateDatasetRequest;
+import me.nghlong3004.vqc.api.dataset.request.UpdateDatasetRequest;
 import me.nghlong3004.vqc.api.dataset.response.DatasetPageResponse;
 import me.nghlong3004.vqc.api.dataset.response.DatasetResponse;
 import me.nghlong3004.vqc.api.exception.ResourceException;
@@ -22,6 +23,8 @@ import me.nghlong3004.vqc.api.project.entity.Project;
 import me.nghlong3004.vqc.api.project.repository.ProjectRepository;
 import me.nghlong3004.vqc.api.requirement.entity.BusinessRequirement;
 import me.nghlong3004.vqc.api.requirement.repository.BusinessRequirementRepository;
+import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
+import me.nghlong3004.vqc.api.testcase.repository.TestCaseRepository;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
 import org.springframework.data.domain.PageImpl;
@@ -47,6 +50,7 @@ class DatasetServiceImplTest {
             datasetRepository(savedDataset),
             projectRepository(projectLookup, Optional.of(project)),
             requirementRepository(requirementLookup, Optional.of(requirement)),
+            testCaseRepository(0),
             userRepository(Optional.of(creator)),
             new DatasetMapper());
 
@@ -87,6 +91,7 @@ class DatasetServiceImplTest {
             datasetRepository(savedDataset),
             projectRepository(new AtomicReference<>(), Optional.of(project)),
             ignoredRequirementRepository(),
+            testCaseRepository(0),
             userRepository(Optional.of(creator)),
             new DatasetMapper());
 
@@ -108,6 +113,7 @@ class DatasetServiceImplTest {
             ignoredDatasetRepository(),
             ignoredProjectRepository(),
             ignoredRequirementRepository(),
+            testCaseRepository(0),
             userRepository(Optional.empty()),
             new DatasetMapper());
 
@@ -131,6 +137,7 @@ class DatasetServiceImplTest {
             ignoredDatasetRepository(),
             projectRepository(projectLookup, Optional.empty()),
             ignoredRequirementRepository(),
+            testCaseRepository(0),
             userRepository(Optional.of(creator)),
             new DatasetMapper());
     UUID projectPublicId = UUID.randomUUID();
@@ -158,6 +165,7 @@ class DatasetServiceImplTest {
             ignoredDatasetRepository(),
             projectRepository(new AtomicReference<>(), Optional.of(project)),
             requirementRepository(requirementLookup, Optional.empty()),
+            testCaseRepository(0),
             userRepository(Optional.of(creator)),
             new DatasetMapper());
     UUID requirementPublicId = UUID.randomUUID();
@@ -188,6 +196,7 @@ class DatasetServiceImplTest {
             ignoredDatasetRepository(),
             projectRepository(new AtomicReference<>(), Optional.of(project)),
             requirementRepository(new AtomicReference<>(), Optional.of(requirement)),
+            testCaseRepository(0),
             userRepository(Optional.of(creator)),
             new DatasetMapper());
 
@@ -218,6 +227,7 @@ class DatasetServiceImplTest {
                 datasetQuery),
             projectRepository(projectLookup, Optional.of(project)),
             ignoredRequirementRepository(),
+            testCaseRepository(0),
             userRepository(Optional.of(creator)),
             new DatasetMapper());
 
@@ -251,6 +261,7 @@ class DatasetServiceImplTest {
                 datasetQuery),
             projectRepository(new AtomicReference<>(), Optional.of(project)),
             ignoredRequirementRepository(),
+            testCaseRepository(0),
             userRepository(Optional.of(creator)),
             new DatasetMapper());
 
@@ -276,6 +287,7 @@ class DatasetServiceImplTest {
                 datasetLookup),
             ignoredProjectRepository(),
             ignoredRequirementRepository(),
+            testCaseRepository(0),
             userRepository(Optional.of(creator)),
             new DatasetMapper());
 
@@ -302,6 +314,7 @@ class DatasetServiceImplTest {
                 datasetLookup),
             ignoredProjectRepository(),
             ignoredRequirementRepository(),
+            testCaseRepository(0),
             userRepository(Optional.of(creator)),
             new DatasetMapper());
     UUID datasetPublicId = UUID.randomUUID();
@@ -312,6 +325,167 @@ class DatasetServiceImplTest {
         .isEqualTo("DATASET_NOT_FOUND");
     assertThat(datasetLookup.get().publicId()).isEqualTo(datasetPublicId);
     assertThat(datasetLookup.get().createdBy()).isSameAs(creator);
+  }
+
+  @Test
+  void updateDatasetChangesFieldsAndReturnsActiveCaseCount() {
+    User creator = user();
+    Project project = project(creator);
+    Dataset dataset = dataset(project, creator);
+    AtomicReference<Dataset> savedDataset = new AtomicReference<>();
+    DatasetServiceImpl datasetService =
+        new DatasetServiceImpl(
+            datasetRepository(
+                savedDataset,
+                null,
+                new AtomicReference<>(),
+                Optional.of(dataset),
+                new AtomicReference<>()),
+            ignoredProjectRepository(),
+            ignoredRequirementRepository(),
+            testCaseRepository(12),
+            userRepository(Optional.of(creator)),
+            new DatasetMapper());
+
+    DatasetResponse response =
+        datasetService.updateDataset(
+            dataset.getPublicId(),
+            new UpdateDatasetRequest("  Health Demo Dataset v2  ", "  Updated description  ", null),
+            "qc.demo@example.com");
+
+    assertThat(savedDataset.get()).isSameAs(dataset);
+    assertThat(dataset.getName()).isEqualTo("Health Demo Dataset v2");
+    assertThat(dataset.getDescription()).isEqualTo("Updated description");
+    assertThat(dataset.getStatus()).isEqualTo(DatasetStatus.DRAFT);
+    assertThat(response.totalCases()).isEqualTo(12);
+  }
+
+  @Test
+  void updateDatasetApprovesWhenActiveCaseCountIsWithinLimit() {
+    User creator = user();
+    Project project = project(creator);
+    Dataset dataset = dataset(project, creator);
+    AtomicReference<Dataset> savedDataset = new AtomicReference<>();
+    DatasetServiceImpl datasetService =
+        new DatasetServiceImpl(
+            datasetRepository(
+                savedDataset,
+                null,
+                new AtomicReference<>(),
+                Optional.of(dataset),
+                new AtomicReference<>()),
+            ignoredProjectRepository(),
+            ignoredRequirementRepository(),
+            testCaseRepository(100),
+            userRepository(Optional.of(creator)),
+            new DatasetMapper());
+
+    DatasetResponse response =
+        datasetService.updateDataset(
+            dataset.getPublicId(),
+            new UpdateDatasetRequest(null, null, DatasetStatus.APPROVED),
+            "qc.demo@example.com");
+
+    assertThat(savedDataset.get()).isSameAs(dataset);
+    assertThat(dataset.getStatus()).isEqualTo(DatasetStatus.APPROVED);
+    assertThat(dataset.getApprovedBy()).isSameAs(creator);
+    assertThat(dataset.getApprovedAt()).isNotNull();
+    assertThat(response.status()).isEqualTo(DatasetStatus.APPROVED);
+    assertThat(response.totalCases()).isEqualTo(100);
+  }
+
+  @Test
+  void updateDatasetRejectsApprovalWithNoActiveCases() {
+    User creator = user();
+    Project project = project(creator);
+    Dataset dataset = dataset(project, creator);
+    DatasetServiceImpl datasetService =
+        new DatasetServiceImpl(
+            datasetRepository(
+                new AtomicReference<>(),
+                null,
+                new AtomicReference<>(),
+                Optional.of(dataset),
+                new AtomicReference<>()),
+            ignoredProjectRepository(),
+            ignoredRequirementRepository(),
+            testCaseRepository(0),
+            userRepository(Optional.of(creator)),
+            new DatasetMapper());
+
+    assertThatThrownBy(
+            () ->
+                datasetService.updateDataset(
+                    dataset.getPublicId(),
+                    new UpdateDatasetRequest(null, null, DatasetStatus.APPROVED),
+                    "qc.demo@example.com"))
+        .isInstanceOf(ResourceException.class)
+        .extracting(error -> ((ResourceException) error).getResponse().code())
+        .isEqualTo("DATASET_APPROVAL_INVALID");
+  }
+
+  @Test
+  void updateDatasetRejectsApprovalWithTooManyActiveCases() {
+    User creator = user();
+    Project project = project(creator);
+    Dataset dataset = dataset(project, creator);
+    DatasetServiceImpl datasetService =
+        new DatasetServiceImpl(
+            datasetRepository(
+                new AtomicReference<>(),
+                null,
+                new AtomicReference<>(),
+                Optional.of(dataset),
+                new AtomicReference<>()),
+            ignoredProjectRepository(),
+            ignoredRequirementRepository(),
+            testCaseRepository(101),
+            userRepository(Optional.of(creator)),
+            new DatasetMapper());
+
+    assertThatThrownBy(
+            () ->
+                datasetService.updateDataset(
+                    dataset.getPublicId(),
+                    new UpdateDatasetRequest(null, null, DatasetStatus.APPROVED),
+                    "qc.demo@example.com"))
+        .isInstanceOf(ResourceException.class)
+        .extracting(error -> ((ResourceException) error).getResponse().code())
+        .isEqualTo("DATASET_APPROVAL_INVALID");
+  }
+
+  @Test
+  void updateDatasetClearsApprovalWhenArchived() {
+    User creator = user();
+    Project project = project(creator);
+    Dataset dataset = dataset(project, creator);
+    dataset.setStatus(DatasetStatus.APPROVED);
+    dataset.setApprovedBy(creator);
+    dataset.setApprovedAt(OffsetDateTime.parse("2026-06-08T10:40:00Z"));
+    AtomicReference<Dataset> savedDataset = new AtomicReference<>();
+    DatasetServiceImpl datasetService =
+        new DatasetServiceImpl(
+            datasetRepository(
+                savedDataset,
+                null,
+                new AtomicReference<>(),
+                Optional.of(dataset),
+                new AtomicReference<>()),
+            ignoredProjectRepository(),
+            ignoredRequirementRepository(),
+            testCaseRepository(12),
+            userRepository(Optional.of(creator)),
+            new DatasetMapper());
+
+    datasetService.updateDataset(
+        dataset.getPublicId(),
+        new UpdateDatasetRequest(null, null, DatasetStatus.ARCHIVED),
+        "qc.demo@example.com");
+
+    assertThat(savedDataset.get()).isSameAs(dataset);
+    assertThat(dataset.getStatus()).isEqualTo(DatasetStatus.ARCHIVED);
+    assertThat(dataset.getApprovedBy()).isNull();
+    assertThat(dataset.getApprovedAt()).isNull();
   }
 
   private DatasetRepository datasetRepository(AtomicReference<Dataset> savedDataset) {
@@ -414,6 +588,18 @@ class DatasetServiceImplTest {
           if ("findByUsername".equals(method.getName())) {
             assertThat(args[0]).isEqualTo(String.valueOf(args[0]).trim().toLowerCase());
             return user;
+          }
+          throw new UnsupportedOperationException(method.getName());
+        });
+  }
+
+  private TestCaseRepository testCaseRepository(long activeCases) {
+    return proxy(
+        TestCaseRepository.class,
+        (proxy, method, args) -> {
+          if ("countByDatasetAndStatus".equals(method.getName())) {
+            assertThat(args[1]).isEqualTo(TestCaseStatus.ACTIVE);
+            return activeCases;
           }
           throw new UnsupportedOperationException(method.getName());
         });

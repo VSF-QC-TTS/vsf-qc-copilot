@@ -2,6 +2,7 @@ package me.nghlong3004.vqc.api.dataset.service.impl;
 
 import java.util.UUID;
 import java.util.List;
+import java.time.OffsetDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.nghlong3004.vqc.api.dataset.entity.Dataset;
@@ -9,6 +10,7 @@ import me.nghlong3004.vqc.api.dataset.enums.DatasetStatus;
 import me.nghlong3004.vqc.api.dataset.mapper.DatasetMapper;
 import me.nghlong3004.vqc.api.dataset.repository.DatasetRepository;
 import me.nghlong3004.vqc.api.dataset.request.CreateDatasetRequest;
+import me.nghlong3004.vqc.api.dataset.request.UpdateDatasetRequest;
 import me.nghlong3004.vqc.api.dataset.response.DatasetListItemResponse;
 import me.nghlong3004.vqc.api.dataset.response.DatasetPageResponse;
 import me.nghlong3004.vqc.api.dataset.response.DatasetResponse;
@@ -19,6 +21,8 @@ import me.nghlong3004.vqc.api.project.entity.Project;
 import me.nghlong3004.vqc.api.project.repository.ProjectRepository;
 import me.nghlong3004.vqc.api.requirement.entity.BusinessRequirement;
 import me.nghlong3004.vqc.api.requirement.repository.BusinessRequirementRepository;
+import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
+import me.nghlong3004.vqc.api.testcase.repository.TestCaseRepository;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
 import org.springframework.data.domain.Page;
@@ -38,6 +42,7 @@ public class DatasetServiceImpl implements DatasetService {
   private final DatasetRepository datasetRepository;
   private final ProjectRepository projectRepository;
   private final BusinessRequirementRepository businessRequirementRepository;
+  private final TestCaseRepository testCaseRepository;
   private final UserRepository userRepository;
   private final DatasetMapper datasetMapper;
 
@@ -109,8 +114,57 @@ public class DatasetServiceImpl implements DatasetService {
     return datasetMapper.toResponse(dataset, 0);
   }
 
+  @Override
+  @Transactional
+  public DatasetResponse updateDataset(
+      UUID datasetPublicId, UpdateDatasetRequest request, String username) {
+    User creator = findCreator(username);
+    Dataset dataset = findDataset(datasetPublicId, creator);
+    if (request.name() != null) {
+      dataset.setName(request.name().trim());
+    }
+    if (request.description() != null) {
+      dataset.setDescription(trimToNull(request.description()));
+    }
+    if (request.status() != null) {
+      applyStatus(dataset, request.status(), creator);
+    }
+    Dataset saved = datasetRepository.save(dataset);
+    long activeCases = countActiveCases(saved);
+    log.info(
+        "Updated dataset {} under project {} by user {} to status {}",
+        saved.getPublicId(),
+        saved.getProject().getPublicId(),
+        creator.getPublicId(),
+        saved.getStatus());
+    return datasetMapper.toResponse(saved, activeCases);
+  }
+
+  private void applyStatus(Dataset dataset, DatasetStatus status, User creator) {
+    if (status == DatasetStatus.APPROVED) {
+      long activeCases = countActiveCases(dataset);
+      if (activeCases < 1 || activeCases > 100) {
+        throw new ResourceException(ErrorCode.DATASET_APPROVAL_INVALID);
+      }
+      dataset.setApprovedBy(creator);
+      dataset.setApprovedAt(OffsetDateTime.now());
+    } else {
+      dataset.setApprovedBy(null);
+      dataset.setApprovedAt(null);
+    }
+    dataset.setStatus(status);
+  }
+
+  private long countActiveCases(Dataset dataset) {
+    return testCaseRepository.countByDatasetAndStatus(dataset, TestCaseStatus.ACTIVE);
+  }
+
   private Dataset findDataset(UUID datasetPublicId, String username) {
     User creator = findCreator(username);
+    return findDataset(datasetPublicId, creator);
+  }
+
+  private Dataset findDataset(UUID datasetPublicId, User creator) {
     return datasetRepository
         .findByPublicIdAndCreatedBy(datasetPublicId, creator)
         .orElseThrow(() -> new ResourceException(ErrorCode.DATASET_NOT_FOUND));
