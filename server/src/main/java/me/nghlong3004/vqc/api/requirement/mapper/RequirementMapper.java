@@ -1,6 +1,7 @@
 package me.nghlong3004.vqc.api.requirement.mapper;
 
 import me.nghlong3004.vqc.api.requirement.entity.BusinessRequirement;
+import me.nghlong3004.vqc.api.requirement.response.RequirementListItemResponse;
 import me.nghlong3004.vqc.api.requirement.response.RequirementResponse;
 import org.springframework.stereotype.Component;
 
@@ -26,5 +27,21 @@ public class RequirementMapper {
         requirement.getStatus(),
         requirement.getCreatedAt(),
         requirement.getUpdatedAt());
+  }
+
+  /**
+   * Maps an internal {@link BusinessRequirement} entity to a public list item response.
+   *
+   * @param requirement internal {@link BusinessRequirement} entity
+   * @return public {@link RequirementListItemResponse}
+   */
+  public RequirementListItemResponse toListItemResponse(BusinessRequirement requirement) {
+    return new RequirementListItemResponse(
+        requirement.getPublicId(),
+        requirement.getProject().getPublicId(),
+        requirement.getContent(),
+        requirement.getVersion(),
+        requirement.getStatus(),
+        requirement.getCreatedAt());
   }
 }

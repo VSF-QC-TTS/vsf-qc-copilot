@@ -11,13 +11,20 @@ import java.security.Principal;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import me.nghlong3004.vqc.api.exception.ErrorResponse;
+import me.nghlong3004.vqc.api.requirement.enums.RequirementStatus;
 import me.nghlong3004.vqc.api.requirement.request.CreateRequirementRequest;
+import me.nghlong3004.vqc.api.requirement.response.RequirementPageResponse;
 import me.nghlong3004.vqc.api.requirement.response.RequirementResponse;
 import me.nghlong3004.vqc.api.requirement.service.RequirementService;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -74,5 +81,48 @@ public class RequirementController {
       @Valid @RequestBody CreateRequirementRequest request,
       Principal principal) {
     return requirementService.createRequirement(projectPublicId, request, principal.getName());
+  }
+
+  @Operation(summary = "List requirements", description = "Lists business requirements under a project.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Requirement page",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = RequirementPageResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Invalid project identifier, status, or pagination request",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Authentication is required",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Project not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @GetMapping(
+      value = "/api/v1/projects/{projectPublicId}/requirements",
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  public RequirementPageResponse listRequirements(
+      @PathVariable UUID projectPublicId,
+      @RequestParam(required = false) RequirementStatus status,
+      @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+          Pageable pageable,
+      Principal principal) {
+    return requirementService.listRequirements(projectPublicId, status, pageable, principal.getName());
   }
 }

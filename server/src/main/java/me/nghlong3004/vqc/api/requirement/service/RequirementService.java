@@ -2,8 +2,11 @@ package me.nghlong3004.vqc.api.requirement.service;
 
 import java.util.UUID;
 import me.nghlong3004.vqc.api.requirement.entity.BusinessRequirement;
+import me.nghlong3004.vqc.api.requirement.enums.RequirementStatus;
 import me.nghlong3004.vqc.api.requirement.request.CreateRequirementRequest;
+import me.nghlong3004.vqc.api.requirement.response.RequirementPageResponse;
 import me.nghlong3004.vqc.api.requirement.response.RequirementResponse;
+import org.springframework.data.domain.Pageable;
 
 /**
  * @author nghlong3004 (Long Nguyen Hoang)
@@ -21,4 +24,16 @@ public interface RequirementService {
    */
   RequirementResponse createRequirement(
       UUID projectPublicId, CreateRequirementRequest request, String username);
+
+  /**
+   * Lists {@link BusinessRequirement} entities under a project owned by the authenticated user.
+   *
+   * @param projectPublicId public project identifier
+   * @param status optional requirement status filter
+   * @param pageable page and sort request
+   * @param username authenticated username/email
+   * @return paginated public {@link RequirementPageResponse}
+   */
+  RequirementPageResponse listRequirements(
+      UUID projectPublicId, RequirementStatus status, Pageable pageable, String username);
 }
