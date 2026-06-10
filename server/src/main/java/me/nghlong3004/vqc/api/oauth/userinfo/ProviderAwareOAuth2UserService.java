@@ -2,6 +2,7 @@ package me.nghlong3004.vqc.api.oauth.userinfo;
 
 import java.util.List;
 import me.nghlong3004.vqc.api.oauth.AuthProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
@@ -20,6 +21,7 @@ public class ProviderAwareOAuth2UserService
   private final OAuth2UserService<OAuth2UserRequest, OAuth2User> delegate;
   private final List<OAuth2UserEnricher> enrichers;
 
+  @Autowired
   public ProviderAwareOAuth2UserService(List<OAuth2UserEnricher> enrichers) {
     this(new DefaultOAuth2UserService(), enrichers);
   }

@@ -7,6 +7,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
@@ -33,6 +34,7 @@ public class JwtConfig {
   }
 
   @Bean
+  @Primary
   public JwtDecoder jwtDecoder(SecretKey secretKey) {
     NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(secretKey).build();
     decoder.setJwtValidator(tokenTypeValidator("access", "Only access tokens can authenticate API requests."));
