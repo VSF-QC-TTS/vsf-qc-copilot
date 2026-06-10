@@ -2,6 +2,7 @@ package me.nghlong3004.vqc.api.dataset.mapper;
 
 import java.util.UUID;
 import me.nghlong3004.vqc.api.dataset.entity.Dataset;
+import me.nghlong3004.vqc.api.dataset.response.DatasetListItemResponse;
 import me.nghlong3004.vqc.api.dataset.response.DatasetResponse;
 import org.springframework.stereotype.Component;
 
@@ -34,5 +35,23 @@ public class DatasetMapper {
         totalCases,
         dataset.getCreatedAt(),
         dataset.getUpdatedAt());
+  }
+
+  /**
+   * Maps an internal {@link Dataset} entity to a public list item response.
+   *
+   * @param dataset internal {@link Dataset} entity
+   * @param totalCases number of test cases in the dataset
+   * @return public {@link DatasetListItemResponse}
+   */
+  public DatasetListItemResponse toListItemResponse(Dataset dataset, long totalCases) {
+    return new DatasetListItemResponse(
+        dataset.getPublicId(),
+        dataset.getProject().getPublicId(),
+        dataset.getName(),
+        dataset.getSourceType(),
+        dataset.getStatus(),
+        totalCases,
+        dataset.getCreatedAt());
   }
 }

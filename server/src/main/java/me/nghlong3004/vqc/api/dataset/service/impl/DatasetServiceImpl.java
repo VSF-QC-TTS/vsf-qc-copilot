@@ -1,6 +1,7 @@
 package me.nghlong3004.vqc.api.dataset.service.impl;
 
 import java.util.UUID;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.nghlong3004.vqc.api.dataset.entity.Dataset;
@@ -8,6 +9,8 @@ import me.nghlong3004.vqc.api.dataset.enums.DatasetStatus;
 import me.nghlong3004.vqc.api.dataset.mapper.DatasetMapper;
 import me.nghlong3004.vqc.api.dataset.repository.DatasetRepository;
 import me.nghlong3004.vqc.api.dataset.request.CreateDatasetRequest;
+import me.nghlong3004.vqc.api.dataset.response.DatasetListItemResponse;
+import me.nghlong3004.vqc.api.dataset.response.DatasetPageResponse;
 import me.nghlong3004.vqc.api.dataset.response.DatasetResponse;
 import me.nghlong3004.vqc.api.dataset.service.DatasetService;
 import me.nghlong3004.vqc.api.exception.ErrorCode;
@@ -18,6 +21,8 @@ import me.nghlong3004.vqc.api.requirement.entity.BusinessRequirement;
 import me.nghlong3004.vqc.api.requirement.repository.BusinessRequirementRepository;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,6 +66,35 @@ public class DatasetServiceImpl implements DatasetService {
         project.getPublicId(),
         creator.getPublicId());
     return datasetMapper.toResponse(saved, 0);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public DatasetPageResponse listDatasets(
+      UUID projectPublicId, DatasetStatus status, Pageable pageable, String username) {
+    User creator = findCreator(username);
+    Project project = findProject(projectPublicId, creator);
+    Page<Dataset> datasets =
+        status == null
+            ? datasetRepository.findByProject(project, pageable)
+            : datasetRepository.findByProjectAndStatus(project, status, pageable);
+    List<DatasetListItemResponse> items =
+        datasets.getContent().stream()
+            .map(dataset -> datasetMapper.toListItemResponse(dataset, 0))
+            .toList();
+    log.info(
+        "Listed datasets for project {} by user {} with status {} page {} size {}",
+        project.getPublicId(),
+        creator.getPublicId(),
+        status,
+        datasets.getNumber(),
+        datasets.getSize());
+    return new DatasetPageResponse(
+        items,
+        datasets.getNumber(),
+        datasets.getSize(),
+        datasets.getTotalElements(),
+        datasets.getTotalPages());
   }
 
   private BusinessRequirement findRequirement(

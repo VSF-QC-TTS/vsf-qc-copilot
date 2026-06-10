@@ -1,8 +1,11 @@
 package me.nghlong3004.vqc.api.dataset.service;
 
 import java.util.UUID;
+import me.nghlong3004.vqc.api.dataset.enums.DatasetStatus;
 import me.nghlong3004.vqc.api.dataset.request.CreateDatasetRequest;
+import me.nghlong3004.vqc.api.dataset.response.DatasetPageResponse;
 import me.nghlong3004.vqc.api.dataset.response.DatasetResponse;
+import org.springframework.data.domain.Pageable;
 
 /**
  * Coordinates dataset use cases.
@@ -22,4 +25,16 @@ public interface DatasetService {
    */
   DatasetResponse createDataset(
       UUID projectPublicId, CreateDatasetRequest request, String username);
+
+  /**
+   * Lists datasets under a project owned by the authenticated user.
+   *
+   * @param projectPublicId public project identifier
+   * @param status optional dataset status filter
+   * @param pageable page and sort request
+   * @param username authenticated principal username/email
+   * @return page of datasets
+   */
+  DatasetPageResponse listDatasets(
+      UUID projectPublicId, DatasetStatus status, Pageable pageable, String username);
 }

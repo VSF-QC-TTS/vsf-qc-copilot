@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.lang.reflect.Proxy;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -14,6 +15,7 @@ import me.nghlong3004.vqc.api.dataset.enums.DatasetStatus;
 import me.nghlong3004.vqc.api.dataset.mapper.DatasetMapper;
 import me.nghlong3004.vqc.api.dataset.repository.DatasetRepository;
 import me.nghlong3004.vqc.api.dataset.request.CreateDatasetRequest;
+import me.nghlong3004.vqc.api.dataset.response.DatasetPageResponse;
 import me.nghlong3004.vqc.api.dataset.response.DatasetResponse;
 import me.nghlong3004.vqc.api.exception.ResourceException;
 import me.nghlong3004.vqc.api.project.entity.Project;
@@ -22,6 +24,8 @@ import me.nghlong3004.vqc.api.requirement.entity.BusinessRequirement;
 import me.nghlong3004.vqc.api.requirement.repository.BusinessRequirementRepository;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -199,7 +203,71 @@ class DatasetServiceImplTest {
         .isEqualTo("REQUIREMENT_NOT_FOUND");
   }
 
+  @Test
+  void listDatasetsLoadsOwnedProjectAndReturnsFilteredPage() {
+    User creator = user();
+    Project project = project(creator);
+    Dataset dataset = dataset(project, creator);
+    AtomicReference<ProjectLookup> projectLookup = new AtomicReference<>();
+    AtomicReference<DatasetQuery> datasetQuery = new AtomicReference<>();
+    DatasetServiceImpl datasetService =
+        new DatasetServiceImpl(
+            datasetRepository(
+                new AtomicReference<>(),
+                new PageImpl<>(List.of(dataset), PageRequest.of(0, 20), 1),
+                datasetQuery),
+            projectRepository(projectLookup, Optional.of(project)),
+            ignoredRequirementRepository(),
+            userRepository(Optional.of(creator)),
+            new DatasetMapper());
+
+    DatasetPageResponse response =
+        datasetService.listDatasets(
+            project.getPublicId(), DatasetStatus.DRAFT, PageRequest.of(0, 20), "  QC.Demo@Example.COM  ");
+
+    assertThat(projectLookup.get().publicId()).isEqualTo(project.getPublicId());
+    assertThat(projectLookup.get().createdBy()).isSameAs(creator);
+    assertThat(datasetQuery.get().project()).isSameAs(project);
+    assertThat(datasetQuery.get().status()).isEqualTo(DatasetStatus.DRAFT);
+    assertThat(response.items()).hasSize(1);
+    assertThat(response.items().getFirst().publicId()).isEqualTo(dataset.getPublicId());
+    assertThat(response.items().getFirst().totalCases()).isZero();
+    assertThat(response.page()).isZero();
+    assertThat(response.size()).isEqualTo(20);
+    assertThat(response.totalItems()).isEqualTo(1);
+    assertThat(response.totalPages()).isEqualTo(1);
+  }
+
+  @Test
+  void listDatasetsUsesUnfilteredQueryWhenStatusIsMissing() {
+    User creator = user();
+    Project project = project(creator);
+    AtomicReference<DatasetQuery> datasetQuery = new AtomicReference<>();
+    DatasetServiceImpl datasetService =
+        new DatasetServiceImpl(
+            datasetRepository(
+                new AtomicReference<>(),
+                new PageImpl<>(List.of(), PageRequest.of(0, 20), 0),
+                datasetQuery),
+            projectRepository(new AtomicReference<>(), Optional.of(project)),
+            ignoredRequirementRepository(),
+            userRepository(Optional.of(creator)),
+            new DatasetMapper());
+
+    datasetService.listDatasets(project.getPublicId(), null, PageRequest.of(0, 20), "qc.demo@example.com");
+
+    assertThat(datasetQuery.get().project()).isSameAs(project);
+    assertThat(datasetQuery.get().status()).isNull();
+  }
+
   private DatasetRepository datasetRepository(AtomicReference<Dataset> savedDataset) {
+    return datasetRepository(savedDataset, null, new AtomicReference<>());
+  }
+
+  private DatasetRepository datasetRepository(
+      AtomicReference<Dataset> savedDataset,
+      PageImpl<Dataset> datasetPage,
+      AtomicReference<DatasetQuery> datasetQuery) {
     return proxy(
         DatasetRepository.class,
         (proxy, method, args) -> {
@@ -207,6 +275,14 @@ class DatasetServiceImplTest {
             Dataset dataset = (Dataset) args[0];
             savedDataset.set(dataset);
             return dataset;
+          }
+          if ("findByProject".equals(method.getName())) {
+            datasetQuery.set(new DatasetQuery((Project) args[0], null));
+            return datasetPage;
+          }
+          if ("findByProjectAndStatus".equals(method.getName())) {
+            datasetQuery.set(new DatasetQuery((Project) args[0], (DatasetStatus) args[1]));
+            return datasetPage;
           }
           throw new UnsupportedOperationException(method.getName());
         });
@@ -310,7 +386,22 @@ class DatasetServiceImplTest {
         .build();
   }
 
+  private Dataset dataset(Project project, User creator) {
+    return Dataset.builder()
+        .publicId(UUID.fromString("0f6d90c2-7410-4db2-86be-8adfd3140f63"))
+        .project(project)
+        .name("Health Demo Dataset")
+        .sourceType(DatasetSourceType.SAMPLE_DEMO)
+        .status(DatasetStatus.DRAFT)
+        .createdBy(creator)
+        .createdAt(OffsetDateTime.parse("2026-06-08T10:30:00Z"))
+        .updatedAt(OffsetDateTime.parse("2026-06-08T10:30:00Z"))
+        .build();
+  }
+
   private record ProjectLookup(UUID publicId, User createdBy) {}
 
   private record RequirementLookup(UUID publicId, User createdBy) {}
+
+  private record DatasetQuery(Project project, DatasetStatus status) {}
 }

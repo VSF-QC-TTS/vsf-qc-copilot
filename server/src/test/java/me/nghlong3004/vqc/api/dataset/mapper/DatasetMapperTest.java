@@ -7,6 +7,7 @@ import java.util.UUID;
 import me.nghlong3004.vqc.api.dataset.entity.Dataset;
 import me.nghlong3004.vqc.api.dataset.enums.DatasetSourceType;
 import me.nghlong3004.vqc.api.dataset.enums.DatasetStatus;
+import me.nghlong3004.vqc.api.dataset.response.DatasetListItemResponse;
 import me.nghlong3004.vqc.api.dataset.response.DatasetResponse;
 import me.nghlong3004.vqc.api.project.entity.Project;
 import me.nghlong3004.vqc.api.requirement.entity.BusinessRequirement;
@@ -71,5 +72,28 @@ class DatasetMapperTest {
 
     assertThat(response.requirementPublicId()).isNull();
     assertThat(response.totalCases()).isZero();
+  }
+
+  @Test
+  void toListItemResponseMapsPublicDatasetSummaryFields() {
+    Project project = new Project();
+    project.setPublicId(UUID.fromString("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"));
+    Dataset dataset = new Dataset();
+    dataset.setPublicId(UUID.fromString("0f6d90c2-7410-4db2-86be-8adfd3140f63"));
+    dataset.setProject(project);
+    dataset.setName("Health Demo Dataset");
+    dataset.setSourceType(DatasetSourceType.SAMPLE_DEMO);
+    dataset.setStatus(DatasetStatus.DRAFT);
+    dataset.setCreatedAt(OffsetDateTime.parse("2026-06-08T10:30:00Z"));
+
+    DatasetListItemResponse response = datasetMapper.toListItemResponse(dataset, 3);
+
+    assertThat(response.publicId()).isEqualTo(dataset.getPublicId());
+    assertThat(response.projectPublicId()).isEqualTo(project.getPublicId());
+    assertThat(response.name()).isEqualTo("Health Demo Dataset");
+    assertThat(response.sourceType()).isEqualTo(DatasetSourceType.SAMPLE_DEMO);
+    assertThat(response.status()).isEqualTo(DatasetStatus.DRAFT);
+    assertThat(response.totalCases()).isEqualTo(3);
+    assertThat(response.createdAt()).isEqualTo(OffsetDateTime.parse("2026-06-08T10:30:00Z"));
   }
 }

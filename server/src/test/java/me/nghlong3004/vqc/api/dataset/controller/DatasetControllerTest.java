@@ -2,16 +2,20 @@ package me.nghlong3004.vqc.api.dataset.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 import me.nghlong3004.vqc.api.dataset.enums.DatasetSourceType;
 import me.nghlong3004.vqc.api.dataset.enums.DatasetStatus;
 import me.nghlong3004.vqc.api.dataset.request.CreateDatasetRequest;
+import me.nghlong3004.vqc.api.dataset.response.DatasetListItemResponse;
+import me.nghlong3004.vqc.api.dataset.response.DatasetPageResponse;
 import me.nghlong3004.vqc.api.dataset.response.DatasetResponse;
 import me.nghlong3004.vqc.api.dataset.service.DatasetService;
 import me.nghlong3004.vqc.api.exception.GlobalException;
@@ -25,6 +29,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.test.web.servlet.MockMvc;
@@ -150,6 +155,70 @@ class DatasetControllerTest {
     assertThat(RecordingDatasetService.createDatasetRequest).isNull();
   }
 
+  @Test
+  void listDatasetsReturnsDatasetPage() throws Exception {
+    RecordingDatasetService.datasetPageResponse =
+        new DatasetPageResponse(
+            List.of(
+                new DatasetListItemResponse(
+                    UUID.fromString("0f6d90c2-7410-4db2-86be-8adfd3140f63"),
+                    UUID.fromString("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"),
+                    "Health Demo Dataset",
+                    DatasetSourceType.SAMPLE_DEMO,
+                    DatasetStatus.DRAFT,
+                    0,
+                    OffsetDateTime.parse("2026-06-08T10:30:00Z"))),
+            0,
+            20,
+            1,
+            1);
+
+    mockMvc
+        .perform(
+            get("/api/v1/projects/5a4edcc1-cd1e-44ef-a144-31f5f3d2f653/datasets")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .queryParam("status", "DRAFT")
+                .queryParam("page", "0")
+                .queryParam("size", "20"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[0].publicId").value("0f6d90c2-7410-4db2-86be-8adfd3140f63"))
+        .andExpect(
+            jsonPath("$.items[0].projectPublicId")
+                .value("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"))
+        .andExpect(jsonPath("$.items[0].name").value("Health Demo Dataset"))
+        .andExpect(jsonPath("$.items[0].sourceType").value("SAMPLE_DEMO"))
+        .andExpect(jsonPath("$.items[0].status").value("DRAFT"))
+        .andExpect(jsonPath("$.items[0].totalCases").value(0))
+        .andExpect(jsonPath("$.page").value(0))
+        .andExpect(jsonPath("$.size").value(20))
+        .andExpect(jsonPath("$.totalItems").value(1))
+        .andExpect(jsonPath("$.totalPages").value(1));
+
+    assertThat(RecordingDatasetService.projectPublicId)
+        .isEqualTo(UUID.fromString("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"));
+    assertThat(RecordingDatasetService.status).isEqualTo(DatasetStatus.DRAFT);
+    assertThat(RecordingDatasetService.pageable.getPageNumber()).isZero();
+    assertThat(RecordingDatasetService.pageable.getPageSize()).isEqualTo(20);
+    assertThat(RecordingDatasetService.username).isEqualTo("qc.demo@example.com");
+  }
+
+  @Test
+  void listDatasetsReturnsValidationProblemDetailsForInvalidStatus() throws Exception {
+    mockMvc
+        .perform(
+            get("/api/v1/projects/5a4edcc1-cd1e-44ef-a144-31f5f3d2f653/datasets")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .queryParam("status", "UNKNOWN"))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+        .andExpect(
+            jsonPath("$.instance")
+                .value("/api/v1/projects/5a4edcc1-cd1e-44ef-a144-31f5f3d2f653/datasets"));
+
+    assertThat(RecordingDatasetService.datasetPageResponse).isNull();
+  }
+
   @TestConfiguration
   static class MockBeans {
 
@@ -163,14 +232,20 @@ class DatasetControllerTest {
 
     static UUID projectPublicId;
     static CreateDatasetRequest createDatasetRequest;
+    static DatasetStatus status;
+    static Pageable pageable;
     static String username;
     static DatasetResponse datasetResponse;
+    static DatasetPageResponse datasetPageResponse;
 
     static void reset() {
       projectPublicId = null;
       createDatasetRequest = null;
+      status = null;
+      pageable = null;
       username = null;
       datasetResponse = null;
+      datasetPageResponse = null;
     }
 
     @Override
@@ -180,6 +255,16 @@ class DatasetControllerTest {
       RecordingDatasetService.createDatasetRequest = request;
       RecordingDatasetService.username = username;
       return datasetResponse;
+    }
+
+    @Override
+    public DatasetPageResponse listDatasets(
+        UUID projectPublicId, DatasetStatus status, Pageable pageable, String username) {
+      RecordingDatasetService.projectPublicId = projectPublicId;
+      RecordingDatasetService.status = status;
+      RecordingDatasetService.pageable = pageable;
+      RecordingDatasetService.username = username;
+      return datasetPageResponse;
     }
   }
 }
