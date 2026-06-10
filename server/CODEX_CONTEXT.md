@@ -44,7 +44,7 @@ Domain choices in current code:
 - `User` uses Lombok builder/defaults; register currently builds users with `User.builder()`.
 
 Persistence now vs target:
-- Current Flyway has `V1__enable_extensions.sql`, `V2__create_users.sql`, `V3__create_projects.sql`, and `V4__create_target_api_connectors.sql`.
+- Current Flyway has `V1__enable_extensions.sql`, `V2__create_users.sql`, `V3__create_projects.sql`, `V4__create_target_api_connectors.sql`, and `V5__create_business_requirements.sql`.
 - `V2__create_users.sql` includes `users`, `email_verification_tokens`, and `password_reset_tokens`.
 - Email verification and password reset tokens are opaque raw values; only SHA-256 hashes are stored.
 - `OpaqueTokenService` owns raw token generation and hashing for one-time email tokens.
@@ -61,12 +61,19 @@ Implemented API slices after auth:
   - `secretValues` are write-only. Create/update replace raw secret values in headers/body/auth config with placeholders like `{{secret:KEY}}`; responses return masked `secretRefs`, not raw secrets.
   - Test-run renders `{{question}}`, `{{precondition}}`, and `{{metadata}}`, calls the configured API via `TargetConnectorClient`, and currently extracts `$.answer` only.
   - `RestClient.Builder` is provided by `ApplicationConfig`; `timeoutSeconds` is accepted but not yet wired into a per-request HTTP timeout.
+- Requirements:
+  - Create/list are nested under `/api/v1/projects/{projectPublicId}/requirements`.
+  - Detail/update use `/api/v1/requirements/{requirementPublicId}`.
+  - Requirement access is owner-scoped by authenticated username/email through project `createdBy`.
+  - `content` is stored trimmed, `version` starts at `1`, and `PATCH` increments `version` only when content changes.
+  - `status` supports `ACTIVE` and `ARCHIVED`; use `PATCH status=ARCHIVED` instead of a separate archive endpoint for now.
+  - `RequirementServiceImpl` logs each API operation with public IDs/user IDs and never logs raw requirement content.
 
 Known current gaps:
 - Connector secrets are not persisted in a real encrypted secret store yet; placeholder resolution for real outbound auth secrets is future work.
 - OAuth persistence/linking remains incomplete.
 - Connector response extraction only supports the current simple selector path used by tests.
-- Long-running evaluation, requirement, dataset, rubric, run/job, result/review, and export APIs are still future slices.
+- Long-running evaluation, dataset, rubric, run/job, result/review, and export APIs are still future slices.
 
 Future product direction from docs:
 - MVP flow: Login -> Project -> Dynamic Target API Connector -> Requirement -> Dataset/Test Cases -> Rubric/Criteria -> Evaluation Run/Job -> Results -> QC Review -> Export.
@@ -92,8 +99,8 @@ API conventions:
 - Prefer feature-first packages: `<feature>/controller`, `service`, `service/impl`, `repository`, `entity`, `mapper`, `request`, `response`.
 
 Focused tests:
-- Full server suite passed on 2026-06-10 after app-context wiring fixes:
-  `rtk bash mvnw test` -> 87 tests, 0 failures/errors.
+- Full server suite passed on 2026-06-10 after Requirement API:
+  `rtk bash mvnw test` -> 109 tests, 0 failures/errors.
 - `ServerApplicationTests` injects dummy test properties for JWT/OAuth/Gemini/base URLs because the full context uses `dev` profile but does not load `server/.env`.
 - Existing safe server suite:
   `rtk bash mvnw -Dtest=RoleTest,UserMapperTest,UserServiceImplTest,HtmlMailTemplateRendererTest,EmailVerificationMailStrategyTest,PasswordResetMailStrategyTest,ErrorResponseTest,AuthServiceImplTest,EmailVerificationServiceImplTest,PasswordResetServiceImplTest,AuthControllerTest,JwtTokenServiceImplTest,RefreshTokenCookieFactoryTest test`
@@ -101,4 +108,6 @@ Focused tests:
   `rtk bash mvnw -Dtest=AuthProviderTest,OAuth2UserProfileExtractorTest,OAuth2UserProfileServiceTest,ProviderAwareOAuth2UserServiceTest,GithubEmailOAuth2UserEnricherTest,OAuth2LoginSuccessHandlerTest test`
 - Project/connector/mock focused suite:
   `rtk bash mvnw -Dtest=ProjectControllerTest,ProjectServiceImplTest,ProjectMapperTest,MockChatbotControllerTest,MockChatbotServiceImplTest,TargetApiConnectorControllerTest,TargetApiConnectorServiceImplTest,TargetApiConnectorMapperTest test`
+- Requirement focused suite:
+  `rtk bash mvnw -Dtest=RequirementControllerTest,RequirementServiceImplTest,RequirementMapperTest test`
 - Public controller tests should cover HTTP status, JSON body, Problem Details validation errors, cookies/headers, and service delegation.

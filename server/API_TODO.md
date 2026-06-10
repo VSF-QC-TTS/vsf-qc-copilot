@@ -11,14 +11,11 @@ Purpose: track API slices while keeping `CODEX_CONTEXT.md` short. Update this fi
 - Project: create, list, detail, update, archive.
 - Mock chatbot: public chat fallback (`POST /mock-chatbot/chat`).
 - Target API connector: create, list, detail, update, test-run.
+- Requirement: create, list, detail, update.
 
 ## In Progress
 
-- Requirement API
-  - [x] Create requirement
-  - [x] List requirements
-  - [x] Get requirement detail
-  - [x] Update requirement
+- None.
 
 ## Next
 
