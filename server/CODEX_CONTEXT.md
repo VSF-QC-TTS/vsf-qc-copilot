@@ -44,8 +44,9 @@ Domain choices in current code:
 - `User` uses Lombok builder/defaults; register currently builds users with `User.builder()`.
 
 Persistence now vs target:
-- Current Flyway has `V1__enable_extensions.sql`, `V2__create_users.sql`, `V3__create_projects.sql`, `V4__create_target_api_connectors.sql`, and `V5__create_business_requirements.sql`.
-- `V2__create_users.sql` includes `users`, `email_verification_tokens`, and `password_reset_tokens`.
+- Current Flyway is intentionally squashed into one initial migration: `V1__init_schema.sql`.
+- The old incremental migrations (`V1__enable_extensions.sql` through `V5__create_business_requirements.sql`) were merged because product/Flyway has not been run yet and the current database is empty.
+- `V1__init_schema.sql` creates `pgcrypto`, `users`, `email_verification_tokens`, `password_reset_tokens`, `projects`, `target_api_connectors`, and `business_requirements`.
 - Email verification and password reset tokens are opaque raw values; only SHA-256 hashes are stored.
 - `OpaqueTokenService` owns raw token generation and hashing for one-time email tokens.
 - Future MVP docs expect main tables to use internal `BIGINT id` plus public `UUID public_id`; APIs should expose `publicId`, not internal `id`.
