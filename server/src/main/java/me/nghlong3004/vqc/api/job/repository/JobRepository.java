@@ -28,4 +28,13 @@ public interface JobRepository extends JpaRepository<Job, Long> {
    * @return list of matching {@link Job} entities
    */
   List<Job> findByStatusIn(List<JobStatus> statuses);
+
+  /**
+   * Finds a job by public id and creator.
+   *
+   * @param publicId public job identifier
+   * @param createdBy creator {@link me.nghlong3004.vqc.api.user.entity.User}
+   * @return {@link Optional} containing the matching {@link Job} when present
+   */
+  Optional<Job> findByPublicIdAndCreatedBy(UUID publicId, me.nghlong3004.vqc.api.user.entity.User createdBy);
 }
