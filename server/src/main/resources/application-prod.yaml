@@ -39,6 +39,9 @@ spring:
 
   data:
     redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
       repositories:
         enabled: false
 
@@ -130,3 +133,11 @@ vqc:
     cookie:
       secure: true
       same-site: Strict
+  promptfoo:
+    mode: cli
+    work-dir: /app/runs
+    command: promptfoo
+    max-concurrency: 1
+  worker:
+    enabled: true
+    queue-key: vqc:jobs:queue

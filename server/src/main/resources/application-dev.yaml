@@ -24,6 +24,9 @@ spring:
 
   data:
     redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
       repositories:
         enabled: false
 
@@ -105,3 +108,11 @@ vqc:
     cookie:
       secure: false
       same-site: lax
+  promptfoo:
+    mode: mock
+    work-dir: ./runs
+    command: ./infra/scripts/run-promptfoo.sh
+    max-concurrency: 1
+  worker:
+    enabled: true
+    queue-key: vqc:jobs:queue
