@@ -204,6 +204,11 @@ Auth
 |   `-- /{reviewDecisionPublicId}
 |       `-- PATCH /
 |           `-- Update QC review decision hiện có
+|
+|-- /api/v1/evaluation-runs [auth]
+|   `-- /{runPublicId}/exports
+|       `-- POST /
+|           `-- Tạo export file metadata + async job, trả 202
 ```
 
 ## Domain Relationship Tree
@@ -280,7 +285,9 @@ User
     `-- xem QC decision, default NOT_REVIEWED nếu chưa review
 23. PATCH /api/v1/review-decisions/{reviewDecisionPublicId}
     `-- update QC decision hiện có
-24. Future: export
+24. POST /api/v1/evaluation-runs/{runPublicId}/exports
+    `-- tạo async export job
+25. Future: export detail/download
 ```
 
 ## Cross-Cutting Rules
@@ -300,7 +307,7 @@ Project
 |-- Evaluation Run / Job
 |   |-- Worker + Promptfoo mock executor [done]
 |   |-- QC Review [done: upsert/get/patch decision]
-|   `-- Export [future]
+|   `-- Export [partial: create job done]
 |       `-- flexible mapping; optional missing fields thì để blank
 `-- Connector secrets encryption [future]
 ```

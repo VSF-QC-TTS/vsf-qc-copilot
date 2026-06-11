@@ -25,7 +25,8 @@ Update rule:
 - Job: detail flat path with resolved `resourcePublicId`.
 - Worker + Promptfoo mock executor (Step 10).
 - QC Review: upsert/get review decision by evaluation result; patch by review decision.
+- Export: create export job under evaluation run.
 
 ## Next
 
-- Export endpoints (Phase 8).
+- Export endpoints: detail and file download.

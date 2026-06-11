@@ -1,0 +1,71 @@
+package me.nghlong3004.vqc.api.export.controller;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import java.security.Principal;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import me.nghlong3004.vqc.api.exception.ErrorResponse;
+import me.nghlong3004.vqc.api.export.request.CreateExportRequest;
+import me.nghlong3004.vqc.api.export.response.CreateExportResponse;
+import me.nghlong3004.vqc.api.export.service.ExportService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * @author nghlong3004 (Long Nguyen Hoang)
+ * @since 6/11/2026
+ */
+@RestController
+@RequiredArgsConstructor
+@Tag(name = "Exports", description = "Export APIs")
+public class ExportController {
+
+  private final ExportService exportService;
+
+  @Operation(summary = "Create export", description = "Creates an async export job for an evaluation run.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "202",
+        description = "Export accepted",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = CreateExportResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Validation failed",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Evaluation run not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @PostMapping(
+      value = "/api/v1/evaluation-runs/{runPublicId}/exports",
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  @ResponseStatus(HttpStatus.ACCEPTED)
+  public CreateExportResponse createExport(
+      @PathVariable UUID runPublicId,
+      @Valid @RequestBody CreateExportRequest request,
+      Principal principal) {
+    return exportService.createExport(runPublicId, request, principal.getName());
+  }
+}

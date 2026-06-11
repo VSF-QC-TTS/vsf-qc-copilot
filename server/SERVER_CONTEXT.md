@@ -149,6 +149,8 @@ Implemented API slices after auth:
   - `QcStatus`: `NOT_REVIEWED`, `PASS`, `FAIL`, `NEED_FIX`, `IGNORED`; write APIs accept only writable statuses (`PASS`, `FAIL`, `NEED_FIX`, `IGNORED`).
   - `NOT_REVIEWED` is derived when no `review_decisions` row exists; no default rows are created.
   - `picBug` is stored as an active user reference (`pic_bug_user_id`) and request payload uses `picBugUserPublicId`.
+- Export:
+  - `POST /api/v1/evaluation-runs/{runPublicId}/exports` creates `export_files` metadata and an async job (`EXPORT_EXCEL` or `EXPORT_JSON`) with `resourceType=EXPORT_FILE`, pushes the job public ID to Redis, and returns `202 Accepted`.
 
 ## [FUTURE_SLICE] Known Current Gaps
 
@@ -157,7 +159,7 @@ Known current gaps:
 - Connector secrets are not persisted in a real encrypted secret store yet; placeholder resolution for real outbound auth secrets is future work.
 - OAuth persistence/linking remains incomplete.
 - Connector response extraction only supports the current simple selector path used by tests.
-- Export APIs are still future slices.
+- Export detail/download endpoints and export job generation are still future slices.
 
 ## [FUTURE_SLICE] Next Implementation Steps
 
@@ -170,8 +172,8 @@ Step 11 — QC Review APIs:
 - Add tests for create/update/default-not-reviewed/ownership/validation.
 - Commit each API slice separately.
 
-Step 12 — Export APIs:
-- Add export file metadata, create/detail/download APIs, and generator Strategy for Excel vs JSON.
+Step 12 — Export detail/download + worker generation:
+- Add export detail/download APIs and generator Strategy for Excel vs JSON.
 - Export final status should use `qcStatus`; optional missing fields should be blank, not fatal.
 
 ## [FUTURE_SLICE] Product Direction
