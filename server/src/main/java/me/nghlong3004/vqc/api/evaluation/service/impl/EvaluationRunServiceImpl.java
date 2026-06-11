@@ -1,5 +1,6 @@
 package me.nghlong3004.vqc.api.evaluation.service.impl;
 
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,9 +9,12 @@ import me.nghlong3004.vqc.api.dataset.enums.DatasetStatus;
 import me.nghlong3004.vqc.api.dataset.repository.DatasetRepository;
 import me.nghlong3004.vqc.api.evaluation.entity.EvaluationRun;
 import me.nghlong3004.vqc.api.evaluation.enums.EvaluationRunStatus;
+import me.nghlong3004.vqc.api.evaluation.mapper.EvaluationRunMapper;
 import me.nghlong3004.vqc.api.evaluation.repository.EvaluationRunRepository;
 import me.nghlong3004.vqc.api.evaluation.request.CreateEvaluationRunRequest;
 import me.nghlong3004.vqc.api.evaluation.response.CreateEvaluationRunResponse;
+import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunListItemResponse;
+import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunPageResponse;
 import me.nghlong3004.vqc.api.evaluation.service.EvaluationRunService;
 import me.nghlong3004.vqc.api.exception.ErrorCode;
 import me.nghlong3004.vqc.api.exception.ResourceException;
@@ -31,6 +35,8 @@ import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
 import me.nghlong3004.vqc.api.testcase.repository.TestCaseRepository;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,6 +60,7 @@ public class EvaluationRunServiceImpl implements EvaluationRunService {
   private final TestCaseRepository testCaseRepository;
   private final UserRepository userRepository;
   private final JobQueuePublisher jobQueuePublisher;
+  private final EvaluationRunMapper evaluationRunMapper;
 
   @Override
   @Transactional
@@ -118,6 +125,28 @@ public class EvaluationRunServiceImpl implements EvaluationRunService {
         savedJob.getPublicId(),
         savedRun.getStatus().name(),
         "Evaluation run queued successfully.");
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public EvaluationRunPageResponse listEvaluationRuns(
+      UUID projectPublicId, Pageable pageable, String username) {
+    User creator = findCreator(username);
+    Project project = findProject(projectPublicId, creator);
+    Page<EvaluationRun> runs =
+        evaluationRunRepository.findByProjectIdAndCreatedBy(project.getId(), creator, pageable);
+    List<EvaluationRunListItemResponse> items =
+        runs.getContent().stream()
+            .map(evaluationRunMapper::toListItemResponse)
+            .toList();
+    log.info(
+        "Listed evaluation runs for project {} by user {} page {} size {}",
+        project.getPublicId(),
+        creator.getPublicId(),
+        runs.getNumber(),
+        runs.getSize());
+    return new EvaluationRunPageResponse(
+        items, runs.getNumber(), runs.getSize(), runs.getTotalElements(), runs.getTotalPages());
   }
 
   // ── Validation helpers ──

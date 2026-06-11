@@ -12,7 +12,9 @@ import me.nghlong3004.vqc.api.dataset.entity.Dataset;
 import me.nghlong3004.vqc.api.dataset.enums.DatasetSourceType;
 import me.nghlong3004.vqc.api.dataset.enums.DatasetStatus;
 import me.nghlong3004.vqc.api.dataset.repository.DatasetRepository;
+import me.nghlong3004.vqc.api.evaluation.entity.EvaluationRun;
 import me.nghlong3004.vqc.api.evaluation.enums.EvaluationRunStatus;
+import me.nghlong3004.vqc.api.evaluation.mapper.EvaluationRunMapper;
 import me.nghlong3004.vqc.api.evaluation.repository.EvaluationRunRepository;
 import me.nghlong3004.vqc.api.evaluation.request.CreateEvaluationRunRequest;
 import me.nghlong3004.vqc.api.evaluation.response.CreateEvaluationRunResponse;
@@ -244,7 +246,8 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(TargetApiConnectorRepository.class),
         ignoredRepo(TestCaseRepository.class),
         userRepository(Optional.empty()),
-        ignoredPublisher());
+        ignoredPublisher(),
+        new EvaluationRunMapper());
 
     assertThatThrownBy(() -> service.createEvaluationRun(
             UUID.randomUUID(),
@@ -267,7 +270,8 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(TargetApiConnectorRepository.class),
         ignoredRepo(TestCaseRepository.class),
         userRepository(Optional.of(creator)),
-        ignoredPublisher());
+        ignoredPublisher(),
+        new EvaluationRunMapper());
 
     assertThatThrownBy(() -> service.createEvaluationRun(
             UUID.randomUUID(),
@@ -276,6 +280,84 @@ class EvaluationRunServiceImplTest {
         .isInstanceOf(ResourceException.class)
         .extracting(e -> ((ResourceException) e).getResponse().code())
         .isEqualTo("PROJECT_NOT_FOUND");
+  }
+
+  // ── List evaluation runs ──
+
+  @Test
+  void listEvaluationRunsReturnsPage() {
+    User creator = user();
+    Project project = project(creator);
+    Dataset dataset = approvedDataset(project, creator);
+    RubricVersion rubricVersion = publishedRubricVersion(creator);
+    TargetApiConnector connector = activeConnector(project, creator);
+
+    EvaluationRun run = EvaluationRun.builder()
+        .publicId(UUID.randomUUID())
+        .project(project)
+        .dataset(dataset)
+        .rubricVersion(rubricVersion)
+        .targetApiConnector(connector)
+        .status(EvaluationRunStatus.PENDING)
+        .totalCases(10)
+        .createdBy(creator)
+        .createdAt(java.time.OffsetDateTime.now())
+        .build();
+
+    EvaluationRunServiceImpl service = new EvaluationRunServiceImpl(
+        evaluationRunRepository(new org.springframework.data.domain.PageImpl<>(
+            java.util.List.of(run),
+            org.springframework.data.domain.PageRequest.of(0, 20), 1)),
+        ignoredRepo(JobRepository.class),
+        projectRepository(Optional.of(project)),
+        ignoredRepo(DatasetRepository.class),
+        ignoredRepo(RubricVersionRepository.class),
+        ignoredRepo(TargetApiConnectorRepository.class),
+        ignoredRepo(TestCaseRepository.class),
+        userRepository(Optional.of(creator)),
+        ignoredPublisher(),
+        new EvaluationRunMapper());
+
+    var response = service.listEvaluationRuns(
+        project.getPublicId(),
+        org.springframework.data.domain.PageRequest.of(0, 20),
+        "qc.demo@example.com");
+
+    assertThat(response.items()).hasSize(1);
+    assertThat(response.items().getFirst().publicId()).isEqualTo(run.getPublicId());
+    assertThat(response.items().getFirst().status()).isEqualTo(EvaluationRunStatus.PENDING);
+    assertThat(response.page()).isZero();
+    assertThat(response.size()).isEqualTo(20);
+    assertThat(response.totalItems()).isEqualTo(1);
+    assertThat(response.totalPages()).isEqualTo(1);
+  }
+
+  @Test
+  void listEvaluationRunsReturnsEmptyPage() {
+    User creator = user();
+    Project project = project(creator);
+
+    EvaluationRunServiceImpl service = new EvaluationRunServiceImpl(
+        evaluationRunRepository(new org.springframework.data.domain.PageImpl<>(
+            java.util.List.of(),
+            org.springframework.data.domain.PageRequest.of(0, 20), 0)),
+        ignoredRepo(JobRepository.class),
+        projectRepository(Optional.of(project)),
+        ignoredRepo(DatasetRepository.class),
+        ignoredRepo(RubricVersionRepository.class),
+        ignoredRepo(TargetApiConnectorRepository.class),
+        ignoredRepo(TestCaseRepository.class),
+        userRepository(Optional.of(creator)),
+        ignoredPublisher(),
+        new EvaluationRunMapper());
+
+    var response = service.listEvaluationRuns(
+        project.getPublicId(),
+        org.springframework.data.domain.PageRequest.of(0, 20),
+        "qc.demo@example.com");
+
+    assertThat(response.items()).isEmpty();
+    assertThat(response.totalItems()).isZero();
   }
 
   // ── Builder / helpers ──
@@ -292,7 +374,8 @@ class EvaluationRunServiceImplTest {
         connectorRepository(Optional.of(connector)),
         testCaseRepository(activeCases),
         userRepository(Optional.of(creator)),
-        jobQueuePublisher(publishedJobId));
+        jobQueuePublisher(publishedJobId),
+        new EvaluationRunMapper());
   }
 
   private CreateEvaluationRunRequest request(
@@ -305,6 +388,15 @@ class EvaluationRunServiceImplTest {
 
   private EvaluationRunRepository evaluationRunRepository() {
     return proxy(EvaluationRunRepository.class, (p, m, args) -> {
+      if ("save".equals(m.getName())) return args[0];
+      throw new UnsupportedOperationException(m.getName());
+    });
+  }
+
+  private EvaluationRunRepository evaluationRunRepository(
+      org.springframework.data.domain.Page<me.nghlong3004.vqc.api.evaluation.entity.EvaluationRun> page) {
+    return proxy(EvaluationRunRepository.class, (p, m, args) -> {
+      if ("findByProjectIdAndCreatedBy".equals(m.getName())) return page;
       if ("save".equals(m.getName())) return args[0];
       throw new UnsupportedOperationException(m.getName());
     });
