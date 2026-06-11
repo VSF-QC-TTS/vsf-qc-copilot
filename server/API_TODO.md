@@ -1,8 +1,13 @@
 # Server API TODO
 
-Date: 2026-06-10
+Date: 2026-06-11
 
-Purpose: track API slices while keeping `CODEX_CONTEXT.md` short. Update this file after each API endpoint commit.
+Purpose: track API slices while keeping `SERVER_CONTEXT.md` short.
+
+Update rule:
+- Update this file after each API endpoint commit.
+- If an endpoint/path/method/resource relationship changes, update `server/API_TREE.md` in the same change.
+- If the change creates important implementation context for future agents, update `server/SERVER_CONTEXT.md` too.
 
 ## Completed
 
@@ -14,11 +19,16 @@ Purpose: track API slices while keeping `CODEX_CONTEXT.md` short. Update this fi
 - Requirement: create, list, detail, update.
 - Dataset/Test Case: dataset create/list/detail/update; test case create/list/update/delete.
 - Rubric/Criteria: rubric create/list/detail/update/archive; version create/list/detail/publish/archive; criteria create/list/update/delete.
+- Evaluation Run: create (`POST`, 202 async), list under project, detail flat path.
+- Evaluation Results: list under run with optional `judgeStatus` filter.
+- Evaluation Events: list job events under run.
+- Job: detail flat path with resolved `resourcePublicId`.
 
 ## In Progress
 
-- None.
+- Worker + Promptfoo mock executor (Step 10).
 
 ## Next
 
-- Evaluation run/job skeleton.
+- QC Review endpoints (Phase 7).
+- Export endpoints (Phase 8).
