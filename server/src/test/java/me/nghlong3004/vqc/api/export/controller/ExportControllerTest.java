@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -14,6 +15,7 @@ import me.nghlong3004.vqc.api.export.enums.ExportFileStatus;
 import me.nghlong3004.vqc.api.export.enums.ExportFileType;
 import me.nghlong3004.vqc.api.export.request.CreateExportRequest;
 import me.nghlong3004.vqc.api.export.response.CreateExportResponse;
+import me.nghlong3004.vqc.api.export.response.ExportDownloadResponse;
 import me.nghlong3004.vqc.api.export.response.ExportFileResponse;
 import me.nghlong3004.vqc.api.export.service.ExportService;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +28,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.test.web.servlet.MockMvc;
@@ -161,6 +164,43 @@ class ExportControllerTest {
     assertThat(RecordingExportService.exportPublicId).isNull();
   }
 
+  @Test
+  void downloadExportReturnsFile() throws Exception {
+    RecordingExportService.downloadResponse =
+        new ExportDownloadResponse(
+            "export.json",
+            MediaType.APPLICATION_JSON,
+            new ByteArrayResource("""
+                [{"externalId":"TC-001"}]
+                """.getBytes()));
+
+    mockMvc
+        .perform(
+            get("/api/v1/exports/e1e2e3e4-e5f6-7890-abcd-ef1234567890/file")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null)))
+        .andExpect(status().isOk())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        .andExpect(header().string("Content-Disposition", "attachment; filename=\"export.json\""))
+        .andExpect(content().json("[{\"externalId\":\"TC-001\"}]"));
+
+    assertThat(RecordingExportService.exportPublicId)
+        .isEqualTo(UUID.fromString("e1e2e3e4-e5f6-7890-abcd-ef1234567890"));
+    assertThat(RecordingExportService.username).isEqualTo("qc.demo@example.com");
+  }
+
+  @Test
+  void downloadExportReturnsValidationForInvalidId() throws Exception {
+    mockMvc
+        .perform(
+            get("/api/v1/exports/not-a-uuid/file")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null)))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+
+    assertThat(RecordingExportService.exportPublicId).isNull();
+  }
+
   @TestConfiguration
   static class MockBeans {
     @Bean
@@ -176,6 +216,7 @@ class ExportControllerTest {
     static String username;
     static CreateExportResponse response;
     static ExportFileResponse detailResponse;
+    static ExportDownloadResponse downloadResponse;
 
     static void reset() {
       runPublicId = null;
@@ -184,6 +225,7 @@ class ExportControllerTest {
       username = null;
       response = null;
       detailResponse = null;
+      downloadResponse = null;
     }
 
     @Override
@@ -200,6 +242,13 @@ class ExportControllerTest {
       RecordingExportService.exportPublicId = exportPublicId;
       RecordingExportService.username = username;
       return detailResponse;
+    }
+
+    @Override
+    public ExportDownloadResponse downloadExport(UUID exportPublicId, String username) {
+      RecordingExportService.exportPublicId = exportPublicId;
+      RecordingExportService.username = username;
+      return downloadResponse;
     }
   }
 }

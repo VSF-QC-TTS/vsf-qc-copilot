@@ -11,6 +11,8 @@ import me.nghlong3004.vqc.api.evaluation.entity.EvaluationRun;
 import me.nghlong3004.vqc.api.evaluation.enums.EvaluationRunStatus;
 import me.nghlong3004.vqc.api.evaluation.repository.EvaluationRunRepository;
 import me.nghlong3004.vqc.api.exception.ResourceException;
+import me.nghlong3004.vqc.api.export.entity.ExportFile;
+import me.nghlong3004.vqc.api.export.repository.ExportFileRepository;
 import me.nghlong3004.vqc.api.job.entity.Job;
 import me.nghlong3004.vqc.api.job.enums.JobStatus;
 import me.nghlong3004.vqc.api.job.enums.JobType;
@@ -61,7 +63,8 @@ class JobServiceImplTest {
     JobServiceImpl service = new JobServiceImpl(
         jobRepository(Optional.of(job)),
         userRepository(Optional.of(creator)),
-        evalRunRepository(Optional.of(evalRun)));
+        evalRunRepository(Optional.of(evalRun)),
+        exportFileRepository(Optional.empty()));
 
     JobDetailResponse detail = service.getJob(job.getPublicId(), "qc.demo@example.com");
 
@@ -78,12 +81,47 @@ class JobServiceImplTest {
   // ── Not found ──
 
   @Test
+  void getJobReturnsExportResourcePublicId() {
+    User creator = user();
+    Project project = project(creator);
+    UUID exportPublicId = UUID.randomUUID();
+    ExportFile exportFile =
+        ExportFile.builder().id(9L).publicId(exportPublicId).project(project).createdBy(creator).build();
+    Job job =
+        Job.builder()
+            .id(1L)
+            .publicId(UUID.randomUUID())
+            .jobType(JobType.EXPORT_JSON)
+            .status(JobStatus.COMPLETED)
+            .resourceType(ResourceType.EXPORT_FILE)
+            .resourceId(exportFile.getId())
+            .project(project)
+            .createdBy(creator)
+            .createdAt(OffsetDateTime.now())
+            .updatedAt(OffsetDateTime.now())
+            .build();
+
+    JobServiceImpl service =
+        new JobServiceImpl(
+            jobRepository(Optional.of(job)),
+            userRepository(Optional.of(creator)),
+            evalRunRepository(Optional.empty()),
+            exportFileRepository(Optional.of(exportFile)));
+
+    JobDetailResponse detail = service.getJob(job.getPublicId(), creator.getUsername());
+
+    assertThat(detail.resourceType()).isEqualTo(ResourceType.EXPORT_FILE);
+    assertThat(detail.resourcePublicId()).isEqualTo(exportPublicId);
+  }
+
+  @Test
   void getJobNotFoundThrows() {
     User creator = user();
     JobServiceImpl service = new JobServiceImpl(
         jobRepository(Optional.empty()),
         userRepository(Optional.of(creator)),
-        evalRunRepository(Optional.empty()));
+        evalRunRepository(Optional.empty()),
+        exportFileRepository(Optional.empty()));
 
     assertThatThrownBy(() -> service.getJob(UUID.randomUUID(), "qc.demo@example.com"))
         .isInstanceOf(ResourceException.class)
@@ -96,7 +134,8 @@ class JobServiceImplTest {
     JobServiceImpl service = new JobServiceImpl(
         jobRepository(Optional.empty()),
         userRepository(Optional.empty()),
-        evalRunRepository(Optional.empty()));
+        evalRunRepository(Optional.empty()),
+        exportFileRepository(Optional.empty()));
 
     assertThatThrownBy(() -> service.getJob(UUID.randomUUID(), "missing@example.com"))
         .isInstanceOf(ResourceException.class)
@@ -125,7 +164,8 @@ class JobServiceImplTest {
     JobServiceImpl service = new JobServiceImpl(
         jobRepository(Optional.of(job)),
         userRepository(Optional.of(creator)),
-        evalRunRepository(Optional.empty()));
+        evalRunRepository(Optional.empty()),
+        exportFileRepository(Optional.empty()));
 
     JobDetailResponse detail = service.getJob(job.getPublicId(), "qc.demo@example.com");
 
@@ -150,6 +190,13 @@ class JobServiceImplTest {
 
   private EvaluationRunRepository evalRunRepository(Optional<EvaluationRun> result) {
     return proxy(EvaluationRunRepository.class, (p, m, args) -> {
+      if ("findById".equals(m.getName())) return result;
+      throw new UnsupportedOperationException(m.getName());
+    });
+  }
+
+  private ExportFileRepository exportFileRepository(Optional<ExportFile> result) {
+    return proxy(ExportFileRepository.class, (p, m, args) -> {
       if ("findById".equals(m.getName())) return result;
       throw new UnsupportedOperationException(m.getName());
     });

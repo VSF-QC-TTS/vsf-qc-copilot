@@ -6,6 +6,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.nghlong3004.vqc.api.config.WorkerProperties;
 import me.nghlong3004.vqc.api.evaluation.handler.EvaluationJobHandler;
+import me.nghlong3004.vqc.api.export.handler.ExportJobHandler;
+import me.nghlong3004.vqc.api.job.enums.JobType;
+import me.nghlong3004.vqc.api.job.repository.JobRepository;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -25,7 +28,9 @@ public class JobWorker implements SmartLifecycle {
 
   private final StringRedisTemplate redisTemplate;
   private final WorkerProperties workerProperties;
+  private final JobRepository jobRepository;
   private final EvaluationJobHandler evaluationJobHandler;
+  private final ExportJobHandler exportJobHandler;
 
   private volatile boolean running;
   private Thread workerThread;
@@ -64,7 +69,18 @@ public class JobWorker implements SmartLifecycle {
   void processMessage(String message) {
     try {
       UUID jobPublicId = UUID.fromString(message);
-      evaluationJobHandler.handle(jobPublicId);
+      JobType jobType =
+          jobRepository
+              .findByPublicId(jobPublicId)
+              .map(job -> job.getJobType())
+              .orElse(null);
+      if (jobType == JobType.EVALUATION_RUN) {
+        evaluationJobHandler.handle(jobPublicId);
+      } else if (jobType == JobType.EXPORT_EXCEL || jobType == JobType.EXPORT_JSON) {
+        exportJobHandler.handle(jobPublicId);
+      } else {
+        log.warn("Discarding unsupported job queue message {} with type {}", message, jobType);
+      }
     } catch (IllegalArgumentException ex) {
       log.warn("Discarding invalid job queue message: {}", message);
     } catch (Exception ex) {

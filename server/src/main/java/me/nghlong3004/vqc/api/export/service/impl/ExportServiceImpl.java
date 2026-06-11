@@ -1,5 +1,7 @@
 package me.nghlong3004.vqc.api.export.service.impl;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +16,7 @@ import me.nghlong3004.vqc.api.export.mapper.ExportFileMapper;
 import me.nghlong3004.vqc.api.export.repository.ExportFileRepository;
 import me.nghlong3004.vqc.api.export.request.CreateExportRequest;
 import me.nghlong3004.vqc.api.export.response.CreateExportResponse;
+import me.nghlong3004.vqc.api.export.response.ExportDownloadResponse;
 import me.nghlong3004.vqc.api.export.response.ExportFileResponse;
 import me.nghlong3004.vqc.api.export.service.ExportService;
 import me.nghlong3004.vqc.api.job.entity.Job;
@@ -26,6 +29,8 @@ import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.MediaType;
 
 /**
  * @author nghlong3004 (Long Nguyen Hoang)
@@ -102,6 +107,35 @@ public class ExportServiceImpl implements ExportService {
             .findByPublicIdAndCreatedBy(exportPublicId, creator)
             .orElseThrow(() -> new ResourceException(ErrorCode.EXPORT_FILE_NOT_FOUND));
     return exportFileMapper.toResponse(exportFile);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public ExportDownloadResponse downloadExport(UUID exportPublicId, String username) {
+    User creator =
+        userRepository
+            .findByUsername(username.trim().toLowerCase())
+            .orElseThrow(() -> new ResourceException(ErrorCode.USER_NOT_FOUND));
+    ExportFile exportFile =
+        exportFileRepository
+            .findByPublicIdAndCreatedBy(exportPublicId, creator)
+            .orElseThrow(() -> new ResourceException(ErrorCode.EXPORT_FILE_NOT_FOUND));
+    if (exportFile.getStatus() != ExportFileStatus.READY) {
+      throw new ResourceException(ErrorCode.EXPORT_FILE_NOT_READY);
+    }
+    if (exportFile.getFilePath() == null || !Files.exists(Path.of(exportFile.getFilePath()))) {
+      throw new ResourceException(ErrorCode.EXPORT_FILE_NOT_FOUND);
+    }
+    return new ExportDownloadResponse(
+        exportFile.getFileName(),
+        mediaType(exportFile.getFileType()),
+        new FileSystemResource(exportFile.getFilePath()));
+  }
+
+  private MediaType mediaType(ExportFileType fileType) {
+    return fileType == ExportFileType.EXCEL
+        ? MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        : MediaType.APPLICATION_JSON;
   }
 
   private JobType toJobType(ExportFileType fileType) {

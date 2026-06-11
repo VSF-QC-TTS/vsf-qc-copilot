@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.lang.reflect.Proxy;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -24,6 +26,8 @@ import me.nghlong3004.vqc.api.project.entity.Project;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.springframework.http.MediaType;
 
 /**
  * @author nghlong3004 (Long Nguyen Hoang)
@@ -172,6 +176,103 @@ class ExportServiceImplTest {
             new AtomicReference<>());
 
     assertThatThrownBy(() -> service.getExport(UUID.randomUUID(), creator.getUsername()))
+        .isInstanceOf(ResourceException.class)
+        .extracting(e -> ((ResourceException) e).getResponse().code())
+        .isEqualTo("EXPORT_FILE_NOT_FOUND");
+  }
+
+  @Test
+  void downloadExportReturnsReadyFile(@TempDir Path tempDir) throws Exception {
+    User creator = user();
+    Project project = project(creator);
+    EvaluationRun run = run(project, creator);
+    Path file = tempDir.resolve("export.json");
+    Files.writeString(file, "[]");
+    ExportFile exportFile =
+        ExportFile.builder()
+            .id(1L)
+            .publicId(UUID.randomUUID())
+            .project(project)
+            .evaluationRun(run)
+            .fileType(ExportFileType.JSON)
+            .status(ExportFileStatus.READY)
+            .fileName("export.json")
+            .filePath(file.toString())
+            .createdBy(creator)
+            .build();
+    ExportServiceImpl service =
+        service(
+            Optional.of(creator),
+            Optional.of(run),
+            Optional.of(exportFile),
+            new AtomicReference<>(),
+            new AtomicReference<>(),
+            new AtomicReference<>());
+
+    var response = service.downloadExport(exportFile.getPublicId(), creator.getUsername());
+
+    assertThat(response.fileName()).isEqualTo("export.json");
+    assertThat(response.mediaType()).isEqualTo(MediaType.APPLICATION_JSON);
+    assertThat(response.resource().exists()).isTrue();
+  }
+
+  @Test
+  void downloadExportRejectsNotReadyFile() {
+    User creator = user();
+    Project project = project(creator);
+    EvaluationRun run = run(project, creator);
+    ExportFile exportFile =
+        ExportFile.builder()
+            .id(1L)
+            .publicId(UUID.randomUUID())
+            .project(project)
+            .evaluationRun(run)
+            .fileType(ExportFileType.EXCEL)
+            .status(ExportFileStatus.PENDING)
+            .createdBy(creator)
+            .build();
+    ExportServiceImpl service =
+        service(
+            Optional.of(creator),
+            Optional.of(run),
+            Optional.of(exportFile),
+            new AtomicReference<>(),
+            new AtomicReference<>(),
+            new AtomicReference<>());
+
+    assertThatThrownBy(() -> service.downloadExport(exportFile.getPublicId(), creator.getUsername()))
+        .isInstanceOf(ResourceException.class)
+        .extracting(e -> ((ResourceException) e).getResponse().code())
+        .isEqualTo("EXPORT_FILE_NOT_READY");
+  }
+
+  @Test
+  void downloadExportRejectsMissingFile() {
+    User creator = user();
+    Project project = project(creator);
+    EvaluationRun run = run(project, creator);
+    ExportFile exportFile =
+        ExportFile.builder()
+            .id(1L)
+            .publicId(UUID.randomUUID())
+            .project(project)
+            .evaluationRun(run)
+            .fileType(ExportFileType.JSON)
+            .status(ExportFileStatus.READY)
+            .fileName("missing.json")
+            .filePath("/tmp/vqc-missing-export-file.json")
+            .createdBy(creator)
+            .build();
+    ExportServiceImpl service =
+        service(
+            Optional.of(creator),
+            Optional.of(run),
+            Optional.of(exportFile),
+            new AtomicReference<>(),
+            new AtomicReference<>(),
+            new AtomicReference<>());
+
+    assertThatThrownBy(() -> service.downloadExport(exportFile.getPublicId(), creator.getUsername()))
         .isInstanceOf(ResourceException.class)
         .extracting(e -> ((ResourceException) e).getResponse().code())
         .isEqualTo("EXPORT_FILE_NOT_FOUND");

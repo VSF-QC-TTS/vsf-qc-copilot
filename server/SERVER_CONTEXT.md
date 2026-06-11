@@ -2,7 +2,7 @@
 
 Date: 2026-06-11
 Repo area: `server/`
-Last full-suite pass: 226 tests, 0 failures (2026-06-11). Latest focused worker/evaluation/job suite pass: 37 tests, 0 failures (2026-06-11).
+Last full-suite pass: 226 tests, 0 failures (2026-06-11). Latest focused export/job suite pass: 28 tests, 0 failures (2026-06-11).
 
 Purpose: this is the short server handoff. Use it before reading broader docs. Current code is the source of truth when docs and implementation differ. The full product target lives in `docs/`; treat docs as roadmap/contract intent unless the user explicitly asks to migrate current code toward them.
 
@@ -152,6 +152,10 @@ Implemented API slices after auth:
 - Export:
   - `POST /api/v1/evaluation-runs/{runPublicId}/exports` creates `export_files` metadata and an async job (`EXPORT_EXCEL` or `EXPORT_JSON`) with `resourceType=EXPORT_FILE`, pushes the job public ID to Redis, and returns `202 Accepted`.
   - `GET /api/v1/exports/{exportPublicId}` returns owner-scoped export metadata and includes `downloadUrl` only when status is `READY`.
+  - `GET /api/v1/exports/{exportPublicId}/file` downloads a READY export file and rejects pending/failed exports with `EXPORT_FILE_NOT_READY`.
+  - `JobWorker` routes `EXPORT_EXCEL` and `EXPORT_JSON` jobs to `ExportJobHandler`.
+  - Export generation uses an `ExportGenerator` Strategy (`ExcelExportGenerator`, `JsonExportGenerator`) and writes files under `vqc.export.dir` (default `./exports`).
+  - Excel generation uses Apache POI `poi-ooxml` and JSON generation uses Jackson; optional/missing export fields are written blank/default rather than failing.
 
 ## [FUTURE_SLICE] Known Current Gaps
 
@@ -160,7 +164,7 @@ Known current gaps:
 - Connector secrets are not persisted in a real encrypted secret store yet; placeholder resolution for real outbound auth secrets is future work.
 - OAuth persistence/linking remains incomplete.
 - Connector response extraction only supports the current simple selector path used by tests.
-- Export download endpoint and export job generation are still future slices.
+- Export generation is local filesystem based; moving generated files to object storage is future work if deployment needs it.
 
 ## [FUTURE_SLICE] Next Implementation Steps
 
@@ -174,14 +178,14 @@ Step 11 — QC Review APIs:
 - Commit each API slice separately.
 
 Step 12 — Export download + worker generation:
-- Add export download API and generator Strategy for Excel vs JSON.
-- Export final status should use `qcStatus`; optional missing fields should be blank, not fatal.
+- Done: download API, generator Strategy for Excel vs JSON, and worker generation.
+- Next likely backend slice: replace the mock/placeholder Promptfoo CLI path with a real pinned `promptfoo eval` integration.
 
 ## [FUTURE_SLICE] Product Direction
 
 Future product direction from docs:
 - MVP flow: Login -> Project -> Dynamic Target API Connector -> Requirement -> Dataset/Test Cases -> Rubric/Criteria -> Evaluation Run/Job -> Results -> QC Review -> Export.
-- Evaluation Run/Job, Worker, and Results APIs are implemented (see `[API_CHANGE]`). QC Review and Export are next.
+- Evaluation Run/Job, Worker, Results, QC Review, and Export APIs are implemented (see `[API_CHANGE]`).
 - Use `target_api_connectors` / API path `target-api-connectors`, not the older ambiguous `api_connectors`, when implementing connector work.
 - Dynamic connector must support manual config first: method/url/headers/body template/response selector, non-streaming JSON, timeout/retry, and secret placeholders.
 - Do not log or return raw connector secrets. Store headers/body/auth with placeholders like `{{secret:KEY}}`; return masked values only.
@@ -228,4 +232,6 @@ Focused tests:
   `rtk bash mvnw -Dtest=RubricControllerTest,RubricServiceImplTest,RubricMapperTest,RubricVersionControllerTest,RubricVersionServiceImplTest,RubricCriterionControllerTest,RubricCriterionServiceImplTest test`
 - Evaluation run/job focused suite:
   `rtk bash mvnw -Dtest=EvaluationRunControllerTest,EvaluationRunServiceImplTest,JobControllerTest,JobServiceImplTest test`
+- Export/job focused suite:
+  `rtk bash mvnw -Dtest=ExportControllerTest,ExportServiceImplTest,ExportJobHandlerTest,JobWorkerTest,JobServiceImplTest test`
 - Public controller tests should cover HTTP status, JSON body, Problem Details validation errors, cookies/headers, and service delegation.

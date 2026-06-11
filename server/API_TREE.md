@@ -31,11 +31,10 @@ Auth
         |-- Rubric
         |   `-- Rubric Version
         |       `-- Rubric Criterion
-        |-- Evaluation Run / Job
-        |   |-- Evaluation Result
-        |   `-- Job Event
-        `-- Future
-            |-- QC Review
+        `-- Evaluation Run / Job
+            |-- Evaluation Result
+            |   `-- QC Review
+            |-- Job Event
             `-- Export
 ```
 
@@ -212,8 +211,10 @@ Auth
 |
 |-- /api/v1/exports [auth]
 |   `-- /{exportPublicId}
-|       `-- GET /
-|           `-- Chi tiết export metadata, downloadUrl khi READY
+|       |-- GET /
+|       |   `-- Chi tiết export metadata, downloadUrl khi READY
+|       `-- GET /file
+|           `-- Download file export READY; JSON hoặc XLSX
 ```
 
 ## Domain Relationship Tree
@@ -294,7 +295,8 @@ User
     `-- tạo async export job
 25. GET  /api/v1/exports/{exportPublicId}
     `-- xem export metadata
-26. Future: export download
+26. GET  /api/v1/exports/{exportPublicId}/file
+    `-- download file khi export READY
 ```
 
 ## Cross-Cutting Rules
@@ -314,7 +316,7 @@ Project
 |-- Evaluation Run / Job
 |   |-- Worker + Promptfoo mock executor [done]
 |   |-- QC Review [done: upsert/get/patch decision]
-|   `-- Export [partial: create job done]
+|   `-- Export [done: create/detail/download + worker generation]
 |       `-- flexible mapping; optional missing fields thì để blank
 `-- Connector secrets encryption [future]
 ```

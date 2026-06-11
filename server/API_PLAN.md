@@ -1,183 +1,67 @@
-# API Plan — Phase 6: Worker + Promptfoo Mock (Step 10)
+# API Plan — Current Backend Slice Tracker
 
 Date: 2026-06-11
-Status: **COMPLETED**
-Prerequisite: Steps 0–9 completed (6 evaluation/job API endpoints, 226 tests passing).
+Status: **QC review and export API slices completed**
 
-## Goal
+Purpose: keep the immediate backend plan short. `API_TODO.md` and `API_TREE.md` remain the source for completed endpoint inventory and resource relationships.
 
-Implement the async worker that consumes jobs from the Redis queue and executes evaluation runs.
-In dev mode, use a mock executor that returns fake results.
-In prod mode, delegate to the promptfoo CLI (placeholder, not wired to real promptfoo yet).
+## Completed In This Sequence
 
-## Existing Infrastructure (already in codebase)
+1. Worker + Promptfoo mock executor.
+   - `JobWorker` consumes Redis queue messages.
+   - `EvaluationJobHandler` writes evaluation results and job events.
+   - Promptfoo executor uses Strategy: mock mode implemented, CLI mode still placeholder.
+   - Commits:
+     - `feat(worker): process evaluation jobs with mock promptfoo`
+     - `docs(server): update handoff docs for evaluation worker`
 
-```
-Config:
-  PromptfooProperties     → vqc.promptfoo.mode (mock/cli), workDir, command, maxConcurrency
-  WorkerProperties        → vqc.worker.enabled (true), queueKey (vqc:jobs:queue)
-  RedisConfig             → StringRedisTemplate bean
+2. QC Review APIs.
+   - `PUT /api/v1/evaluation-results/{resultPublicId}/review-decision`
+   - `GET /api/v1/evaluation-results/{resultPublicId}/review-decision`
+   - `PATCH /api/v1/review-decisions/{reviewDecisionPublicId}`
+   - Commits:
+     - `feat(review): upsert result review decision`
+     - `feat(review): get result review decision`
+     - `feat(review): update review decision`
 
-Publisher:
-  JobQueuePublisher       → RPUSH jobPublicId to Redis queue (called by EvaluationRunServiceImpl)
+3. Evaluation result QC fields.
+   - `GET /api/v1/evaluation-runs/{runPublicId}/results` includes `qcStatus`, `qcNote`, and `picBug`.
+   - Supports optional `qcStatus` filter, including derived `NOT_REVIEWED`.
+   - Commit:
+     - `feat(evaluation): include qc review fields in results`
 
-Entities:
-  Job                     → id, publicId, jobType, status, resourceType, resourceId, projectId, ...
-  JobEvent                → id, publicId, jobId, eventType, payloadJson, createdAt
-  EvaluationRun           → id, publicId, projectId, datasetId, rubricVersionId, connectorId, status, ...
-  EvaluationResult        → id, publicId, evaluationRunId, testCaseId, actualAnswer, judgeScore, ...
+4. Export APIs and worker generation.
+   - `POST /api/v1/evaluation-runs/{runPublicId}/exports`
+   - `GET /api/v1/exports/{exportPublicId}`
+   - `GET /api/v1/exports/{exportPublicId}/file`
+   - Export job generation uses `ExportGenerator` Strategy for JSON and Excel.
+   - Excel uses Apache POI `poi-ooxml`; JSON uses Jackson.
+   - Export files are written under `vqc.export.dir` (default `./exports`).
+   - Commits:
+     - `feat(export): create export jobs`
+     - `feat(export): get export detail`
+     - Pending current commit: `feat(export): generate and download export files`
 
-Enums:
-  JobStatus               → PENDING, RUNNING, COMPLETED, FAILED, CANCELLED
-  EvaluationRunStatus     → PENDING, RUNNING, COMPLETED, FAILED
-  JudgeStatus             → PASS, FAIL, WARNING, ERROR
+## Current Verify Commands
 
-Repositories:
-  JobRepository           → findByPublicIdAndCreatedBy, findByPublicId
-  JobEventRepository      → findByJobIdOrderByCreatedAtAsc
-  EvaluationRunRepository → findByPublicIdAndCreatedBy, findById
-  EvaluationResultRepository → findByEvaluationRunId
-  TestCaseRepository      → findByDatasetAndStatusOrderBySortOrderAscIdAsc
-```
+Focused export/job suite:
 
-## Implementation Steps
-
-### Step 10a — PromptfooExecutor interface + MockPromptfooExecutor
-
-Create:
-- `evaluation/executor/PromptfooExecutor.java` — interface
-- `evaluation/executor/PromptfooResult.java` — result record
-- `evaluation/executor/MockPromptfooExecutor.java` — mock impl
-- `evaluation/executor/CliPromptfooExecutor.java` — CLI placeholder
-
-```
-PromptfooExecutor interface:
-  List<PromptfooResult> evaluate(List<TestCase> testCases, RubricVersion rubricVersion, TargetApiConnector connector)
-
-PromptfooResult record:
-  (Long testCaseId, String actualAnswer, BigDecimal judgeScore, JudgeStatus judgeStatus, String judgeReason, Integer latencyMs, String errorMessage)
-
-MockPromptfooExecutor:
-  - @Component + @ConditionalOnProperty(name = "vqc.promptfoo.mode", havingValue = "mock")
-  - For each test case: generate random PASS/FAIL/WARNING (weighted 70/20/10)
-  - Random judgeScore 0.0–1.0, simulated latencyMs 50–500ms
-  - Sleep 100–300ms per case to simulate real execution
-  - Return List<PromptfooResult>
-
-CliPromptfooExecutor:
-  - @Component + @ConditionalOnProperty(name = "vqc.promptfoo.mode", havingValue = "cli")
-  - Log warning "CLI mode not yet implemented, returning empty results"
-  - Return empty list (placeholder for future real integration)
+```bash
+rtk bash mvnw -Dtest=ExportControllerTest,ExportServiceImplTest,ExportJobHandlerTest,JobWorkerTest,JobServiceImplTest test
 ```
 
-Tests: `MockPromptfooExecutorTest` — verify result count, judge status distribution, latency range.
-Verify: `./mvnw -Dtest=MockPromptfooExecutorTest test`
+Previously passed focused suites:
 
-### Step 10b — EvaluationJobHandler
-
-Create:
-- `evaluation/handler/EvaluationJobHandler.java` — orchestrates a single evaluation job
-
-```
-EvaluationJobHandler:
-  Dependencies: JobRepository, JobEventRepository, EvaluationRunRepository,
-                EvaluationResultRepository, TestCaseRepository, PromptfooExecutor
-  
-  void handle(UUID jobPublicId):
-    1. Find Job by publicId → update status RUNNING, emit JobEvent("RUNNING")
-    2. Find EvaluationRun by job.resourceId → update status RUNNING
-    3. Load test cases from dataset (run.datasetId) → only ACTIVE ones
-    4. Load rubric version (run.rubricVersionId) and connector (run.connectorId)
-    5. Call promptfooExecutor.evaluate(testCases, rubricVersion, connector)
-    6. For each PromptfooResult → save EvaluationResult row
-    7. Update job: progressCurrent++, emit JobEvent("CASE_COMPLETED", payload with current/total)
-    8. When all done → update EvaluationRun status COMPLETED, Job status COMPLETED
-    9. Emit JobEvent("COMPLETED")
-    10. On exception → update both to FAILED, emit JobEvent("FAILED", error message)
+```bash
+rtk bash mvnw -Dtest=ReviewDecisionControllerTest,ReviewDecisionServiceImplTest test
+rtk bash mvnw -Dtest=EvaluationRunControllerTest,EvaluationRunServiceImplTest test
+rtk bash mvnw -Dtest=EvaluationRunControllerTest,EvaluationRunServiceImplTest,JobControllerTest,JobServiceImplTest,MockPromptfooExecutorTest,EvaluationJobHandlerTest,JobWorkerTest test
 ```
 
-Tests: `EvaluationJobHandlerTest` — verify happy path (status transitions, result rows created),
-       failure path (exception → FAILED status), empty test cases edge case.
-Verify: `./mvnw -Dtest=EvaluationJobHandlerTest test`
+## Next Likely Backend Slice
 
-### Step 10c — JobWorker (Redis consumer)
-
-Create:
-- `job/worker/JobWorker.java` — Redis BLPOP consumer loop
-
-```
-JobWorker:
-  Dependencies: StringRedisTemplate, WorkerProperties, EvaluationJobHandler
-
-  @ConditionalOnProperty(name = "vqc.worker.enabled", havingValue = "true", matchIfMissing = true)
-  Implements SmartLifecycle (or use @EventListener(ApplicationReadyEvent))
-
-  Run loop in a daemon thread:
-    while (running):
-      result = redisTemplate.opsForList().leftPop(queueKey, Duration.ofSeconds(5))
-      if result != null:
-        try:
-          evaluationJobHandler.handle(UUID.fromString(result))
-        catch Exception:
-          log.error("Failed to process job {}", result, e)
-```
-
-Tests: `JobWorkerTest` — verify BLPOP delegates to handler, handles parse errors gracefully.
-Verify: `./mvnw -Dtest=JobWorkerTest test`
-
-### Step 10d — Config profiles
-
-Update:
-- `application-dev.yml`: `vqc.promptfoo.mode: mock`, `vqc.worker.enabled: true`
-- `application-prod.yml`: `vqc.promptfoo.mode: cli`, `vqc.worker.enabled: true`
-
-### Step 10e — Commit + full verify
-
-```
-Verify all: rtk bash mvnw -Dtest=MockPromptfooExecutorTest,EvaluationJobHandlerTest,JobWorkerTest test
-Focused suite: rtk bash mvnw -Dtest=EvaluationRunControllerTest,EvaluationRunServiceImplTest,JobControllerTest,JobServiceImplTest,MockPromptfooExecutorTest,EvaluationJobHandlerTest,JobWorkerTest test
-Commit: feat(worker): process evaluation jobs with mock promptfoo
-```
-
-## Step 11 — Docs Update
-
-After Step 10:
-- `API_TODO.md`: move Worker to Completed, set QC Review as Next.
-- `SERVER_CONTEXT.md`: remove worker from Known Gaps, add to CURRENT_STATE, update test count.
-- `API_PLAN.md`: mark this plan as COMPLETED.
-- Commit: `docs(server): update handoff docs for evaluation worker`
-
-## File Tree After Completion
-
-```
-evaluation/
-  controller/EvaluationRunController.java        ← existing
-  entity/EvaluationRun.java                      ← existing
-  entity/EvaluationResult.java                   ← existing
-  enums/EvaluationRunStatus.java                 ← existing
-  enums/JudgeStatus.java                         ← existing
-  executor/PromptfooExecutor.java                ← NEW
-  executor/PromptfooResult.java                  ← NEW
-  executor/MockPromptfooExecutor.java            ← NEW
-  executor/CliPromptfooExecutor.java             ← NEW
-  handler/EvaluationJobHandler.java              ← NEW
-  mapper/EvaluationRunMapper.java                ← existing
-  repository/EvaluationRunRepository.java        ← existing
-  repository/EvaluationResultRepository.java     ← existing
-  request/CreateEvaluationRunRequest.java        ← existing
-  response/*.java                                ← existing
-  service/EvaluationRunService.java              ← existing
-  service/impl/EvaluationRunServiceImpl.java     ← existing
-
-job/
-  controller/JobController.java                  ← existing
-  entity/Job.java                                ← existing
-  entity/JobEvent.java                           ← existing
-  enums/*.java                                   ← existing
-  repository/*.java                              ← existing
-  response/*.java                                ← existing
-  service/JobQueuePublisher.java                 ← existing
-  service/JobService.java                        ← existing
-  service/impl/JobServiceImpl.java               ← existing
-  worker/JobWorker.java                          ← NEW
-```
+Real Promptfoo CLI integration:
+- Replace the CLI placeholder with a pinned, repeatable `promptfoo eval` invocation.
+- Keep evaluation execution async through Redis/job/worker.
+- Convert promptfoo output into existing `PromptfooResult` records.
+- Preserve the mock executor for local demo fallback.

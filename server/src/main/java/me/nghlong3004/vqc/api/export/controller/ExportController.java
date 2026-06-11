@@ -13,10 +13,14 @@ import lombok.RequiredArgsConstructor;
 import me.nghlong3004.vqc.api.exception.ErrorResponse;
 import me.nghlong3004.vqc.api.export.request.CreateExportRequest;
 import me.nghlong3004.vqc.api.export.response.CreateExportResponse;
+import me.nghlong3004.vqc.api.export.response.ExportDownloadResponse;
 import me.nghlong3004.vqc.api.export.response.ExportFileResponse;
 import me.nghlong3004.vqc.api.export.service.ExportService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.core.io.Resource;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -91,5 +95,17 @@ public class ExportController {
   @GetMapping(value = "/api/v1/exports/{exportPublicId}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ExportFileResponse getExport(@PathVariable UUID exportPublicId, Principal principal) {
     return exportService.getExport(exportPublicId, principal.getName());
+  }
+
+  @Operation(summary = "Download export file", description = "Downloads a READY export file.")
+  @GetMapping(value = "/api/v1/exports/{exportPublicId}/file")
+  public ResponseEntity<Resource> downloadExport(
+      @PathVariable UUID exportPublicId, Principal principal) {
+    ExportDownloadResponse download =
+        exportService.downloadExport(exportPublicId, principal.getName());
+    return ResponseEntity.ok()
+        .contentType(download.mediaType())
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + download.fileName() + "\"")
+        .body(download.resource());
   }
 }

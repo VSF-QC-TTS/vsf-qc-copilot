@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import me.nghlong3004.vqc.api.evaluation.repository.EvaluationRunRepository;
 import me.nghlong3004.vqc.api.exception.ErrorCode;
 import me.nghlong3004.vqc.api.exception.ResourceException;
+import me.nghlong3004.vqc.api.export.repository.ExportFileRepository;
 import me.nghlong3004.vqc.api.job.entity.Job;
 import me.nghlong3004.vqc.api.job.enums.ResourceType;
 import me.nghlong3004.vqc.api.job.repository.JobRepository;
@@ -28,6 +29,7 @@ public class JobServiceImpl implements JobService {
   private final JobRepository jobRepository;
   private final UserRepository userRepository;
   private final EvaluationRunRepository evaluationRunRepository;
+  private final ExportFileRepository exportFileRepository;
 
   @Override
   @Transactional(readOnly = true)
@@ -72,6 +74,12 @@ public class JobServiceImpl implements JobService {
       return evaluationRunRepository
           .findById(job.getResourceId())
           .map(run -> run.getPublicId())
+          .orElse(null);
+    }
+    if (job.getResourceType() == ResourceType.EXPORT_FILE) {
+      return exportFileRepository
+          .findById(job.getResourceId())
+          .map(exportFile -> exportFile.getPublicId())
           .orElse(null);
     }
     return null;
