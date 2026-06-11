@@ -2,6 +2,7 @@ package me.nghlong3004.vqc.api.review.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -12,6 +13,7 @@ import java.util.UUID;
 import me.nghlong3004.vqc.api.exception.GlobalException;
 import me.nghlong3004.vqc.api.review.enums.QcStatus;
 import me.nghlong3004.vqc.api.review.request.UpsertReviewDecisionRequest;
+import me.nghlong3004.vqc.api.review.request.UpdateReviewDecisionRequest;
 import me.nghlong3004.vqc.api.review.response.ReviewDecisionResponse;
 import me.nghlong3004.vqc.api.review.response.ReviewUserResponse;
 import me.nghlong3004.vqc.api.review.service.ReviewDecisionService;
@@ -174,6 +176,83 @@ class ReviewDecisionControllerTest {
     assertThat(RecordingReviewDecisionService.resultPublicId).isNull();
   }
 
+  @Test
+  void updateReviewDecisionReturnsResponse() throws Exception {
+    RecordingReviewDecisionService.response =
+        new ReviewDecisionResponse(
+            UUID.fromString("a1b2c3d4-e5f6-7890-abcd-ef1234567890"),
+            UUID.fromString("b1b2c3d4-e5f6-7890-abcd-ef1234567890"),
+            QcStatus.PASS,
+            "Confirmed.",
+            null,
+            new ReviewUserResponse(
+                UUID.fromString("d1d2c3d4-e5f6-7890-abcd-ef1234567890"), "QC Demo"),
+            OffsetDateTime.parse("2026-06-11T10:00:00Z"),
+            OffsetDateTime.parse("2026-06-11T10:05:00Z"));
+
+    mockMvc
+        .perform(
+            patch("/api/v1/review-decisions/a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "qcStatus": "PASS",
+                      "qcNote": "Confirmed."
+                    }
+                    """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.publicId").value("a1b2c3d4-e5f6-7890-abcd-ef1234567890"))
+        .andExpect(jsonPath("$.qcStatus").value("PASS"))
+        .andExpect(jsonPath("$.qcNote").value("Confirmed."));
+
+    assertThat(RecordingReviewDecisionService.reviewDecisionPublicId)
+        .isEqualTo(UUID.fromString("a1b2c3d4-e5f6-7890-abcd-ef1234567890"));
+    assertThat(RecordingReviewDecisionService.updateRequest.qcStatus()).isEqualTo(QcStatus.PASS);
+    assertThat(RecordingReviewDecisionService.username).isEqualTo("qc.demo@example.com");
+  }
+
+  @Test
+  void updateReviewDecisionReturnsValidationForMissingStatus() throws Exception {
+    mockMvc
+        .perform(
+            patch("/api/v1/review-decisions/a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "qcNote": "Missing status"
+                    }
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+
+    assertThat(RecordingReviewDecisionService.updateRequest).isNull();
+  }
+
+  @Test
+  void updateReviewDecisionReturnsValidationForInvalidId() throws Exception {
+    mockMvc
+        .perform(
+            patch("/api/v1/review-decisions/not-a-uuid")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "qcStatus": "FAIL"
+                    }
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+
+    assertThat(RecordingReviewDecisionService.reviewDecisionPublicId).isNull();
+  }
+
   @TestConfiguration
   static class MockBeans {
     @Bean
@@ -184,13 +263,17 @@ class ReviewDecisionControllerTest {
 
   static class RecordingReviewDecisionService implements ReviewDecisionService {
     static UUID resultPublicId;
+    static UUID reviewDecisionPublicId;
     static UpsertReviewDecisionRequest request;
+    static UpdateReviewDecisionRequest updateRequest;
     static String username;
     static ReviewDecisionResponse response;
 
     static void reset() {
       resultPublicId = null;
+      reviewDecisionPublicId = null;
       request = null;
+      updateRequest = null;
       username = null;
       response = null;
     }
@@ -207,6 +290,15 @@ class ReviewDecisionControllerTest {
     @Override
     public ReviewDecisionResponse getReviewDecision(UUID resultPublicId, String username) {
       RecordingReviewDecisionService.resultPublicId = resultPublicId;
+      RecordingReviewDecisionService.username = username;
+      return response;
+    }
+
+    @Override
+    public ReviewDecisionResponse updateReviewDecision(
+        UUID reviewDecisionPublicId, UpdateReviewDecisionRequest request, String username) {
+      RecordingReviewDecisionService.reviewDecisionPublicId = reviewDecisionPublicId;
+      RecordingReviewDecisionService.updateRequest = request;
       RecordingReviewDecisionService.username = username;
       return response;
     }

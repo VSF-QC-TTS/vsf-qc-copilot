@@ -12,10 +12,12 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import me.nghlong3004.vqc.api.exception.ErrorResponse;
 import me.nghlong3004.vqc.api.review.request.UpsertReviewDecisionRequest;
+import me.nghlong3004.vqc.api.review.request.UpdateReviewDecisionRequest;
 import me.nghlong3004.vqc.api.review.response.ReviewDecisionResponse;
 import me.nghlong3004.vqc.api.review.service.ReviewDecisionService;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -95,5 +97,43 @@ public class ReviewDecisionController {
   public ReviewDecisionResponse getReviewDecision(
       @PathVariable UUID resultPublicId, Principal principal) {
     return reviewDecisionService.getReviewDecision(resultPublicId, principal.getName());
+  }
+
+  @Operation(
+      summary = "Update review decision",
+      description = "Updates an existing QC review decision.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Review decision",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ReviewDecisionResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Validation failed",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Review decision or PIC bug user not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @PatchMapping(
+      value = "/api/v1/review-decisions/{reviewDecisionPublicId}",
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  public ReviewDecisionResponse updateReviewDecision(
+      @PathVariable UUID reviewDecisionPublicId,
+      @Valid @RequestBody UpdateReviewDecisionRequest request,
+      Principal principal) {
+    return reviewDecisionService.updateReviewDecision(
+        reviewDecisionPublicId, request, principal.getName());
   }
 }

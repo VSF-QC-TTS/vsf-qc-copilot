@@ -18,6 +18,7 @@ import me.nghlong3004.vqc.api.review.entity.ReviewDecision;
 import me.nghlong3004.vqc.api.review.enums.QcStatus;
 import me.nghlong3004.vqc.api.review.mapper.ReviewDecisionMapper;
 import me.nghlong3004.vqc.api.review.repository.ReviewDecisionRepository;
+import me.nghlong3004.vqc.api.review.request.UpdateReviewDecisionRequest;
 import me.nghlong3004.vqc.api.review.request.UpsertReviewDecisionRequest;
 import me.nghlong3004.vqc.api.review.response.ReviewDecisionResponse;
 import me.nghlong3004.vqc.api.user.entity.User;
@@ -212,6 +213,73 @@ class ReviewDecisionServiceImplTest {
         .isEqualTo("EVALUATION_RESULT_NOT_FOUND");
   }
 
+  @Test
+  void updateReviewDecisionUpdatesExistingDecision() {
+    User reviewer = user(1L, "QC Demo", UserStatus.ACTIVE);
+    User picBugUser = user(2L, "Long", UserStatus.ACTIVE);
+    EvaluationResult result = result(reviewer);
+    ReviewDecision existing =
+        ReviewDecision.builder()
+            .id(1L)
+            .publicId(UUID.randomUUID())
+            .evaluationResult(result)
+            .qcStatus(QcStatus.NEED_FIX)
+            .qcNote("old")
+            .reviewedBy(reviewer)
+            .reviewedAt(OffsetDateTime.now().minusHours(1))
+            .updatedAt(OffsetDateTime.now().minusHours(1))
+            .build();
+    AtomicReference<ReviewDecision> saved = new AtomicReference<>();
+    ReviewDecisionServiceImpl service =
+        service(reviewer, Optional.of(picBugUser), Optional.of(result), Optional.of(existing), saved);
+
+    ReviewDecisionResponse response =
+        service.updateReviewDecision(
+            existing.getPublicId(),
+            new UpdateReviewDecisionRequest(QcStatus.PASS, " Confirmed. ", picBugUser.getPublicId()),
+            reviewer.getUsername());
+
+    assertThat(response.publicId()).isEqualTo(existing.getPublicId());
+    assertThat(response.qcStatus()).isEqualTo(QcStatus.PASS);
+    assertThat(response.qcNote()).isEqualTo("Confirmed.");
+    assertThat(response.picBug().publicId()).isEqualTo(picBugUser.getPublicId());
+    assertThat(saved.get()).isSameAs(existing);
+  }
+
+  @Test
+  void updateReviewDecisionRejectsMissingDecision() {
+    User reviewer = user(1L, "QC Demo", UserStatus.ACTIVE);
+    ReviewDecisionServiceImpl service =
+        service(reviewer, Optional.empty(), Optional.empty(), Optional.empty(), new AtomicReference<>());
+
+    assertThatThrownBy(
+            () ->
+                service.updateReviewDecision(
+                    UUID.randomUUID(),
+                    new UpdateReviewDecisionRequest(QcStatus.FAIL, null, null),
+                    reviewer.getUsername()))
+        .isInstanceOf(ResourceException.class)
+        .extracting(e -> ((ResourceException) e).getResponse().code())
+        .isEqualTo("REVIEW_DECISION_NOT_FOUND");
+  }
+
+  @Test
+  void updateReviewDecisionRejectsNotReviewedStatus() {
+    User reviewer = user(1L, "QC Demo", UserStatus.ACTIVE);
+    ReviewDecisionServiceImpl service =
+        service(reviewer, Optional.empty(), Optional.empty(), Optional.empty(), new AtomicReference<>());
+
+    assertThatThrownBy(
+            () ->
+                service.updateReviewDecision(
+                    UUID.randomUUID(),
+                    new UpdateReviewDecisionRequest(QcStatus.NOT_REVIEWED, null, null),
+                    reviewer.getUsername()))
+        .isInstanceOf(ResourceException.class)
+        .extracting(e -> ((ResourceException) e).getResponse().code())
+        .isEqualTo("REVIEW_DECISION_STATUS_INVALID");
+  }
+
   private ReviewDecisionServiceImpl service(
       User reviewer,
       Optional<User> picBugUser,
@@ -231,6 +299,9 @@ class ReviewDecisionServiceImplTest {
         ReviewDecisionRepository.class,
         (proxy, method, args) -> {
           if ("findByEvaluationResult".equals(method.getName())) return existingDecision;
+          if ("findByPublicIdAndEvaluationResultEvaluationRunCreatedBy".equals(method.getName())) {
+            return existingDecision;
+          }
           if ("save".equals(method.getName())) {
             savedDecision.set((ReviewDecision) args[0]);
             return args[0];

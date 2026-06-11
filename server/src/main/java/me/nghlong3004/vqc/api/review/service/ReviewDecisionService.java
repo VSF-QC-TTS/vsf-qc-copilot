@@ -2,6 +2,7 @@ package me.nghlong3004.vqc.api.review.service;
 
 import java.util.UUID;
 import me.nghlong3004.vqc.api.review.request.UpsertReviewDecisionRequest;
+import me.nghlong3004.vqc.api.review.request.UpdateReviewDecisionRequest;
 import me.nghlong3004.vqc.api.review.response.ReviewDecisionResponse;
 
 /**
@@ -29,4 +30,15 @@ public interface ReviewDecisionService {
    * @return persisted decision or default NOT_REVIEWED response
    */
   ReviewDecisionResponse getReviewDecision(UUID resultPublicId, String username);
+
+  /**
+   * Updates an existing review decision.
+   *
+   * @param reviewDecisionPublicId review decision public identifier
+   * @param request update payload
+   * @param username authenticated username/email
+   * @return updated review decision response
+   */
+  ReviewDecisionResponse updateReviewDecision(
+      UUID reviewDecisionPublicId, UpdateReviewDecisionRequest request, String username);
 }

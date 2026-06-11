@@ -11,6 +11,7 @@ import me.nghlong3004.vqc.api.review.entity.ReviewDecision;
 import me.nghlong3004.vqc.api.review.enums.QcStatus;
 import me.nghlong3004.vqc.api.review.mapper.ReviewDecisionMapper;
 import me.nghlong3004.vqc.api.review.repository.ReviewDecisionRepository;
+import me.nghlong3004.vqc.api.review.request.UpdateReviewDecisionRequest;
 import me.nghlong3004.vqc.api.review.request.UpsertReviewDecisionRequest;
 import me.nghlong3004.vqc.api.review.response.ReviewDecisionResponse;
 import me.nghlong3004.vqc.api.review.service.ReviewDecisionService;
@@ -68,6 +69,28 @@ public class ReviewDecisionServiceImpl implements ReviewDecisionService {
         .findByEvaluationResult(result)
         .map(reviewDecisionMapper::toResponse)
         .orElseGet(() -> reviewDecisionMapper.toNotReviewedResponse(result));
+  }
+
+  @Override
+  @Transactional
+  public ReviewDecisionResponse updateReviewDecision(
+      UUID reviewDecisionPublicId, UpdateReviewDecisionRequest request, String username) {
+    User reviewer = findReviewer(username);
+    validateWritableStatus(request.qcStatus());
+    ReviewDecision decision =
+        reviewDecisionRepository
+            .findByPublicIdAndEvaluationResultEvaluationRunCreatedBy(
+                reviewDecisionPublicId, reviewer)
+            .orElseThrow(() -> new ResourceException(ErrorCode.REVIEW_DECISION_NOT_FOUND));
+    User picBugUser = findPicBugUser(request.picBugUserPublicId());
+    decision.applyDecision(request.qcStatus(), request.qcNote(), picBugUser, reviewer);
+    ReviewDecision saved = reviewDecisionRepository.save(decision);
+    log.info(
+        "Updated review decision {} by user {} with status {}",
+        saved.getPublicId(),
+        reviewer.getPublicId(),
+        saved.getQcStatus());
+    return reviewDecisionMapper.toResponse(saved);
   }
 
   private User findReviewer(String username) {

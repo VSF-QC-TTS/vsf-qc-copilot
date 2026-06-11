@@ -24,9 +24,9 @@ Update rule:
 - Evaluation Events: list job events under run.
 - Job: detail flat path with resolved `resourcePublicId`.
 - Worker + Promptfoo mock executor (Step 10).
-- QC Review: upsert/get review decision by evaluation result.
+- QC Review: upsert/get review decision by evaluation result; patch by review decision.
 
 ## Next
 
-- QC Review endpoint: patch by review decision.
+- Evaluation Results: add QC review fields/filter.
 - Export endpoints (Phase 8).

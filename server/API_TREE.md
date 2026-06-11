@@ -199,6 +199,11 @@ Auth
 |       |   `-- Upsert QC review decision; qcStatus là human final status, picBug là active user reference
 |       `-- GET /
 |           `-- Lấy QC review decision; trả NOT_REVIEWED nếu chưa có row
+|
+|-- /api/v1/review-decisions [auth]
+|   `-- /{reviewDecisionPublicId}
+|       `-- PATCH /
+|           `-- Update QC review decision hiện có
 ```
 
 ## Domain Relationship Tree
@@ -273,7 +278,9 @@ User
     `-- QC upsert final decision cho một result
 22. GET  /api/v1/evaluation-results/{resultPublicId}/review-decision
     `-- xem QC decision, default NOT_REVIEWED nếu chưa review
-23. Future: export
+23. PATCH /api/v1/review-decisions/{reviewDecisionPublicId}
+    `-- update QC decision hiện có
+24. Future: export
 ```
 
 ## Cross-Cutting Rules
@@ -292,7 +299,7 @@ User
 Project
 |-- Evaluation Run / Job
 |   |-- Worker + Promptfoo mock executor [done]
-|   |-- QC Review [partial: upsert decision done]
+|   |-- QC Review [done: upsert/get/patch decision]
 |   `-- Export [future]
 |       `-- flexible mapping; optional missing fields thì để blank
 `-- Connector secrets encryption [future]
