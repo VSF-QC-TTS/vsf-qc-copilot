@@ -32,6 +32,7 @@ Rules:
 Docs map:
 - `server/API_TREE.md`: current API/resource relationship tree and main workflow.
 - `server/API_TODO.md`: completed/in-progress/next API slice tracker.
+- `server/API_PLAN.md`: concrete implementation plan for the current in-progress step (classes, packages, tests, commits).
 - `docs/backend-codex-implementation-brief.md`: best full backend implementation brief when building new domains.
 - `docs/api_contract_mvp_updated.md`: target MVP API contract, but some paths/fields are older than current server.
 - `docs/db_schema.md`: target MVP schema and publicId/internal-id rules.
