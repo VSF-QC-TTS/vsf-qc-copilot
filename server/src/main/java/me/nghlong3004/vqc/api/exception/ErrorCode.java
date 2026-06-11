@@ -128,6 +128,36 @@ public enum ErrorCode {
       "RUBRIC_CRITERION_METRIC_KEY_CONFLICT",
       "Rubric criterion metric key already exists in this version."),
 
+  // ── Evaluation ──
+  DATASET_NOT_APPROVED(
+      422,
+      "DATASET_NOT_APPROVED",
+      "Dataset must be APPROVED before starting an evaluation run."),
+  DATASET_NO_ACTIVE_CASES(
+      422,
+      "DATASET_NO_ACTIVE_CASES",
+      "Dataset must have at least one active test case."),
+  DATASET_TOO_MANY_CASES(
+      422,
+      "DATASET_TOO_MANY_CASES",
+      "Dataset exceeds the maximum number of active test cases (100)."),
+  RUBRIC_VERSION_NOT_PUBLISHED(
+      422,
+      "RUBRIC_VERSION_NOT_PUBLISHED",
+      "Rubric version must be PUBLISHED before starting an evaluation run."),
+  CONNECTOR_NOT_ACTIVE(
+      422,
+      "CONNECTOR_NOT_ACTIVE",
+      "Target connector must be active before starting an evaluation run."),
+  EVALUATION_RUN_NOT_FOUND(
+      HttpStatus.NOT_FOUND.value(),
+      "EVALUATION_RUN_NOT_FOUND",
+      "No evaluation run found with the provided ID."),
+  JOB_NOT_FOUND(
+      HttpStatus.NOT_FOUND.value(),
+      "JOB_NOT_FOUND",
+      "No job found with the provided ID."),
+
   // ── User Administration ──
   CANNOT_DELETE_SELF(
       HttpStatus.BAD_REQUEST.value(), "CANNOT_DELETE_SELF", "You cannot disable your own account."),
