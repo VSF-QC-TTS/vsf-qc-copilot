@@ -1,8 +1,10 @@
 package me.nghlong3004.vqc.api.evaluation.service;
 
 import java.util.UUID;
+import me.nghlong3004.vqc.api.evaluation.enums.JudgeStatus;
 import me.nghlong3004.vqc.api.evaluation.request.CreateEvaluationRunRequest;
 import me.nghlong3004.vqc.api.evaluation.response.CreateEvaluationRunResponse;
+import me.nghlong3004.vqc.api.evaluation.response.EvaluationResultPageResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunDetailResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunPageResponse;
 import org.springframework.data.domain.Pageable;
@@ -35,4 +37,16 @@ public interface EvaluationRunService {
    * @return evaluation run detail response
    */
   EvaluationRunDetailResponse getEvaluationRun(UUID runPublicId, String username);
+
+  /**
+   * Lists evaluation results for a run, optionally filtered by judge status.
+   *
+   * @param runPublicId public run identifier
+   * @param judgeStatus optional judge status filter
+   * @param pageable page and sort request
+   * @param username authenticated principal username/email
+   * @return page of evaluation results
+   */
+  EvaluationResultPageResponse listEvaluationResults(
+      UUID runPublicId, JudgeStatus judgeStatus, Pageable pageable, String username);
 }

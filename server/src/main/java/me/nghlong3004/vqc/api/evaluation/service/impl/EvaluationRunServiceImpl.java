@@ -7,12 +7,17 @@ import lombok.extern.slf4j.Slf4j;
 import me.nghlong3004.vqc.api.dataset.entity.Dataset;
 import me.nghlong3004.vqc.api.dataset.enums.DatasetStatus;
 import me.nghlong3004.vqc.api.dataset.repository.DatasetRepository;
+import me.nghlong3004.vqc.api.evaluation.entity.EvaluationResult;
 import me.nghlong3004.vqc.api.evaluation.entity.EvaluationRun;
 import me.nghlong3004.vqc.api.evaluation.enums.EvaluationRunStatus;
+import me.nghlong3004.vqc.api.evaluation.enums.JudgeStatus;
 import me.nghlong3004.vqc.api.evaluation.mapper.EvaluationRunMapper;
+import me.nghlong3004.vqc.api.evaluation.repository.EvaluationResultRepository;
 import me.nghlong3004.vqc.api.evaluation.repository.EvaluationRunRepository;
 import me.nghlong3004.vqc.api.evaluation.request.CreateEvaluationRunRequest;
 import me.nghlong3004.vqc.api.evaluation.response.CreateEvaluationRunResponse;
+import me.nghlong3004.vqc.api.evaluation.response.EvaluationResultListItemResponse;
+import me.nghlong3004.vqc.api.evaluation.response.EvaluationResultPageResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunDetailResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunListItemResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunPageResponse;
@@ -53,6 +58,7 @@ public class EvaluationRunServiceImpl implements EvaluationRunService {
   private static final int MAX_ACTIVE_TEST_CASES = 100;
 
   private final EvaluationRunRepository evaluationRunRepository;
+  private final EvaluationResultRepository evaluationResultRepository;
   private final JobRepository jobRepository;
   private final ProjectRepository projectRepository;
   private final DatasetRepository datasetRepository;
@@ -164,6 +170,36 @@ public class EvaluationRunServiceImpl implements EvaluationRunService {
         run.getProject().getPublicId(),
         creator.getPublicId());
     return evaluationRunMapper.toDetailResponse(run);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public EvaluationResultPageResponse listEvaluationResults(
+      UUID runPublicId, JudgeStatus judgeStatus, Pageable pageable, String username) {
+    User creator = findCreator(username);
+    EvaluationRun run =
+        evaluationRunRepository
+            .findByPublicIdAndCreatedBy(runPublicId, creator)
+            .orElseThrow(() -> new ResourceException(ErrorCode.EVALUATION_RUN_NOT_FOUND));
+
+    Page<EvaluationResult> results =
+        judgeStatus == null
+            ? evaluationResultRepository.findByEvaluationRunId(run.getId(), pageable)
+            : evaluationResultRepository.findByEvaluationRunIdAndJudgeStatus(
+                run.getId(), judgeStatus, pageable);
+
+    List<EvaluationResultListItemResponse> items =
+        results.getContent().stream()
+            .map(evaluationRunMapper::toResultListItem)
+            .toList();
+    log.info(
+        "Listed evaluation results for run {} page {} size {}",
+        run.getPublicId(),
+        results.getNumber(),
+        results.getSize());
+    return new EvaluationResultPageResponse(
+        items, results.getNumber(), results.getSize(),
+        results.getTotalElements(), results.getTotalPages());
   }
 
   // ── Validation helpers ──

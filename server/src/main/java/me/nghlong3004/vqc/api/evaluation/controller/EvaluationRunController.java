@@ -10,8 +10,10 @@ import jakarta.validation.Valid;
 import java.security.Principal;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import me.nghlong3004.vqc.api.evaluation.enums.JudgeStatus;
 import me.nghlong3004.vqc.api.evaluation.request.CreateEvaluationRunRequest;
 import me.nghlong3004.vqc.api.evaluation.response.CreateEvaluationRunResponse;
+import me.nghlong3004.vqc.api.evaluation.response.EvaluationResultPageResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunDetailResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunPageResponse;
 import me.nghlong3004.vqc.api.evaluation.service.EvaluationRunService;
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -162,5 +165,37 @@ public class EvaluationRunController {
   public EvaluationRunDetailResponse getEvaluationRun(
       @PathVariable UUID runPublicId, Principal principal) {
     return evaluationRunService.getEvaluationRun(runPublicId, principal.getName());
+  }
+
+  @Operation(
+      summary = "List evaluation results",
+      description = "Lists results for an evaluation run, optionally filtered by judge status.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Evaluation results page",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = EvaluationResultPageResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Evaluation run not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @GetMapping(
+      value = "/api/v1/evaluation-runs/{runPublicId}/results",
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  public EvaluationResultPageResponse listEvaluationResults(
+      @PathVariable UUID runPublicId,
+      @RequestParam(required = false) JudgeStatus judgeStatus,
+      @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.ASC)
+          Pageable pageable,
+      Principal principal) {
+    return evaluationRunService.listEvaluationResults(
+        runPublicId, judgeStatus, pageable, principal.getName());
   }
 }
