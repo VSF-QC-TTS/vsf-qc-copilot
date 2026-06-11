@@ -13,6 +13,7 @@ import me.nghlong3004.vqc.api.evaluation.mapper.EvaluationRunMapper;
 import me.nghlong3004.vqc.api.evaluation.repository.EvaluationRunRepository;
 import me.nghlong3004.vqc.api.evaluation.request.CreateEvaluationRunRequest;
 import me.nghlong3004.vqc.api.evaluation.response.CreateEvaluationRunResponse;
+import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunDetailResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunListItemResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunPageResponse;
 import me.nghlong3004.vqc.api.evaluation.service.EvaluationRunService;
@@ -147,6 +148,22 @@ public class EvaluationRunServiceImpl implements EvaluationRunService {
         runs.getSize());
     return new EvaluationRunPageResponse(
         items, runs.getNumber(), runs.getSize(), runs.getTotalElements(), runs.getTotalPages());
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public EvaluationRunDetailResponse getEvaluationRun(UUID runPublicId, String username) {
+    User creator = findCreator(username);
+    EvaluationRun run =
+        evaluationRunRepository
+            .findByPublicIdAndCreatedBy(runPublicId, creator)
+            .orElseThrow(() -> new ResourceException(ErrorCode.EVALUATION_RUN_NOT_FOUND));
+    log.info(
+        "Loaded evaluation run {} for project {} by user {}",
+        run.getPublicId(),
+        run.getProject().getPublicId(),
+        creator.getPublicId());
+    return evaluationRunMapper.toDetailResponse(run);
   }
 
   // ── Validation helpers ──

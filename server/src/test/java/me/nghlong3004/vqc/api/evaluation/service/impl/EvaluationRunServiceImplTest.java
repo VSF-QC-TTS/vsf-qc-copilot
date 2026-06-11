@@ -360,6 +360,73 @@ class EvaluationRunServiceImplTest {
     assertThat(response.totalItems()).isZero();
   }
 
+  // ── Get evaluation run detail ──
+
+  @Test
+  void getEvaluationRunReturnsDetail() {
+    User creator = user();
+    Project project = project(creator);
+    Dataset dataset = approvedDataset(project, creator);
+    RubricVersion rubricVersion = publishedRubricVersion(creator);
+    TargetApiConnector connector = activeConnector(project, creator);
+
+    EvaluationRun run = EvaluationRun.builder()
+        .publicId(UUID.randomUUID())
+        .project(project)
+        .dataset(dataset)
+        .rubricVersion(rubricVersion)
+        .targetApiConnector(connector)
+        .status(EvaluationRunStatus.PENDING)
+        .totalCases(10)
+        .maxConcurrency(1)
+        .createdBy(creator)
+        .createdAt(java.time.OffsetDateTime.now())
+        .updatedAt(java.time.OffsetDateTime.now())
+        .build();
+
+    EvaluationRunServiceImpl service = new EvaluationRunServiceImpl(
+        evaluationRunRepositoryForDetail(Optional.of(run)),
+        ignoredRepo(JobRepository.class),
+        ignoredRepo(ProjectRepository.class),
+        ignoredRepo(DatasetRepository.class),
+        ignoredRepo(RubricVersionRepository.class),
+        ignoredRepo(TargetApiConnectorRepository.class),
+        ignoredRepo(TestCaseRepository.class),
+        userRepository(Optional.of(creator)),
+        ignoredPublisher(),
+        new EvaluationRunMapper());
+
+    var detail = service.getEvaluationRun(run.getPublicId(), "qc.demo@example.com");
+
+    assertThat(detail.publicId()).isEqualTo(run.getPublicId());
+    assertThat(detail.projectPublicId()).isEqualTo(project.getPublicId());
+    assertThat(detail.datasetPublicId()).isEqualTo(dataset.getPublicId());
+    assertThat(detail.status()).isEqualTo(EvaluationRunStatus.PENDING);
+    assertThat(detail.totalCases()).isEqualTo(10);
+    assertThat(detail.maxConcurrency()).isEqualTo(1);
+  }
+
+  @Test
+  void getEvaluationRunNotFoundThrows() {
+    User creator = user();
+    EvaluationRunServiceImpl service = new EvaluationRunServiceImpl(
+        evaluationRunRepositoryForDetail(Optional.empty()),
+        ignoredRepo(JobRepository.class),
+        ignoredRepo(ProjectRepository.class),
+        ignoredRepo(DatasetRepository.class),
+        ignoredRepo(RubricVersionRepository.class),
+        ignoredRepo(TargetApiConnectorRepository.class),
+        ignoredRepo(TestCaseRepository.class),
+        userRepository(Optional.of(creator)),
+        ignoredPublisher(),
+        new EvaluationRunMapper());
+
+    assertThatThrownBy(() -> service.getEvaluationRun(UUID.randomUUID(), "qc.demo@example.com"))
+        .isInstanceOf(ResourceException.class)
+        .extracting(e -> ((ResourceException) e).getResponse().code())
+        .isEqualTo("EVALUATION_RUN_NOT_FOUND");
+  }
+
   // ── Builder / helpers ──
 
   private EvaluationRunServiceImpl buildService(
@@ -397,6 +464,14 @@ class EvaluationRunServiceImplTest {
       org.springframework.data.domain.Page<me.nghlong3004.vqc.api.evaluation.entity.EvaluationRun> page) {
     return proxy(EvaluationRunRepository.class, (p, m, args) -> {
       if ("findByProjectIdAndCreatedBy".equals(m.getName())) return page;
+      if ("save".equals(m.getName())) return args[0];
+      throw new UnsupportedOperationException(m.getName());
+    });
+  }
+
+  private EvaluationRunRepository evaluationRunRepositoryForDetail(Optional<EvaluationRun> result) {
+    return proxy(EvaluationRunRepository.class, (p, m, args) -> {
+      if ("findByPublicIdAndCreatedBy".equals(m.getName())) return result;
       if ("save".equals(m.getName())) return args[0];
       throw new UnsupportedOperationException(m.getName());
     });

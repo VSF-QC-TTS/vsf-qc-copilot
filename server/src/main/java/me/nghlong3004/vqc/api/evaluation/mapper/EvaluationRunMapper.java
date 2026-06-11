@@ -1,6 +1,8 @@
 package me.nghlong3004.vqc.api.evaluation.mapper;
 
+import java.util.UUID;
 import me.nghlong3004.vqc.api.evaluation.entity.EvaluationRun;
+import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunDetailResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunListItemResponse;
 import org.springframework.stereotype.Component;
 
@@ -26,5 +28,27 @@ public class EvaluationRunMapper {
         run.getStatus(),
         run.getTotalCases(),
         run.getCreatedAt());
+  }
+
+  /**
+   * Maps an {@link EvaluationRun} entity to a full detail response.
+   *
+   * @param run evaluation run entity
+   * @return detail response
+   */
+  public EvaluationRunDetailResponse toDetailResponse(EvaluationRun run) {
+    UUID jobPublicId = run.getJob() == null ? null : run.getJob().getPublicId();
+    return new EvaluationRunDetailResponse(
+        run.getPublicId(),
+        run.getProject().getPublicId(),
+        run.getDataset().getPublicId(),
+        run.getRubricVersion().getPublicId(),
+        run.getTargetApiConnector().getPublicId(),
+        jobPublicId,
+        run.getStatus(),
+        run.getTotalCases(),
+        run.getMaxConcurrency(),
+        run.getCreatedAt(),
+        run.getUpdatedAt());
   }
 }

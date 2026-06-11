@@ -31,4 +31,13 @@ public interface EvaluationRunRepository extends JpaRepository<EvaluationRun, Lo
    * @return page of matching {@link EvaluationRun} entities
    */
   Page<EvaluationRun> findByProjectIdAndCreatedBy(Long projectId, User createdBy, Pageable pageable);
+
+  /**
+   * Finds an evaluation run by public id and creator.
+   *
+   * @param publicId public run identifier
+   * @param createdBy creator {@link User}
+   * @return {@link Optional} containing the matching {@link EvaluationRun} when present
+   */
+  Optional<EvaluationRun> findByPublicIdAndCreatedBy(UUID publicId, User createdBy);
 }

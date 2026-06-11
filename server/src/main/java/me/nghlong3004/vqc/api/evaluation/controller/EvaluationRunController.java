@@ -12,6 +12,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import me.nghlong3004.vqc.api.evaluation.request.CreateEvaluationRunRequest;
 import me.nghlong3004.vqc.api.evaluation.response.CreateEvaluationRunResponse;
+import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunDetailResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunPageResponse;
 import me.nghlong3004.vqc.api.evaluation.service.EvaluationRunService;
 import me.nghlong3004.vqc.api.exception.ErrorResponse;
@@ -127,5 +128,39 @@ public class EvaluationRunController {
       Principal principal) {
     return evaluationRunService.listEvaluationRuns(
         projectPublicId, pageable, principal.getName());
+  }
+
+  @Operation(
+      summary = "Get evaluation run detail",
+      description = "Returns a single evaluation run by public identifier.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Evaluation run detail",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = EvaluationRunDetailResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Authentication is required",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Evaluation run not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @GetMapping(
+      value = "/api/v1/evaluation-runs/{runPublicId}",
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  public EvaluationRunDetailResponse getEvaluationRun(
+      @PathVariable UUID runPublicId, Principal principal) {
+    return evaluationRunService.getEvaluationRun(runPublicId, principal.getName());
   }
 }
