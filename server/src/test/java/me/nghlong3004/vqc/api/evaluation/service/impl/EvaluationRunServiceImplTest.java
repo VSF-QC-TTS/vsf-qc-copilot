@@ -21,6 +21,7 @@ import me.nghlong3004.vqc.api.evaluation.request.CreateEvaluationRunRequest;
 import me.nghlong3004.vqc.api.evaluation.response.CreateEvaluationRunResponse;
 import me.nghlong3004.vqc.api.exception.ResourceException;
 import me.nghlong3004.vqc.api.job.entity.Job;
+import me.nghlong3004.vqc.api.job.repository.JobEventRepository;
 import me.nghlong3004.vqc.api.job.repository.JobRepository;
 import me.nghlong3004.vqc.api.job.service.JobQueuePublisher;
 import me.nghlong3004.vqc.api.project.entity.Project;
@@ -242,6 +243,7 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(EvaluationRunRepository.class),
         ignoredRepo(EvaluationResultRepository.class),
         ignoredRepo(JobRepository.class),
+        ignoredRepo(JobEventRepository.class),
         ignoredRepo(ProjectRepository.class),
         ignoredRepo(DatasetRepository.class),
         ignoredRepo(RubricVersionRepository.class),
@@ -267,6 +269,7 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(EvaluationRunRepository.class),
         ignoredRepo(EvaluationResultRepository.class),
         ignoredRepo(JobRepository.class),
+        ignoredRepo(JobEventRepository.class),
         projectRepository(Optional.empty()),
         ignoredRepo(DatasetRepository.class),
         ignoredRepo(RubricVersionRepository.class),
@@ -313,6 +316,7 @@ class EvaluationRunServiceImplTest {
             org.springframework.data.domain.PageRequest.of(0, 20), 1)),
         ignoredRepo(EvaluationResultRepository.class),
         ignoredRepo(JobRepository.class),
+        ignoredRepo(JobEventRepository.class),
         projectRepository(Optional.of(project)),
         ignoredRepo(DatasetRepository.class),
         ignoredRepo(RubricVersionRepository.class),
@@ -347,6 +351,7 @@ class EvaluationRunServiceImplTest {
             org.springframework.data.domain.PageRequest.of(0, 20), 0)),
         ignoredRepo(EvaluationResultRepository.class),
         ignoredRepo(JobRepository.class),
+        ignoredRepo(JobEventRepository.class),
         projectRepository(Optional.of(project)),
         ignoredRepo(DatasetRepository.class),
         ignoredRepo(RubricVersionRepository.class),
@@ -393,6 +398,7 @@ class EvaluationRunServiceImplTest {
         evaluationRunRepositoryForDetail(Optional.of(run)),
         ignoredRepo(EvaluationResultRepository.class),
         ignoredRepo(JobRepository.class),
+        ignoredRepo(JobEventRepository.class),
         ignoredRepo(ProjectRepository.class),
         ignoredRepo(DatasetRepository.class),
         ignoredRepo(RubricVersionRepository.class),
@@ -419,6 +425,7 @@ class EvaluationRunServiceImplTest {
         evaluationRunRepositoryForDetail(Optional.empty()),
         ignoredRepo(EvaluationResultRepository.class),
         ignoredRepo(JobRepository.class),
+        ignoredRepo(JobEventRepository.class),
         ignoredRepo(ProjectRepository.class),
         ignoredRepo(DatasetRepository.class),
         ignoredRepo(RubricVersionRepository.class),
@@ -463,6 +470,7 @@ class EvaluationRunServiceImplTest {
             java.util.List.of(result),
             org.springframework.data.domain.PageRequest.of(0, 20), 1)),
         ignoredRepo(JobRepository.class),
+        ignoredRepo(JobEventRepository.class),
         ignoredRepo(ProjectRepository.class),
         ignoredRepo(DatasetRepository.class),
         ignoredRepo(RubricVersionRepository.class),
@@ -498,6 +506,7 @@ class EvaluationRunServiceImplTest {
             java.util.List.of(),
             org.springframework.data.domain.PageRequest.of(0, 20), 0)),
         ignoredRepo(JobRepository.class),
+        ignoredRepo(JobEventRepository.class),
         ignoredRepo(ProjectRepository.class),
         ignoredRepo(DatasetRepository.class),
         ignoredRepo(RubricVersionRepository.class),
@@ -525,6 +534,7 @@ class EvaluationRunServiceImplTest {
         evaluationRunRepository(),
         ignoredRepo(EvaluationResultRepository.class),
         jobRepository(),
+        ignoredRepo(JobEventRepository.class),
         projectRepository(Optional.of(project)),
         datasetRepository(Optional.of(dataset)),
         rubricVersionRepository(Optional.of(rubricVersion)),

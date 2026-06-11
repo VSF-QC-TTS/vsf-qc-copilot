@@ -198,4 +198,31 @@ public class EvaluationRunController {
     return evaluationRunService.listEvaluationResults(
         runPublicId, judgeStatus, pageable, principal.getName());
   }
+
+  @Operation(
+      summary = "List evaluation run events",
+      description = "Returns job events for an evaluation run in chronological order.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Event list",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = me.nghlong3004.vqc.api.job.response.JobEventResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Evaluation run not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @GetMapping(
+      value = "/api/v1/evaluation-runs/{runPublicId}/events",
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  public java.util.List<me.nghlong3004.vqc.api.job.response.JobEventResponse> listEvaluationRunEvents(
+      @PathVariable UUID runPublicId, Principal principal) {
+    return evaluationRunService.listEvaluationRunEvents(runPublicId, principal.getName());
+  }
 }

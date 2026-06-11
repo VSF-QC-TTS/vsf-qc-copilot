@@ -49,4 +49,14 @@ public interface EvaluationRunService {
    */
   EvaluationResultPageResponse listEvaluationResults(
       UUID runPublicId, JudgeStatus judgeStatus, Pageable pageable, String username);
+
+  /**
+   * Lists job events for an evaluation run.
+   *
+   * @param runPublicId public run identifier
+   * @param username authenticated principal username/email
+   * @return chronological list of job events
+   */
+  java.util.List<me.nghlong3004.vqc.api.job.response.JobEventResponse> listEvaluationRunEvents(
+      UUID runPublicId, String username);
 }

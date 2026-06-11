@@ -60,6 +60,7 @@ public class EvaluationRunServiceImpl implements EvaluationRunService {
   private final EvaluationRunRepository evaluationRunRepository;
   private final EvaluationResultRepository evaluationResultRepository;
   private final JobRepository jobRepository;
+  private final me.nghlong3004.vqc.api.job.repository.JobEventRepository jobEventRepository;
   private final ProjectRepository projectRepository;
   private final DatasetRepository datasetRepository;
   private final RubricVersionRepository rubricVersionRepository;
@@ -200,6 +201,27 @@ public class EvaluationRunServiceImpl implements EvaluationRunService {
     return new EvaluationResultPageResponse(
         items, results.getNumber(), results.getSize(),
         results.getTotalElements(), results.getTotalPages());
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public java.util.List<me.nghlong3004.vqc.api.job.response.JobEventResponse> listEvaluationRunEvents(
+      UUID runPublicId, String username) {
+    User creator = findCreator(username);
+    EvaluationRun run =
+        evaluationRunRepository
+            .findByPublicIdAndCreatedBy(runPublicId, creator)
+            .orElseThrow(() -> new ResourceException(ErrorCode.EVALUATION_RUN_NOT_FOUND));
+
+    if (run.getJob() == null) {
+      return java.util.List.of();
+    }
+
+    log.info("Listed events for evaluation run {} job {}", run.getPublicId(), run.getJob().getPublicId());
+    return jobEventRepository.findByJobIdOrderByCreatedAtAsc(run.getJob().getId()).stream()
+        .map(e -> new me.nghlong3004.vqc.api.job.response.JobEventResponse(
+            e.getPublicId(), e.getEventType(), e.getPayloadJson(), e.getCreatedAt()))
+        .toList();
   }
 
   // ── Validation helpers ──
