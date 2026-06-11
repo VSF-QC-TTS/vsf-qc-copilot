@@ -192,6 +192,11 @@ Auth
     `-- /{jobPublicId}
         `-- GET /
             `-- Chi tiết job; resourcePublicId resolved từ internal ID
+
+|-- /api/v1/evaluation-results [auth]
+|   `-- /{resultPublicId}/review-decision
+|       `-- PUT /
+|           `-- Upsert QC review decision; qcStatus là human final status, picBug là active user reference
 ```
 
 ## Domain Relationship Tree
@@ -262,7 +267,8 @@ User
     `-- xem kết quả chi tiết từng test case
 20. Worker consumes Redis queue `vqc:jobs:queue`
     `-- mock promptfoo executor writes evaluation results and job events
-21. Future: QC review results
+21. PUT  /api/v1/evaluation-results/{resultPublicId}/review-decision
+    `-- QC upsert final decision cho một result
 22. Future: export
 ```
 
@@ -282,7 +288,7 @@ User
 Project
 |-- Evaluation Run / Job
 |   |-- Worker + Promptfoo mock executor [done]
-|   |-- QC Review [future]
+|   |-- QC Review [partial: upsert decision done]
 |   `-- Export [future]
 |       `-- flexible mapping; optional missing fields thì để blank
 `-- Connector secrets encryption [future]

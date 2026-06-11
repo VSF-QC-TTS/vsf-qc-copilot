@@ -1,6 +1,7 @@
 package me.nghlong3004.vqc.api.user.repository;
 
 import java.util.Optional;
+import java.util.UUID;
 import me.nghlong3004.vqc.api.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -25,4 +26,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
    * @return {@link Optional} containing the matching {@link User} when present
    */
   Optional<User> findByUsername(String username);
+
+  /**
+   * Finds a {@link User} by public identifier.
+   *
+   * @param publicId public user identifier
+   * @return {@link Optional} containing the matching {@link User} when present
+   */
+  Optional<User> findByPublicId(UUID publicId);
 }

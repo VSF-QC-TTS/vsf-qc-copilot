@@ -142,6 +142,11 @@ Implemented API slices after auth:
   - Redis is used as a job queue (`vqc:jobs:queue` list). `JobQueuePublisher` pushes job public IDs and `JobWorker` consumes them when `vqc.worker.enabled=true`.
   - `PromptfooExecutor` is Strategy-based: `MockPromptfooExecutor` for `vqc.promptfoo.mode=mock` and `CliPromptfooExecutor` placeholder for `vqc.promptfoo.mode=cli`.
   - `EvaluationJobHandler` loads active dataset test cases, runs the executor, writes one `EvaluationResult` per active case, updates run/job counters and statuses, and emits `RUNNING`, `CASE_COMPLETED`, `COMPLETED`, or `FAILED` job events.
+- QC review:
+  - `PUT /api/v1/evaluation-results/{resultPublicId}/review-decision` upserts one review decision per evaluation result.
+  - `QcStatus`: `NOT_REVIEWED`, `PASS`, `FAIL`, `NEED_FIX`, `IGNORED`; write APIs accept only writable statuses (`PASS`, `FAIL`, `NEED_FIX`, `IGNORED`).
+  - `NOT_REVIEWED` is derived when no `review_decisions` row exists; no default rows are created.
+  - `picBug` is stored as an active user reference (`pic_bug_user_id`) and request payload uses `picBugUserPublicId`.
 
 ## [FUTURE_SLICE] Known Current Gaps
 
@@ -150,7 +155,7 @@ Known current gaps:
 - Connector secrets are not persisted in a real encrypted secret store yet; placeholder resolution for real outbound auth secrets is future work.
 - OAuth persistence/linking remains incomplete.
 - Connector response extraction only supports the current simple selector path used by tests.
-- QC review and export APIs are still future slices.
+- QC review get/patch endpoints, results QC fields/filter, and export APIs are still future slices.
 
 ## [FUTURE_SLICE] Next Implementation Steps
 

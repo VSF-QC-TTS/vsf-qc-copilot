@@ -1,7 +1,10 @@
 package me.nghlong3004.vqc.api.evaluation.repository;
 
+import java.util.Optional;
+import java.util.UUID;
 import me.nghlong3004.vqc.api.evaluation.entity.EvaluationResult;
 import me.nghlong3004.vqc.api.evaluation.enums.JudgeStatus;
+import me.nghlong3004.vqc.api.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,6 +14,16 @@ import org.springframework.data.jpa.repository.JpaRepository;
  * @since 6/11/2026
  */
 public interface EvaluationResultRepository extends JpaRepository<EvaluationResult, Long> {
+
+  /**
+   * Finds a result by public id and evaluation run creator.
+   *
+   * @param publicId public result identifier
+   * @param createdBy evaluation run creator
+   * @return {@link Optional} containing the matching result when present
+   */
+  Optional<EvaluationResult> findByPublicIdAndEvaluationRunCreatedBy(
+      UUID publicId, User createdBy);
 
   /**
    * Finds evaluation results for a run.

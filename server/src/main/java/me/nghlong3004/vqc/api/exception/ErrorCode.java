@@ -157,6 +157,22 @@ public enum ErrorCode {
       HttpStatus.NOT_FOUND.value(),
       "JOB_NOT_FOUND",
       "No job found with the provided ID."),
+  EVALUATION_RESULT_NOT_FOUND(
+      HttpStatus.NOT_FOUND.value(),
+      "EVALUATION_RESULT_NOT_FOUND",
+      "No evaluation result found with the provided ID."),
+  REVIEW_DECISION_NOT_FOUND(
+      HttpStatus.NOT_FOUND.value(),
+      "REVIEW_DECISION_NOT_FOUND",
+      "No review decision found with the provided ID."),
+  REVIEW_DECISION_STATUS_INVALID(
+      HttpStatus.BAD_REQUEST.value(),
+      "REVIEW_DECISION_STATUS_INVALID",
+      "Review decision status is not allowed for write operations."),
+  PIC_BUG_USER_NOT_FOUND(
+      HttpStatus.NOT_FOUND.value(),
+      "PIC_BUG_USER_NOT_FOUND",
+      "No active PIC bug user found with the provided ID."),
 
   // ── User Administration ──
   CANNOT_DELETE_SELF(
