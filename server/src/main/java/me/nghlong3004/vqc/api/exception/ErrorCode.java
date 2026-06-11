@@ -173,6 +173,14 @@ public enum ErrorCode {
       HttpStatus.NOT_FOUND.value(),
       "PIC_BUG_USER_NOT_FOUND",
       "No active PIC bug user found with the provided ID."),
+  EXPORT_FILE_NOT_FOUND(
+      HttpStatus.NOT_FOUND.value(),
+      "EXPORT_FILE_NOT_FOUND",
+      "No export file found with the provided ID."),
+  EXPORT_FILE_NOT_READY(
+      HttpStatus.CONFLICT.value(),
+      "EXPORT_FILE_NOT_READY",
+      "Export file is not ready for download."),
 
   // ── User Administration ──
   CANNOT_DELETE_SELF(

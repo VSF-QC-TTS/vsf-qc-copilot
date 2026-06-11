@@ -209,6 +209,11 @@ Auth
 |   `-- /{runPublicId}/exports
 |       `-- POST /
 |           `-- Tạo export file metadata + async job, trả 202
+|
+|-- /api/v1/exports [auth]
+|   `-- /{exportPublicId}
+|       `-- GET /
+|           `-- Chi tiết export metadata, downloadUrl khi READY
 ```
 
 ## Domain Relationship Tree
@@ -287,7 +292,9 @@ User
     `-- update QC decision hiện có
 24. POST /api/v1/evaluation-runs/{runPublicId}/exports
     `-- tạo async export job
-25. Future: export detail/download
+25. GET  /api/v1/exports/{exportPublicId}
+    `-- xem export metadata
+26. Future: export download
 ```
 
 ## Cross-Cutting Rules

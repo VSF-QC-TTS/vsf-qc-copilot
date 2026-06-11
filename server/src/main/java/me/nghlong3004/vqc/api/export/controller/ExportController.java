@@ -13,10 +13,12 @@ import lombok.RequiredArgsConstructor;
 import me.nghlong3004.vqc.api.exception.ErrorResponse;
 import me.nghlong3004.vqc.api.export.request.CreateExportRequest;
 import me.nghlong3004.vqc.api.export.response.CreateExportResponse;
+import me.nghlong3004.vqc.api.export.response.ExportFileResponse;
 import me.nghlong3004.vqc.api.export.service.ExportService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -67,5 +69,27 @@ public class ExportController {
       @Valid @RequestBody CreateExportRequest request,
       Principal principal) {
     return exportService.createExport(runPublicId, request, principal.getName());
+  }
+
+  @Operation(summary = "Get export detail", description = "Returns export metadata by public id.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Export detail",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ExportFileResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Export not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @GetMapping(value = "/api/v1/exports/{exportPublicId}", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ExportFileResponse getExport(@PathVariable UUID exportPublicId, Principal principal) {
+    return exportService.getExport(exportPublicId, principal.getName());
   }
 }

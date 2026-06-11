@@ -1,17 +1,20 @@
 package me.nghlong3004.vqc.api.export.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.OffsetDateTime;
 import java.util.UUID;
 import me.nghlong3004.vqc.api.exception.GlobalException;
 import me.nghlong3004.vqc.api.export.enums.ExportFileStatus;
 import me.nghlong3004.vqc.api.export.enums.ExportFileType;
 import me.nghlong3004.vqc.api.export.request.CreateExportRequest;
 import me.nghlong3004.vqc.api.export.response.CreateExportResponse;
+import me.nghlong3004.vqc.api.export.response.ExportFileResponse;
 import me.nghlong3004.vqc.api.export.service.ExportService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -114,6 +117,50 @@ class ExportControllerTest {
     assertThat(RecordingExportService.runPublicId).isNull();
   }
 
+  @Test
+  void getExportReturnsDetail() throws Exception {
+    RecordingExportService.detailResponse =
+        new ExportFileResponse(
+            UUID.fromString("e1e2e3e4-e5f6-7890-abcd-ef1234567890"),
+            UUID.fromString("p1e2e3e4-e5f6-7890-abcd-ef1234567890".replace('p', 'a')),
+            UUID.fromString("a1b2c3d4-e5f6-7890-abcd-ef1234567890"),
+            UUID.fromString("b1e2e3e4-e5f6-7890-abcd-ef1234567890"),
+            ExportFileType.JSON,
+            ExportFileStatus.READY,
+            "export.json",
+            "/api/v1/exports/e1e2e3e4-e5f6-7890-abcd-ef1234567890/file",
+            null,
+            OffsetDateTime.parse("2026-06-11T10:00:00Z"),
+            OffsetDateTime.parse("2026-06-11T10:01:00Z"));
+
+    mockMvc
+        .perform(
+            get("/api/v1/exports/e1e2e3e4-e5f6-7890-abcd-ef1234567890")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.publicId").value("e1e2e3e4-e5f6-7890-abcd-ef1234567890"))
+        .andExpect(jsonPath("$.fileType").value("JSON"))
+        .andExpect(jsonPath("$.status").value("READY"))
+        .andExpect(jsonPath("$.downloadUrl").value("/api/v1/exports/e1e2e3e4-e5f6-7890-abcd-ef1234567890/file"));
+
+    assertThat(RecordingExportService.exportPublicId)
+        .isEqualTo(UUID.fromString("e1e2e3e4-e5f6-7890-abcd-ef1234567890"));
+    assertThat(RecordingExportService.username).isEqualTo("qc.demo@example.com");
+  }
+
+  @Test
+  void getExportReturnsValidationForInvalidId() throws Exception {
+    mockMvc
+        .perform(
+            get("/api/v1/exports/not-a-uuid")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null)))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+
+    assertThat(RecordingExportService.exportPublicId).isNull();
+  }
+
   @TestConfiguration
   static class MockBeans {
     @Bean
@@ -124,15 +171,19 @@ class ExportControllerTest {
 
   static class RecordingExportService implements ExportService {
     static UUID runPublicId;
+    static UUID exportPublicId;
     static CreateExportRequest request;
     static String username;
     static CreateExportResponse response;
+    static ExportFileResponse detailResponse;
 
     static void reset() {
       runPublicId = null;
+      exportPublicId = null;
       request = null;
       username = null;
       response = null;
+      detailResponse = null;
     }
 
     @Override
@@ -142,6 +193,13 @@ class ExportControllerTest {
       RecordingExportService.request = request;
       RecordingExportService.username = username;
       return response;
+    }
+
+    @Override
+    public ExportFileResponse getExport(UUID exportPublicId, String username) {
+      RecordingExportService.exportPublicId = exportPublicId;
+      RecordingExportService.username = username;
+      return detailResponse;
     }
   }
 }

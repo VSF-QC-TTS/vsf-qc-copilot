@@ -10,9 +10,11 @@ import me.nghlong3004.vqc.api.exception.ResourceException;
 import me.nghlong3004.vqc.api.export.entity.ExportFile;
 import me.nghlong3004.vqc.api.export.enums.ExportFileStatus;
 import me.nghlong3004.vqc.api.export.enums.ExportFileType;
+import me.nghlong3004.vqc.api.export.mapper.ExportFileMapper;
 import me.nghlong3004.vqc.api.export.repository.ExportFileRepository;
 import me.nghlong3004.vqc.api.export.request.CreateExportRequest;
 import me.nghlong3004.vqc.api.export.response.CreateExportResponse;
+import me.nghlong3004.vqc.api.export.response.ExportFileResponse;
 import me.nghlong3004.vqc.api.export.service.ExportService;
 import me.nghlong3004.vqc.api.job.entity.Job;
 import me.nghlong3004.vqc.api.job.enums.JobStatus;
@@ -39,6 +41,7 @@ public class ExportServiceImpl implements ExportService {
   private final JobRepository jobRepository;
   private final UserRepository userRepository;
   private final JobQueuePublisher jobQueuePublisher;
+  private final ExportFileMapper exportFileMapper;
 
   @Override
   @Transactional
@@ -85,6 +88,20 @@ public class ExportServiceImpl implements ExportService {
         creator.getPublicId());
     return new CreateExportResponse(
         savedExport.getPublicId(), job.getPublicId(), savedExport.getStatus(), "Export job accepted.");
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public ExportFileResponse getExport(UUID exportPublicId, String username) {
+    User creator =
+        userRepository
+            .findByUsername(username.trim().toLowerCase())
+            .orElseThrow(() -> new ResourceException(ErrorCode.USER_NOT_FOUND));
+    ExportFile exportFile =
+        exportFileRepository
+            .findByPublicIdAndCreatedBy(exportPublicId, creator)
+            .orElseThrow(() -> new ResourceException(ErrorCode.EXPORT_FILE_NOT_FOUND));
+    return exportFileMapper.toResponse(exportFile);
   }
 
   private JobType toJobType(ExportFileType fileType) {

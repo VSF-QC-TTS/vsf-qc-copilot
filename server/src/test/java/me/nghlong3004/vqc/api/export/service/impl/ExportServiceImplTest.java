@@ -13,6 +13,7 @@ import me.nghlong3004.vqc.api.exception.ResourceException;
 import me.nghlong3004.vqc.api.export.entity.ExportFile;
 import me.nghlong3004.vqc.api.export.enums.ExportFileStatus;
 import me.nghlong3004.vqc.api.export.enums.ExportFileType;
+import me.nghlong3004.vqc.api.export.mapper.ExportFileMapper;
 import me.nghlong3004.vqc.api.export.repository.ExportFileRepository;
 import me.nghlong3004.vqc.api.export.request.CreateExportRequest;
 import me.nghlong3004.vqc.api.job.entity.Job;
@@ -42,6 +43,7 @@ class ExportServiceImplTest {
         service(
             Optional.of(creator),
             Optional.of(run),
+            Optional.empty(),
             savedExport,
             savedJob,
             publishedJobId);
@@ -71,6 +73,7 @@ class ExportServiceImplTest {
         service(
             Optional.of(creator),
             Optional.of(run),
+            Optional.empty(),
             new AtomicReference<>(),
             savedJob,
             new AtomicReference<>());
@@ -84,7 +87,13 @@ class ExportServiceImplTest {
   @Test
   void createExportRejectsMissingUser() {
     ExportServiceImpl service =
-        service(Optional.empty(), Optional.empty(), new AtomicReference<>(), new AtomicReference<>(), new AtomicReference<>());
+        service(
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            new AtomicReference<>(),
+            new AtomicReference<>(),
+            new AtomicReference<>());
 
     assertThatThrownBy(
             () ->
@@ -99,7 +108,13 @@ class ExportServiceImplTest {
   void createExportRejectsMissingRun() {
     User creator = user();
     ExportServiceImpl service =
-        service(Optional.of(creator), Optional.empty(), new AtomicReference<>(), new AtomicReference<>(), new AtomicReference<>());
+        service(
+            Optional.of(creator),
+            Optional.empty(),
+            Optional.empty(),
+            new AtomicReference<>(),
+            new AtomicReference<>(),
+            new AtomicReference<>());
 
     assertThatThrownBy(
             () ->
@@ -110,21 +125,76 @@ class ExportServiceImplTest {
         .isEqualTo("EVALUATION_RUN_NOT_FOUND");
   }
 
+  @Test
+  void getExportReturnsDetail() {
+    User creator = user();
+    Project project = project(creator);
+    EvaluationRun run = run(project, creator);
+    Job job = Job.builder().id(1L).publicId(UUID.randomUUID()).createdBy(creator).build();
+    ExportFile exportFile =
+        ExportFile.builder()
+            .id(1L)
+            .publicId(UUID.randomUUID())
+            .project(project)
+            .evaluationRun(run)
+            .job(job)
+            .fileType(ExportFileType.JSON)
+            .status(ExportFileStatus.READY)
+            .fileName("export.json")
+            .createdBy(creator)
+            .build();
+    ExportServiceImpl service =
+        service(
+            Optional.of(creator),
+            Optional.of(run),
+            Optional.of(exportFile),
+            new AtomicReference<>(),
+            new AtomicReference<>(),
+            new AtomicReference<>());
+
+    var response = service.getExport(exportFile.getPublicId(), creator.getUsername());
+
+    assertThat(response.publicId()).isEqualTo(exportFile.getPublicId());
+    assertThat(response.jobPublicId()).isEqualTo(job.getPublicId());
+    assertThat(response.downloadUrl()).isEqualTo("/api/v1/exports/" + exportFile.getPublicId() + "/file");
+  }
+
+  @Test
+  void getExportRejectsMissingExport() {
+    User creator = user();
+    ExportServiceImpl service =
+        service(
+            Optional.of(creator),
+            Optional.empty(),
+            Optional.empty(),
+            new AtomicReference<>(),
+            new AtomicReference<>(),
+            new AtomicReference<>());
+
+    assertThatThrownBy(() -> service.getExport(UUID.randomUUID(), creator.getUsername()))
+        .isInstanceOf(ResourceException.class)
+        .extracting(e -> ((ResourceException) e).getResponse().code())
+        .isEqualTo("EXPORT_FILE_NOT_FOUND");
+  }
+
   private ExportServiceImpl service(
       Optional<User> creator,
       Optional<EvaluationRun> run,
+      Optional<ExportFile> exportFile,
       AtomicReference<ExportFile> savedExport,
       AtomicReference<Job> savedJob,
       AtomicReference<String> publishedJobId) {
     return new ExportServiceImpl(
-        exportFileRepository(savedExport),
+        exportFileRepository(savedExport, exportFile),
         evaluationRunRepository(run),
         jobRepository(savedJob),
         userRepository(creator),
-        publisher(publishedJobId));
+        publisher(publishedJobId),
+        new ExportFileMapper());
   }
 
-  private ExportFileRepository exportFileRepository(AtomicReference<ExportFile> savedExport) {
+  private ExportFileRepository exportFileRepository(
+      AtomicReference<ExportFile> savedExport, Optional<ExportFile> existingExport) {
     return proxy(
         ExportFileRepository.class,
         (proxy, method, args) -> {
@@ -139,6 +209,7 @@ class ExportServiceImplTest {
             savedExport.set(exportFile);
             return exportFile;
           }
+          if ("findByPublicIdAndCreatedBy".equals(method.getName())) return existingExport;
           throw new UnsupportedOperationException(method.getName());
         });
   }
