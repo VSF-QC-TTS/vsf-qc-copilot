@@ -2,6 +2,7 @@ package me.nghlong3004.vqc.api.testcase.repository;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.List;
 import me.nghlong3004.vqc.api.dataset.entity.Dataset;
 import me.nghlong3004.vqc.api.testcase.entity.TestCase;
 import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
@@ -44,6 +45,16 @@ public interface TestCaseRepository extends JpaRepository<TestCase, Long> {
    */
   Page<TestCase> findByDatasetAndStatus(
       Dataset dataset, TestCaseStatus status, Pageable pageable);
+
+  /**
+   * Finds test cases under a {@link Dataset} with a matching status ordered for execution.
+   *
+   * @param dataset owner {@link Dataset}
+   * @param status test case status filter
+   * @return ordered list of matching {@link TestCase} entities
+   */
+  List<TestCase> findByDatasetAndStatusOrderBySortOrderAscIdAsc(
+      Dataset dataset, TestCaseStatus status);
 
   /**
    * Finds a test case by public id and dataset creator.
