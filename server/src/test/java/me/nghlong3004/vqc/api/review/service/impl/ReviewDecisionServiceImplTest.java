@@ -159,6 +159,59 @@ class ReviewDecisionServiceImplTest {
         .isEqualTo("USER_NOT_FOUND");
   }
 
+  @Test
+  void getReviewDecisionReturnsExistingDecision() {
+    User reviewer = user(1L, "QC Demo", UserStatus.ACTIVE);
+    EvaluationResult result = result(reviewer);
+    ReviewDecision existing =
+        ReviewDecision.builder()
+            .id(1L)
+            .publicId(UUID.randomUUID())
+            .evaluationResult(result)
+            .qcStatus(QcStatus.IGNORED)
+            .qcNote("Out of scope")
+            .reviewedBy(reviewer)
+            .reviewedAt(OffsetDateTime.now())
+            .updatedAt(OffsetDateTime.now())
+            .build();
+    ReviewDecisionServiceImpl service =
+        service(reviewer, Optional.empty(), Optional.of(result), Optional.of(existing), new AtomicReference<>());
+
+    ReviewDecisionResponse response = service.getReviewDecision(result.getPublicId(), reviewer.getUsername());
+
+    assertThat(response.publicId()).isEqualTo(existing.getPublicId());
+    assertThat(response.qcStatus()).isEqualTo(QcStatus.IGNORED);
+    assertThat(response.qcNote()).isEqualTo("Out of scope");
+  }
+
+  @Test
+  void getReviewDecisionReturnsDefaultNotReviewedWhenAbsent() {
+    User reviewer = user(1L, "QC Demo", UserStatus.ACTIVE);
+    EvaluationResult result = result(reviewer);
+    ReviewDecisionServiceImpl service =
+        service(reviewer, Optional.empty(), Optional.of(result), Optional.empty(), new AtomicReference<>());
+
+    ReviewDecisionResponse response = service.getReviewDecision(result.getPublicId(), reviewer.getUsername());
+
+    assertThat(response.publicId()).isNull();
+    assertThat(response.evaluationResultPublicId()).isEqualTo(result.getPublicId());
+    assertThat(response.qcStatus()).isEqualTo(QcStatus.NOT_REVIEWED);
+    assertThat(response.reviewedBy()).isNull();
+    assertThat(response.reviewedAt()).isNull();
+  }
+
+  @Test
+  void getReviewDecisionRejectsMissingResult() {
+    User reviewer = user(1L, "QC Demo", UserStatus.ACTIVE);
+    ReviewDecisionServiceImpl service =
+        service(reviewer, Optional.empty(), Optional.empty(), Optional.empty(), new AtomicReference<>());
+
+    assertThatThrownBy(() -> service.getReviewDecision(UUID.randomUUID(), reviewer.getUsername()))
+        .isInstanceOf(ResourceException.class)
+        .extracting(e -> ((ResourceException) e).getResponse().code())
+        .isEqualTo("EVALUATION_RESULT_NOT_FOUND");
+  }
+
   private ReviewDecisionServiceImpl service(
       User reviewer,
       Optional<User> picBugUser,

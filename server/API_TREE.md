@@ -195,8 +195,10 @@ Auth
 
 |-- /api/v1/evaluation-results [auth]
 |   `-- /{resultPublicId}/review-decision
-|       `-- PUT /
-|           `-- Upsert QC review decision; qcStatus là human final status, picBug là active user reference
+|       |-- PUT /
+|       |   `-- Upsert QC review decision; qcStatus là human final status, picBug là active user reference
+|       `-- GET /
+|           `-- Lấy QC review decision; trả NOT_REVIEWED nếu chưa có row
 ```
 
 ## Domain Relationship Tree
@@ -269,7 +271,9 @@ User
     `-- mock promptfoo executor writes evaluation results and job events
 21. PUT  /api/v1/evaluation-results/{resultPublicId}/review-decision
     `-- QC upsert final decision cho một result
-22. Future: export
+22. GET  /api/v1/evaluation-results/{resultPublicId}/review-decision
+    `-- xem QC decision, default NOT_REVIEWED nếu chưa review
+23. Future: export
 ```
 
 ## Cross-Cutting Rules

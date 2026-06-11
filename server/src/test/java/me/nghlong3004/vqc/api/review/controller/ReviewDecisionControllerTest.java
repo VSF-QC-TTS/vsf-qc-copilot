@@ -1,6 +1,7 @@
 package me.nghlong3004.vqc.api.review.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -132,6 +133,47 @@ class ReviewDecisionControllerTest {
     assertThat(RecordingReviewDecisionService.resultPublicId).isNull();
   }
 
+  @Test
+  void getReviewDecisionReturnsResponse() throws Exception {
+    RecordingReviewDecisionService.response =
+        new ReviewDecisionResponse(
+            null,
+            UUID.fromString("b1b2c3d4-e5f6-7890-abcd-ef1234567890"),
+            QcStatus.NOT_REVIEWED,
+            null,
+            null,
+            null,
+            null,
+            null);
+
+    mockMvc
+        .perform(
+            get(
+                    "/api/v1/evaluation-results/b1b2c3d4-e5f6-7890-abcd-ef1234567890/review-decision")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.publicId").isEmpty())
+        .andExpect(jsonPath("$.evaluationResultPublicId").value("b1b2c3d4-e5f6-7890-abcd-ef1234567890"))
+        .andExpect(jsonPath("$.qcStatus").value("NOT_REVIEWED"));
+
+    assertThat(RecordingReviewDecisionService.resultPublicId)
+        .isEqualTo(UUID.fromString("b1b2c3d4-e5f6-7890-abcd-ef1234567890"));
+    assertThat(RecordingReviewDecisionService.username).isEqualTo("qc.demo@example.com");
+  }
+
+  @Test
+  void getReviewDecisionReturnsValidationForInvalidResultId() throws Exception {
+    mockMvc
+        .perform(
+            get("/api/v1/evaluation-results/not-a-uuid/review-decision")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null)))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+
+    assertThat(RecordingReviewDecisionService.resultPublicId).isNull();
+  }
+
   @TestConfiguration
   static class MockBeans {
     @Bean
@@ -158,6 +200,13 @@ class ReviewDecisionControllerTest {
         UUID resultPublicId, UpsertReviewDecisionRequest request, String username) {
       RecordingReviewDecisionService.resultPublicId = resultPublicId;
       RecordingReviewDecisionService.request = request;
+      RecordingReviewDecisionService.username = username;
+      return response;
+    }
+
+    @Override
+    public ReviewDecisionResponse getReviewDecision(UUID resultPublicId, String username) {
+      RecordingReviewDecisionService.resultPublicId = resultPublicId;
       RecordingReviewDecisionService.username = username;
       return response;
     }

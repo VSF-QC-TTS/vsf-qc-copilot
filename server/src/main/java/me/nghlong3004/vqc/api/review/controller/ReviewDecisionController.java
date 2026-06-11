@@ -15,6 +15,7 @@ import me.nghlong3004.vqc.api.review.request.UpsertReviewDecisionRequest;
 import me.nghlong3004.vqc.api.review.response.ReviewDecisionResponse;
 import me.nghlong3004.vqc.api.review.service.ReviewDecisionService;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -67,5 +68,32 @@ public class ReviewDecisionController {
       Principal principal) {
     return reviewDecisionService.upsertReviewDecision(
         resultPublicId, request, principal.getName());
+  }
+
+  @Operation(
+      summary = "Get review decision",
+      description = "Returns a QC review decision for an evaluation result, or NOT_REVIEWED when absent.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Review decision",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ReviewDecisionResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Evaluation result not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @GetMapping(
+      value = "/api/v1/evaluation-results/{resultPublicId}/review-decision",
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  public ReviewDecisionResponse getReviewDecision(
+      @PathVariable UUID resultPublicId, Principal principal) {
+    return reviewDecisionService.getReviewDecision(resultPublicId, principal.getName());
   }
 }

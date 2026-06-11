@@ -59,6 +59,17 @@ public class ReviewDecisionServiceImpl implements ReviewDecisionService {
     return reviewDecisionMapper.toResponse(saved);
   }
 
+  @Override
+  @Transactional(readOnly = true)
+  public ReviewDecisionResponse getReviewDecision(UUID resultPublicId, String username) {
+    User reviewer = findReviewer(username);
+    EvaluationResult result = findResult(resultPublicId, reviewer);
+    return reviewDecisionRepository
+        .findByEvaluationResult(result)
+        .map(reviewDecisionMapper::toResponse)
+        .orElseGet(() -> reviewDecisionMapper.toNotReviewedResponse(result));
+  }
+
   private User findReviewer(String username) {
     return userRepository
         .findByUsername(username.trim().toLowerCase())

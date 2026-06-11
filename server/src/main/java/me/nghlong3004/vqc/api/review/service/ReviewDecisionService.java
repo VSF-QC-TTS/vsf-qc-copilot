@@ -20,4 +20,13 @@ public interface ReviewDecisionService {
    */
   ReviewDecisionResponse upsertReviewDecision(
       UUID resultPublicId, UpsertReviewDecisionRequest request, String username);
+
+  /**
+   * Gets a review decision for an evaluation result.
+   *
+   * @param resultPublicId evaluation result public identifier
+   * @param username authenticated username/email
+   * @return persisted decision or default NOT_REVIEWED response
+   */
+  ReviewDecisionResponse getReviewDecision(UUID resultPublicId, String username);
 }
