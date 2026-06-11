@@ -7,6 +7,7 @@ import me.nghlong3004.vqc.api.evaluation.response.CreateEvaluationRunResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationResultPageResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunDetailResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunPageResponse;
+import me.nghlong3004.vqc.api.review.enums.QcStatus;
 import org.springframework.data.domain.Pageable;
 
 /**
@@ -48,7 +49,7 @@ public interface EvaluationRunService {
    * @return page of evaluation results
    */
   EvaluationResultPageResponse listEvaluationResults(
-      UUID runPublicId, JudgeStatus judgeStatus, Pageable pageable, String username);
+      UUID runPublicId, JudgeStatus judgeStatus, QcStatus qcStatus, Pageable pageable, String username);
 
   /**
    * Lists job events for an evaluation run.

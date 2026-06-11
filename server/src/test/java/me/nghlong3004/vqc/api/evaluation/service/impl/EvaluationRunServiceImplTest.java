@@ -453,7 +453,12 @@ class EvaluationRunServiceImplTest {
 
     me.nghlong3004.vqc.api.testcase.entity.TestCase tc =
         me.nghlong3004.vqc.api.testcase.entity.TestCase.builder()
-            .id(1L).publicId(UUID.randomUUID()).build();
+            .id(1L)
+            .publicId(UUID.randomUUID())
+            .externalId("HEALTH_001")
+            .question("How many steps?")
+            .groundTruth("8,200 steps")
+            .build();
 
     me.nghlong3004.vqc.api.evaluation.entity.EvaluationResult result =
         me.nghlong3004.vqc.api.evaluation.entity.EvaluationResult.builder()
@@ -481,7 +486,7 @@ class EvaluationRunServiceImplTest {
         new EvaluationRunMapper());
 
     var response = service.listEvaluationResults(
-        run.getPublicId(), null,
+        run.getPublicId(), null, null,
         org.springframework.data.domain.PageRequest.of(0, 20),
         "qc.demo@example.com");
 
@@ -489,6 +494,9 @@ class EvaluationRunServiceImplTest {
     assertThat(response.items().getFirst().publicId()).isEqualTo(result.getPublicId());
     assertThat(response.items().getFirst().judgeStatus())
         .isEqualTo(me.nghlong3004.vqc.api.evaluation.enums.JudgeStatus.PASS);
+    assertThat(response.items().getFirst().qcStatus())
+        .isEqualTo(me.nghlong3004.vqc.api.review.enums.QcStatus.NOT_REVIEWED);
+    assertThat(response.items().getFirst().question()).isEqualTo("How many steps?");
     assertThat(response.totalItems()).isEqualTo(1);
   }
 
@@ -517,9 +525,54 @@ class EvaluationRunServiceImplTest {
         new EvaluationRunMapper());
 
     var response = service.listEvaluationResults(
-        run.getPublicId(), null,
+        run.getPublicId(), null, null,
         org.springframework.data.domain.PageRequest.of(0, 20),
         "qc.demo@example.com");
+
+    assertThat(response.items()).isEmpty();
+    assertThat(response.totalItems()).isZero();
+  }
+
+  @Test
+  void listEvaluationResultsSupportsNotReviewedFilter() {
+    User creator = user();
+    Project project = project(creator);
+    EvaluationRun run =
+        EvaluationRun.builder()
+            .id(1L)
+            .publicId(UUID.randomUUID())
+            .project(project)
+            .status(EvaluationRunStatus.COMPLETED)
+            .totalCases(0)
+            .createdBy(creator)
+            .build();
+
+    EvaluationRunServiceImpl service =
+        new EvaluationRunServiceImpl(
+            evaluationRunRepositoryForDetail(Optional.of(run)),
+            evaluationResultRepository(
+                new org.springframework.data.domain.PageImpl<>(
+                    java.util.List.of(),
+                    org.springframework.data.domain.PageRequest.of(0, 20),
+                    0)),
+            ignoredRepo(JobRepository.class),
+            ignoredRepo(JobEventRepository.class),
+            ignoredRepo(ProjectRepository.class),
+            ignoredRepo(DatasetRepository.class),
+            ignoredRepo(RubricVersionRepository.class),
+            ignoredRepo(TargetApiConnectorRepository.class),
+            ignoredRepo(TestCaseRepository.class),
+            userRepository(Optional.of(creator)),
+            ignoredPublisher(),
+            new EvaluationRunMapper());
+
+    var response =
+        service.listEvaluationResults(
+            run.getPublicId(),
+            me.nghlong3004.vqc.api.evaluation.enums.JudgeStatus.FAIL,
+            me.nghlong3004.vqc.api.review.enums.QcStatus.NOT_REVIEWED,
+            org.springframework.data.domain.PageRequest.of(0, 20),
+            "qc.demo@example.com");
 
     assertThat(response.items()).isEmpty();
     assertThat(response.totalItems()).isZero();
@@ -582,6 +635,14 @@ class EvaluationRunServiceImplTest {
     return proxy(EvaluationResultRepository.class, (p, m, args) -> {
       if ("findByEvaluationRunId".equals(m.getName())) return page;
       if ("findByEvaluationRunIdAndJudgeStatus".equals(m.getName())) return page;
+      if ("findByEvaluationRunIdAndReviewDecisionIsNull".equals(m.getName())) return page;
+      if ("findByEvaluationRunIdAndJudgeStatusAndReviewDecisionIsNull".equals(m.getName())) {
+        return page;
+      }
+      if ("findByEvaluationRunIdAndReviewDecisionQcStatus".equals(m.getName())) return page;
+      if ("findByEvaluationRunIdAndJudgeStatusAndReviewDecisionQcStatus".equals(m.getName())) {
+        return page;
+      }
       throw new UnsupportedOperationException(m.getName());
     });
   }

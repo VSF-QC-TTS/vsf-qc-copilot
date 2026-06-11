@@ -183,7 +183,7 @@ Auth
 |       |   `-- Chi tiết evaluation run
 |       |-- /results [auth]
 |       |   `-- GET /
-|       |       `-- List kết quả; filter: judgeStatus; pageable/sortable
+|       |       `-- List kết quả; filter: judgeStatus/qcStatus; includes QC review fields
 |       `-- /events [auth]
 |           `-- GET /
 |               `-- List job events theo thứ tự thời gian
@@ -271,7 +271,7 @@ User
 18. GET  /api/v1/evaluation-runs/{runPublicId}
     `-- xem kết quả tổng
 19. GET  /api/v1/evaluation-runs/{runPublicId}/results
-    `-- xem kết quả chi tiết từng test case
+    `-- xem kết quả chi tiết từng test case, gồm qcStatus/qcNote/picBug
 20. Worker consumes Redis queue `vqc:jobs:queue`
     `-- mock promptfoo executor writes evaluation results and job events
 21. PUT  /api/v1/evaluation-results/{resultPublicId}/review-decision

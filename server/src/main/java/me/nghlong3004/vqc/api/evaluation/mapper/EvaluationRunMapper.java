@@ -2,9 +2,14 @@ package me.nghlong3004.vqc.api.evaluation.mapper;
 
 import java.util.UUID;
 import me.nghlong3004.vqc.api.evaluation.entity.EvaluationRun;
+import me.nghlong3004.vqc.api.evaluation.entity.EvaluationResult;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationResultListItemResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunDetailResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunListItemResponse;
+import me.nghlong3004.vqc.api.review.entity.ReviewDecision;
+import me.nghlong3004.vqc.api.review.enums.QcStatus;
+import me.nghlong3004.vqc.api.review.response.ReviewUserResponse;
+import me.nghlong3004.vqc.api.user.entity.User;
 import org.springframework.stereotype.Component;
 
 /**
@@ -60,16 +65,31 @@ public class EvaluationRunMapper {
    * @return result list item response
    */
   public EvaluationResultListItemResponse toResultListItem(
-      me.nghlong3004.vqc.api.evaluation.entity.EvaluationResult result) {
+      EvaluationResult result) {
+    ReviewDecision reviewDecision = result.getReviewDecision();
     return new EvaluationResultListItemResponse(
         result.getPublicId(),
+        result.getEvaluationRun().getPublicId(),
         result.getTestCase().getPublicId(),
+        result.getTestCase().getExternalId(),
+        result.getTestCase().getQuestion(),
+        result.getTestCase().getGroundTruth(),
         result.getActualAnswer(),
         result.getJudgeScore(),
         result.getJudgeStatus(),
         result.getJudgeReason(),
         result.getLatencyMs(),
         result.getErrorMessage(),
+        reviewDecision == null ? QcStatus.NOT_REVIEWED : reviewDecision.getQcStatus(),
+        reviewDecision == null ? null : reviewDecision.getQcNote(),
+        reviewDecision == null ? null : toReviewUserResponse(reviewDecision.getPicBugUser()),
         result.getCreatedAt());
+  }
+
+  private ReviewUserResponse toReviewUserResponse(User user) {
+    if (user == null) {
+      return null;
+    }
+    return new ReviewUserResponse(user.getPublicId(), user.getDisplayName());
   }
 }

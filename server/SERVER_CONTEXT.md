@@ -134,7 +134,7 @@ Implemented API slices after auth:
   - `POST /api/v1/projects/{projectPublicId}/evaluation-runs` creates an evaluation run + job, validates that the referenced dataset is `APPROVED`, rubric version is `PUBLISHED`, and connector exists, then pushes a job message to a Redis queue and returns `202 Accepted` with `runPublicId` and `jobPublicId`.
   - `GET /api/v1/projects/{projectPublicId}/evaluation-runs` lists runs under a project with pagination.
   - `GET /api/v1/evaluation-runs/{runPublicId}` returns run detail (flat path, owner-scoped).
-  - `GET /api/v1/evaluation-runs/{runPublicId}/results` lists evaluation results with optional `judgeStatus` filter and pagination.
+  - `GET /api/v1/evaluation-runs/{runPublicId}/results` lists evaluation results with optional `judgeStatus` and `qcStatus` filters, pagination, test-case review context, and QC fields (`qcStatus`, `qcNote`, `picBug`).
   - `GET /api/v1/evaluation-runs/{runPublicId}/events` lists job events in chronological order.
   - `GET /api/v1/jobs/{jobPublicId}` returns job detail with resolved `resourcePublicId` (flat path, owner-scoped).
   - All evaluation/job endpoints are owner-scoped through the project `createdBy` chain.
@@ -157,7 +157,7 @@ Known current gaps:
 - Connector secrets are not persisted in a real encrypted secret store yet; placeholder resolution for real outbound auth secrets is future work.
 - OAuth persistence/linking remains incomplete.
 - Connector response extraction only supports the current simple selector path used by tests.
-- Results QC fields/filter and export APIs are still future slices.
+- Export APIs are still future slices.
 
 ## [FUTURE_SLICE] Next Implementation Steps
 
@@ -170,11 +170,7 @@ Step 11 — QC Review APIs:
 - Add tests for create/update/default-not-reviewed/ownership/validation.
 - Commit each API slice separately.
 
-Step 12 — Evaluation Results QC fields:
-- Extend results list with `qcStatus`, `qcNote`, `picBug`, and optional `qcStatus` filter.
-- Keep `judgeStatus` as automated status and never overwrite it from review decisions.
-
-Step 13 — Export APIs:
+Step 12 — Export APIs:
 - Add export file metadata, create/detail/download APIs, and generator Strategy for Excel vs JSON.
 - Export final status should use `qcStatus`; optional missing fields should be blank, not fatal.
 

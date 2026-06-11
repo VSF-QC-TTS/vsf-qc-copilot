@@ -35,6 +35,7 @@ import me.nghlong3004.vqc.api.project.repository.ProjectRepository;
 import me.nghlong3004.vqc.api.rubric.entity.RubricVersion;
 import me.nghlong3004.vqc.api.rubric.enums.RubricVersionStatus;
 import me.nghlong3004.vqc.api.rubric.repository.RubricVersionRepository;
+import me.nghlong3004.vqc.api.review.enums.QcStatus;
 import me.nghlong3004.vqc.api.targetconnector.entity.TargetApiConnector;
 import me.nghlong3004.vqc.api.targetconnector.repository.TargetApiConnectorRepository;
 import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
@@ -176,18 +177,14 @@ public class EvaluationRunServiceImpl implements EvaluationRunService {
   @Override
   @Transactional(readOnly = true)
   public EvaluationResultPageResponse listEvaluationResults(
-      UUID runPublicId, JudgeStatus judgeStatus, Pageable pageable, String username) {
+      UUID runPublicId, JudgeStatus judgeStatus, QcStatus qcStatus, Pageable pageable, String username) {
     User creator = findCreator(username);
     EvaluationRun run =
         evaluationRunRepository
             .findByPublicIdAndCreatedBy(runPublicId, creator)
             .orElseThrow(() -> new ResourceException(ErrorCode.EVALUATION_RUN_NOT_FOUND));
 
-    Page<EvaluationResult> results =
-        judgeStatus == null
-            ? evaluationResultRepository.findByEvaluationRunId(run.getId(), pageable)
-            : evaluationResultRepository.findByEvaluationRunIdAndJudgeStatus(
-                run.getId(), judgeStatus, pageable);
+    Page<EvaluationResult> results = findResults(run.getId(), judgeStatus, qcStatus, pageable);
 
     List<EvaluationResultListItemResponse> items =
         results.getContent().stream()
@@ -201,6 +198,28 @@ public class EvaluationRunServiceImpl implements EvaluationRunService {
     return new EvaluationResultPageResponse(
         items, results.getNumber(), results.getSize(),
         results.getTotalElements(), results.getTotalPages());
+  }
+
+  private Page<EvaluationResult> findResults(
+      Long runId, JudgeStatus judgeStatus, QcStatus qcStatus, Pageable pageable) {
+    if (qcStatus == null) {
+      return judgeStatus == null
+          ? evaluationResultRepository.findByEvaluationRunId(runId, pageable)
+          : evaluationResultRepository.findByEvaluationRunIdAndJudgeStatus(
+              runId, judgeStatus, pageable);
+    }
+    if (qcStatus == QcStatus.NOT_REVIEWED) {
+      return judgeStatus == null
+          ? evaluationResultRepository.findByEvaluationRunIdAndReviewDecisionIsNull(
+              runId, pageable)
+          : evaluationResultRepository.findByEvaluationRunIdAndJudgeStatusAndReviewDecisionIsNull(
+              runId, judgeStatus, pageable);
+    }
+    return judgeStatus == null
+        ? evaluationResultRepository.findByEvaluationRunIdAndReviewDecisionQcStatus(
+            runId, qcStatus, pageable)
+        : evaluationResultRepository.findByEvaluationRunIdAndJudgeStatusAndReviewDecisionQcStatus(
+            runId, judgeStatus, qcStatus, pageable);
   }
 
   @Override

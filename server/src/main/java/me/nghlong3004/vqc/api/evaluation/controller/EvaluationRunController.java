@@ -18,6 +18,7 @@ import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunDetailResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunPageResponse;
 import me.nghlong3004.vqc.api.evaluation.service.EvaluationRunService;
 import me.nghlong3004.vqc.api.exception.ErrorResponse;
+import me.nghlong3004.vqc.api.review.enums.QcStatus;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -192,11 +193,12 @@ public class EvaluationRunController {
   public EvaluationResultPageResponse listEvaluationResults(
       @PathVariable UUID runPublicId,
       @RequestParam(required = false) JudgeStatus judgeStatus,
+      @RequestParam(required = false) QcStatus qcStatus,
       @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.ASC)
           Pageable pageable,
       Principal principal) {
     return evaluationRunService.listEvaluationResults(
-        runPublicId, judgeStatus, pageable, principal.getName());
+        runPublicId, judgeStatus, qcStatus, pageable, principal.getName());
   }
 
   @Operation(

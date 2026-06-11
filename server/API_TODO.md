@@ -20,7 +20,7 @@ Update rule:
 - Dataset/Test Case: dataset create/list/detail/update; test case create/list/update/delete.
 - Rubric/Criteria: rubric create/list/detail/update/archive; version create/list/detail/publish/archive; criteria create/list/update/delete.
 - Evaluation Run: create (`POST`, 202 async), list under project, detail flat path.
-- Evaluation Results: list under run with optional `judgeStatus` filter.
+- Evaluation Results: list under run with optional `judgeStatus`/`qcStatus` filters and QC review fields.
 - Evaluation Events: list job events under run.
 - Job: detail flat path with resolved `resourcePublicId`.
 - Worker + Promptfoo mock executor (Step 10).
@@ -28,5 +28,4 @@ Update rule:
 
 ## Next
 
-- Evaluation Results: add QC review fields/filter.
 - Export endpoints (Phase 8).

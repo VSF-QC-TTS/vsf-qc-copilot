@@ -23,6 +23,8 @@ import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunPageResponse;
 import me.nghlong3004.vqc.api.evaluation.service.EvaluationRunService;
 import me.nghlong3004.vqc.api.exception.GlobalException;
 import me.nghlong3004.vqc.api.job.response.JobEventResponse;
+import me.nghlong3004.vqc.api.review.enums.QcStatus;
+import me.nghlong3004.vqc.api.review.response.ReviewUserResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -229,13 +231,21 @@ class EvaluationRunControllerTest {
             List.of(
                 new EvaluationResultListItemResponse(
                     UUID.fromString("e1e2e3e4-e5f6-7890-abcd-ef1234567890"),
+                    UUID.fromString("a1b2c3d4-e5f6-7890-abcd-ef1234567890"),
                     UUID.fromString("b1b2b3b4-e5f6-7890-abcd-ef1234567890"),
+                    "HEALTH_001",
+                    "How many steps?",
+                    "8,200 steps",
                     "Test answer",
                     BigDecimal.valueOf(0.9),
                     JudgeStatus.PASS,
                     "Correct answer",
                     120,
                     null,
+                    QcStatus.NEED_FIX,
+                    "Needs exact value.",
+                    new ReviewUserResponse(
+                        UUID.fromString("d1d2c3d4-e5f6-7890-abcd-ef1234567890"), "Long"),
                     OffsetDateTime.parse("2026-06-11T10:01:00Z"))),
             0,
             20,
@@ -245,18 +255,26 @@ class EvaluationRunControllerTest {
     mockMvc
         .perform(
             get("/api/v1/evaluation-runs/a1b2c3d4-e5f6-7890-abcd-ef1234567890/results")
+                .param("judgeStatus", "PASS")
+                .param("qcStatus", "NEED_FIX")
                 .principal(new TestingAuthenticationToken("qc.demo@example.com", null)))
         .andExpect(status().isOk())
         .andExpect(
             jsonPath("$.items[0].publicId")
                 .value("e1e2e3e4-e5f6-7890-abcd-ef1234567890"))
         .andExpect(jsonPath("$.items[0].judgeStatus").value("PASS"))
+        .andExpect(jsonPath("$.items[0].externalId").value("HEALTH_001"))
+        .andExpect(jsonPath("$.items[0].question").value("How many steps?"))
+        .andExpect(jsonPath("$.items[0].qcStatus").value("NEED_FIX"))
+        .andExpect(jsonPath("$.items[0].picBug.displayName").value("Long"))
         .andExpect(jsonPath("$.items[0].judgeScore").value(0.9))
         .andExpect(jsonPath("$.items[0].latencyMs").value(120))
         .andExpect(jsonPath("$.totalItems").value(1));
 
     assertThat(RecordingEvaluationRunService.runPublicId)
         .isEqualTo(UUID.fromString("a1b2c3d4-e5f6-7890-abcd-ef1234567890"));
+    assertThat(RecordingEvaluationRunService.judgeStatus).isEqualTo(JudgeStatus.PASS);
+    assertThat(RecordingEvaluationRunService.qcStatus).isEqualTo(QcStatus.NEED_FIX);
   }
 
   // ── GET evaluation events ──
@@ -300,6 +318,7 @@ class EvaluationRunControllerTest {
     static UUID runPublicId;
     static CreateEvaluationRunRequest createRequest;
     static JudgeStatus judgeStatus;
+    static QcStatus qcStatus;
     static Pageable pageable;
     static String username;
     static CreateEvaluationRunResponse createResponse;
@@ -313,6 +332,7 @@ class EvaluationRunControllerTest {
       runPublicId = null;
       createRequest = null;
       judgeStatus = null;
+      qcStatus = null;
       pageable = null;
       username = null;
       createResponse = null;
@@ -349,9 +369,10 @@ class EvaluationRunControllerTest {
 
     @Override
     public EvaluationResultPageResponse listEvaluationResults(
-        UUID runPublicId, JudgeStatus judgeStatus, Pageable pageable, String username) {
+        UUID runPublicId, JudgeStatus judgeStatus, QcStatus qcStatus, Pageable pageable, String username) {
       RecordingEvaluationRunService.runPublicId = runPublicId;
       RecordingEvaluationRunService.judgeStatus = judgeStatus;
+      RecordingEvaluationRunService.qcStatus = qcStatus;
       RecordingEvaluationRunService.pageable = pageable;
       RecordingEvaluationRunService.username = username;
       return resultPageResponse;

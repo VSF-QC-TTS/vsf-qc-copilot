@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -23,6 +24,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import me.nghlong3004.vqc.api.evaluation.enums.JudgeStatus;
+import me.nghlong3004.vqc.api.review.entity.ReviewDecision;
 import me.nghlong3004.vqc.api.testcase.entity.TestCase;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -101,6 +103,9 @@ public class EvaluationResult {
 
   @Column(name = "error_message", columnDefinition = "TEXT")
   private String errorMessage;
+
+  @OneToOne(mappedBy = "evaluationResult", fetch = FetchType.LAZY)
+  private ReviewDecision reviewDecision;
 
   @Column(name = "created_at", nullable = false, updatable = false)
   @Builder.Default
