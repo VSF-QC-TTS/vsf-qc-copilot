@@ -1,7 +1,7 @@
 # API Plan — Phase 6: Worker + Promptfoo Mock (Step 10)
 
 Date: 2026-06-11
-Status: **IN PROGRESS**
+Status: **COMPLETED**
 Prerequisite: Steps 0–9 completed (6 evaluation/job API endpoints, 226 tests passing).
 
 ## Goal
@@ -28,15 +28,16 @@ Entities:
   EvaluationResult        → id, publicId, evaluationRunId, testCaseId, actualAnswer, judgeScore, ...
 
 Enums:
-  JobStatus               → PENDING, PROCESSING, COMPLETED, FAILED
+  JobStatus               → PENDING, RUNNING, COMPLETED, FAILED, CANCELLED
   EvaluationRunStatus     → PENDING, RUNNING, COMPLETED, FAILED
   JudgeStatus             → PASS, FAIL, WARNING, ERROR
 
 Repositories:
   JobRepository           → findByPublicIdAndCreatedBy, findByPublicId
   JobEventRepository      → findByJobIdOrderByCreatedAtAsc
-  EvaluationRunRepository → findByPublicIdAndCreatedBy, findByJobPublicId
+  EvaluationRunRepository → findByPublicIdAndCreatedBy, findById
   EvaluationResultRepository → findByEvaluationRunId
+  TestCaseRepository      → findByDatasetAndStatusOrderBySortOrderAscIdAsc
 ```
 
 ## Implementation Steps
@@ -83,13 +84,13 @@ EvaluationJobHandler:
                 EvaluationResultRepository, TestCaseRepository, PromptfooExecutor
   
   void handle(UUID jobPublicId):
-    1. Find Job by publicId → update status PROCESSING, emit JobEvent("PROCESSING")
+    1. Find Job by publicId → update status RUNNING, emit JobEvent("RUNNING")
     2. Find EvaluationRun by job.resourceId → update status RUNNING
     3. Load test cases from dataset (run.datasetId) → only ACTIVE ones
     4. Load rubric version (run.rubricVersionId) and connector (run.connectorId)
     5. Call promptfooExecutor.evaluate(testCases, rubricVersion, connector)
     6. For each PromptfooResult → save EvaluationResult row
-    7. Update job: progressCurrent++, emit JobEvent("PROGRESS", payload with current/total)
+    7. Update job: progressCurrent++, emit JobEvent("CASE_COMPLETED", payload with current/total)
     8. When all done → update EvaluationRun status COMPLETED, Job status COMPLETED
     9. Emit JobEvent("COMPLETED")
     10. On exception → update both to FAILED, emit JobEvent("FAILED", error message)
@@ -133,9 +134,9 @@ Update:
 ### Step 10e — Commit + full verify
 
 ```
-Verify all: ./mvnw -Dtest=MockPromptfooExecutorTest,EvaluationJobHandlerTest,JobWorkerTest test
-Full suite: ./mvnw test
-Commit: feat(worker): evaluation job worker with mock promptfoo executor
+Verify all: rtk bash mvnw -Dtest=MockPromptfooExecutorTest,EvaluationJobHandlerTest,JobWorkerTest test
+Focused suite: rtk bash mvnw -Dtest=EvaluationRunControllerTest,EvaluationRunServiceImplTest,JobControllerTest,JobServiceImplTest,MockPromptfooExecutorTest,EvaluationJobHandlerTest,JobWorkerTest test
+Commit: feat(worker): process evaluation jobs with mock promptfoo
 ```
 
 ## Step 11 — Docs Update

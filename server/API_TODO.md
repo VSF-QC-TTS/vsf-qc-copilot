@@ -23,9 +23,6 @@ Update rule:
 - Evaluation Results: list under run with optional `judgeStatus` filter.
 - Evaluation Events: list job events under run.
 - Job: detail flat path with resolved `resourcePublicId`.
-
-## In Progress
-
 - Worker + Promptfoo mock executor (Step 10).
 
 ## Next

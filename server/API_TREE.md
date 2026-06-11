@@ -260,8 +260,10 @@ User
     `-- xem kết quả tổng
 19. GET  /api/v1/evaluation-runs/{runPublicId}/results
     `-- xem kết quả chi tiết từng test case
-20. Future: QC review results
-21. Future: export
+20. Worker consumes Redis queue `vqc:jobs:queue`
+    `-- mock promptfoo executor writes evaluation results and job events
+21. Future: QC review results
+22. Future: export
 ```
 
 ## Cross-Cutting Rules
@@ -278,8 +280,8 @@ User
 
 ```text
 Project
-|-- Evaluation Run / Job [partially done]
-|   |-- Worker + Promptfoo mock executor [in progress]
+|-- Evaluation Run / Job
+|   |-- Worker + Promptfoo mock executor [done]
 |   |-- QC Review [future]
 |   `-- Export [future]
 |       `-- flexible mapping; optional missing fields thì để blank
