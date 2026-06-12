@@ -28,6 +28,8 @@ import me.nghlong3004.vqc.api.evaluation.promptfoo.PromptfooCommandExecutor;
 import me.nghlong3004.vqc.api.evaluation.promptfoo.PromptfooConfigGenerator;
 import me.nghlong3004.vqc.api.evaluation.promptfoo.PromptfooResultParser;
 import me.nghlong3004.vqc.api.evaluation.promptfoo.PromptfooRunDirectoryResolver;
+import me.nghlong3004.vqc.api.evaluation.promptfoo.RubricAssertionMapper;
+import me.nghlong3004.vqc.api.rubric.repository.RubricCriterionRepository;
 import me.nghlong3004.vqc.api.evaluation.repository.EvaluationResultRepository;
 import me.nghlong3004.vqc.api.evaluation.repository.EvaluationRunRepository;
 import me.nghlong3004.vqc.api.export.handler.ExportJobHandler;
@@ -114,9 +116,18 @@ class PromptfooWorkerSmokeTest {
     properties.setMaxEvalTimeMs(120000);
     properties.setPerTestTimeoutMs(30000);
     var objectMapper = JsonMapper.builder().findAndAddModules().build();
+    RubricCriterionRepository noOpRepo =
+        (RubricCriterionRepository)
+            Proxy.newProxyInstance(
+                RubricCriterionRepository.class.getClassLoader(),
+                new Class<?>[] {RubricCriterionRepository.class},
+                (proxy, method, args) -> {
+                  if (method.getReturnType() == List.class) return List.of();
+                  return null;
+                });
     return new CliPromptfooExecutor(
         new PromptfooRunDirectoryResolver(properties),
-        new PromptfooConfigGenerator(objectMapper),
+        new PromptfooConfigGenerator(objectMapper, new RubricAssertionMapper()),
         new PromptfooCommandExecutor(properties),
         new PromptfooResultParser(objectMapper),
         new ConnectorSecretService() {
@@ -124,7 +135,9 @@ class PromptfooWorkerSmokeTest {
           public void saveSecrets(TargetApiConnector c, java.util.Map<String, String> s) {}
           @Override
           public java.util.Map<String, String> decryptSecrets(TargetApiConnector c) { return Map.of(); }
-        });
+        },
+        noOpRepo,
+        properties);
   }
 
   private Fixture fixture(String targetUrl) {

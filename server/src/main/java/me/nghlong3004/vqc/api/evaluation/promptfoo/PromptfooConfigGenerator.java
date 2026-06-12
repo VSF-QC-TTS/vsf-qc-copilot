@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import me.nghlong3004.vqc.api.evaluation.entity.EvaluationRun;
+import me.nghlong3004.vqc.api.rubric.entity.RubricCriterion;
 import me.nghlong3004.vqc.api.targetconnector.entity.TargetApiConnector;
 import me.nghlong3004.vqc.api.testcase.entity.TestCase;
 import org.springframework.stereotype.Component;
@@ -24,18 +26,35 @@ public class PromptfooConfigGenerator {
   private static final String SECRET_PLACEHOLDER_PREFIX = "{{secret:";
 
   private final ObjectMapper objectMapper;
+  private final RubricAssertionMapper rubricAssertionMapper;
 
   public void generate(EvaluationRun run, List<TestCase> testCases, Path runDir) {
+    generate(run, testCases, List.of(), null, runDir);
+  }
+
+  public void generate(
+      EvaluationRun run,
+      List<TestCase> testCases,
+      List<RubricCriterion> criteria,
+      String gradingProvider,
+      Path runDir) {
     try {
       Files.createDirectories(runDir);
-      objectMapper.writeValue(runDir.resolve("tests.json").toFile(), tests(testCases));
-      objectMapper.writeValue(runDir.resolve("promptfooconfig.json").toFile(), config(run));
+      List<Map<String, Object>> rubricAssertions = rubricAssertionMapper.toAssertions(criteria);
+      objectMapper.writeValue(
+          runDir.resolve("tests.json").toFile(), tests(testCases, rubricAssertions));
+      objectMapper.writeValue(
+          runDir.resolve("promptfooconfig.json").toFile(),
+          config(run, rubricAssertions, gradingProvider));
     } catch (IOException ex) {
       throw new PromptfooExecutionException("Failed to write promptfoo run files.", ex);
     }
   }
 
-  Map<String, Object> config(EvaluationRun run) {
+  Map<String, Object> config(
+      EvaluationRun run,
+      List<Map<String, Object>> rubricAssertions,
+      String gradingProvider) {
     TargetApiConnector connector = run.getTargetApiConnector();
     Map<String, Object> config = new LinkedHashMap<>();
     config.put("description", "VQC evaluation run " + run.getPublicId());
@@ -46,6 +65,10 @@ public class PromptfooConfigGenerator {
       config.put(
           "evaluateOptions",
           Map.of("timeoutMs", connector.getTimeoutSeconds() * 1_000L));
+    }
+    if (!rubricAssertions.isEmpty() && gradingProvider != null && !gradingProvider.isBlank()) {
+      config.put(
+          "defaultTest", Map.of("options", Map.of("provider", gradingProvider)));
     }
     return config;
   }
@@ -92,11 +115,13 @@ public class PromptfooConfigGenerator {
     };
   }
 
-  List<Map<String, Object>> tests(List<TestCase> testCases) {
-    return testCases.stream().map(this::test).toList();
+  List<Map<String, Object>> tests(
+      List<TestCase> testCases, List<Map<String, Object>> rubricAssertions) {
+    return testCases.stream().map(tc -> test(tc, rubricAssertions)).toList();
   }
 
-  private Map<String, Object> test(TestCase testCase) {
+  private Map<String, Object> test(
+      TestCase testCase, List<Map<String, Object>> rubricAssertions) {
     Map<String, Object> test = new LinkedHashMap<>();
     Map<String, Object> vars = new LinkedHashMap<>();
     vars.put("vqcTestCaseId", testCase.getId());
@@ -108,9 +133,16 @@ public class PromptfooConfigGenerator {
       vars.put("externalId", testCase.getExternalId());
     }
     test.put("vars", vars);
+
+    List<Map<String, Object>> assertions = new ArrayList<>();
     if (testCase.getGroundTruth() != null && !testCase.getGroundTruth().isBlank()) {
-      test.put("assert", List.of(Map.of("type", "contains", "value", testCase.getGroundTruth())));
+      assertions.add(Map.of("type", "contains", "value", testCase.getGroundTruth()));
     }
+    assertions.addAll(rubricAssertions);
+    if (!assertions.isEmpty()) {
+      test.put("assert", assertions);
+    }
+
     return test;
   }
 

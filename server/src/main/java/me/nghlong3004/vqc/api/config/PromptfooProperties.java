@@ -32,4 +32,10 @@ public class PromptfooProperties {
 
   /** Maximum time for one promptfoo test case. */
   private long perTestTimeoutMs = 60000;
+
+  /** Grading provider for llm-rubric assertions (e.g. google:gemini-2.5-flash). */
+  private String gradingProvider = "google:gemini-2.5-flash";
+
+  /** API key for the grading provider. Passed as env var to promptfoo CLI. */
+  private String gradingApiKey = "";
 }

@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import java.io.IOException;
+import java.lang.reflect.Proxy;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -21,8 +23,11 @@ import me.nghlong3004.vqc.api.evaluation.promptfoo.PromptfooConfigGenerator;
 import me.nghlong3004.vqc.api.evaluation.promptfoo.PromptfooExecutionException;
 import me.nghlong3004.vqc.api.evaluation.promptfoo.PromptfooResultParser;
 import me.nghlong3004.vqc.api.evaluation.promptfoo.PromptfooRunDirectoryResolver;
+import me.nghlong3004.vqc.api.evaluation.promptfoo.RubricAssertionMapper;
 import me.nghlong3004.vqc.api.project.entity.Project;
+import me.nghlong3004.vqc.api.rubric.entity.RubricCriterion;
 import me.nghlong3004.vqc.api.rubric.entity.RubricVersion;
+import me.nghlong3004.vqc.api.rubric.repository.RubricCriterionRepository;
 import me.nghlong3004.vqc.api.targetconnector.entity.TargetApiConnector;
 import me.nghlong3004.vqc.api.targetconnector.enums.HttpMethodType;
 import me.nghlong3004.vqc.api.targetconnector.service.ConnectorSecretService;
@@ -193,28 +198,69 @@ class CliPromptfooExecutorTest {
   }
 
   private CliPromptfooExecutor executor(Path tempDir, Path fakePromptfoo) {
-    return executor(tempDir, fakePromptfoo, new ConnectorSecretService() {
-      @Override
-      public void saveSecrets(TargetApiConnector c, Map<String, String> s) {}
-      @Override
-      public Map<String, String> decryptSecrets(TargetApiConnector c) { return Map.of(); }
-    });
+    return executor(tempDir, fakePromptfoo, noOpSecretService(), noOpCriterionRepository());
   }
 
   private CliPromptfooExecutor executor(
       Path tempDir, Path fakePromptfoo, ConnectorSecretService secretService) {
+    return executor(tempDir, fakePromptfoo, secretService, noOpCriterionRepository());
+  }
+
+  private CliPromptfooExecutor executor(
+      Path tempDir,
+      Path fakePromptfoo,
+      ConnectorSecretService secretService,
+      RubricCriterionRepository criterionRepository) {
+    PromptfooProperties properties = promptfooProperties(tempDir, fakePromptfoo);
+    return new CliPromptfooExecutor(
+        new PromptfooRunDirectoryResolver(properties),
+        new PromptfooConfigGenerator(objectMapper, new RubricAssertionMapper()),
+        new PromptfooCommandExecutor(properties),
+        new PromptfooResultParser(objectMapper),
+        secretService,
+        criterionRepository,
+        properties);
+  }
+
+  private PromptfooProperties promptfooProperties(Path tempDir, Path fakePromptfoo) {
     PromptfooProperties properties = new PromptfooProperties();
     properties.setBinaryPath(fakePromptfoo.toString());
     properties.setWorkDir(tempDir.resolve("runs").toString());
     properties.setMaxConcurrency(3);
     properties.setMaxEvalTimeMs(120000);
     properties.setPerTestTimeoutMs(30000);
-    return new CliPromptfooExecutor(
-        new PromptfooRunDirectoryResolver(properties),
-        new PromptfooConfigGenerator(objectMapper),
-        new PromptfooCommandExecutor(properties),
-        new PromptfooResultParser(objectMapper),
-        secretService);
+    properties.setGradingProvider("google:gemini-2.5-flash");
+    properties.setGradingApiKey("test-gemini-key");
+    return properties;
+  }
+
+  private ConnectorSecretService noOpSecretService() {
+    return new ConnectorSecretService() {
+      @Override
+      public void saveSecrets(TargetApiConnector c, Map<String, String> s) {}
+      @Override
+      public Map<String, String> decryptSecrets(TargetApiConnector c) { return Map.of(); }
+    };
+  }
+
+  private RubricCriterionRepository noOpCriterionRepository() {
+    return criterionRepositoryReturning(List.of());
+  }
+
+  private RubricCriterionRepository criterionRepositoryReturning(List<RubricCriterion> criteria) {
+    return (RubricCriterionRepository)
+        Proxy.newProxyInstance(
+            RubricCriterionRepository.class.getClassLoader(),
+            new Class<?>[] {RubricCriterionRepository.class},
+            (proxy, method, args) -> {
+              if (method.getName().equals("findByRubricVersionOrderBySortOrderAscIdAsc")) {
+                return criteria;
+              }
+              if (method.getReturnType() == List.class) return List.of();
+              if (method.getReturnType() == long.class) return 0L;
+              if (method.getReturnType() == boolean.class) return false;
+              return null;
+            });
   }
 
   private EvaluationRun run(UUID publicId, String responseSelector, Map<String, Object> headers) {
@@ -270,6 +316,7 @@ class CliPromptfooExecutorTest {
           echo "PROMPTFOO_MAX_EVAL_TIME_MS=$PROMPTFOO_MAX_EVAL_TIME_MS"
           echo "PROMPTFOO_EVAL_TIMEOUT_MS=$PROMPTFOO_EVAL_TIMEOUT_MS"
           env | grep '^VQC_SECRET_' | sort || true
+          env | grep '^GEMINI_API_KEY' || true
         } >> "$PROMPTFOO_LOG_DIR/env.log"
         if [ "$1" = "validate" ]; then
           if [ "__MODE__" = "VALIDATION_FAIL" ]; then
@@ -358,6 +405,59 @@ class CliPromptfooExecutorTest {
     Files.writeString(fakeBin, script);
     assertThat(fakeBin.toFile().setExecutable(true)).isTrue();
     return fakeBin;
+  }
+
+  @Test
+  void evaluateGeneratesRubricAssertionsWithGradingProvider(@TempDir Path tempDir)
+      throws Exception {
+    UUID runPublicId = UUID.randomUUID();
+    RubricVersion version = RubricVersion.builder().id(1L).build();
+    List<RubricCriterion> criteria =
+        List.of(
+            RubricCriterion.builder()
+                .metricKey("accuracy")
+                .judgeInstruction("Check accuracy")
+                .weight(new BigDecimal("0.6000"))
+                .rubricVersion(version)
+                .build(),
+            RubricCriterion.builder()
+                .metricKey("tone")
+                .judgeInstruction("Check tone")
+                .weight(new BigDecimal("0.4000"))
+                .rubricVersion(version)
+                .build());
+
+    RubricCriterionRepository criterionRepo = criterionRepositoryReturning(criteria);
+
+    CliPromptfooExecutor executor =
+        executor(tempDir, fakePromptfoo(tempDir, FakeMode.SUCCESS), noOpSecretService(), criterionRepo);
+
+    executor.evaluate(run(runPublicId, "$.answer", Map.of()), testCases());
+
+    Path runDir = tempDir.resolve("runs").resolve(runPublicId.toString());
+    JsonNode config = objectMapper.readTree(runDir.resolve("promptfooconfig.json").toFile());
+
+    // Grading provider should be set
+    assertThat(config.path("defaultTest").path("options").path("provider").asText())
+        .isEqualTo("google:gemini-2.5-flash");
+
+    // Tests should contain rubric assertions
+    JsonNode tests = objectMapper.readTree(runDir.resolve("tests.json").toFile());
+    JsonNode firstTestAssert = tests.get(0).path("assert");
+    // First test case has groundTruth → contains + 2 rubric assertions = 3
+    assertThat(firstTestAssert.size()).isEqualTo(3);
+    assertThat(firstTestAssert.get(0).path("type").asText()).isEqualTo("contains");
+    assertThat(firstTestAssert.get(1).path("type").asText()).isEqualTo("llm-rubric");
+    assertThat(firstTestAssert.get(1).path("metric").asText()).isEqualTo("accuracy");
+    assertThat(firstTestAssert.get(2).path("metric").asText()).isEqualTo("tone");
+    // Second test case has no groundTruth → only 2 rubric assertions
+    JsonNode secondTestAssert = tests.get(1).path("assert");
+    assertThat(secondTestAssert.size()).isEqualTo(2);
+    assertThat(secondTestAssert.get(0).path("type").asText()).isEqualTo("llm-rubric");
+
+    // GEMINI_API_KEY should be in env
+    assertThat(Files.readString(runDir.resolve("logs").resolve("env.log")))
+        .contains("GEMINI_API_KEY=test-gemini-key");
   }
 
   private enum FakeMode {
