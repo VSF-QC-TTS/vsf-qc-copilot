@@ -138,6 +138,10 @@ vqc:
     work-dir: /app/runs
     command: promptfoo
     max-concurrency: 1
+  storage:
+    type: ${VQC_STORAGE_TYPE:local}
+    local:
+      base-dir: ${VQC_STORAGE_LOCAL_BASE_DIR:/app/exports}
   worker:
     enabled: true
     queue-key: vqc:jobs:queue

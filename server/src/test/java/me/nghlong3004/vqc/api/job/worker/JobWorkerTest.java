@@ -100,7 +100,7 @@ class JobWorkerTest {
   }
 
   private ExportJobHandler exportHandler(AtomicReference<UUID> handled, boolean fail) {
-    return new ExportJobHandler(null, null, null, null) {
+    return new ExportJobHandler(null, null, null, null, null) {
       @Override
       public void handle(UUID jobPublicId) {
         handled.set(jobPublicId);

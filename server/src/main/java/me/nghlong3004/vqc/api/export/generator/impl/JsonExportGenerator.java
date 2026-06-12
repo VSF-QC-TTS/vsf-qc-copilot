@@ -2,12 +2,9 @@ package me.nghlong3004.vqc.api.export.generator.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
-import me.nghlong3004.vqc.api.config.ExportProperties;
 import me.nghlong3004.vqc.api.evaluation.entity.EvaluationResult;
 import me.nghlong3004.vqc.api.export.entity.ExportFile;
 import me.nghlong3004.vqc.api.export.enums.ExportFileType;
@@ -24,7 +21,8 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class JsonExportGenerator implements ExportGenerator {
 
-  private final ExportProperties exportProperties;
+  private static final String CONTENT_TYPE = "application/json";
+
   private final ObjectMapper objectMapper;
 
   @Override
@@ -35,12 +33,10 @@ public class JsonExportGenerator implements ExportGenerator {
   @Override
   public GeneratedExportFile generate(ExportFile exportFile, List<EvaluationResult> results) {
     try {
-      Path dir = Files.createDirectories(Path.of(exportProperties.getDir()));
       String fileName = "evaluation-run-" + exportFile.getEvaluationRun().getPublicId() + ".json";
-      Path path = dir.resolve(fileName);
       List<Map<String, Object>> items = results.stream().map(this::toRow).toList();
-      Files.writeString(path, objectMapper.writeValueAsString(items), StandardCharsets.UTF_8);
-      return new GeneratedExportFile(fileName, path.toString());
+      byte[] content = objectMapper.writeValueAsString(items).getBytes(StandardCharsets.UTF_8);
+      return new GeneratedExportFile(fileName, CONTENT_TYPE, content);
     } catch (Exception ex) {
       throw new IllegalStateException("Failed to generate JSON export.", ex);
     }

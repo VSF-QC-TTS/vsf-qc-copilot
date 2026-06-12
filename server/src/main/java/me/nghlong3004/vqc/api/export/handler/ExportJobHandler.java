@@ -15,6 +15,9 @@ import me.nghlong3004.vqc.api.export.repository.ExportFileRepository;
 import me.nghlong3004.vqc.api.job.entity.Job;
 import me.nghlong3004.vqc.api.job.enums.JobStatus;
 import me.nghlong3004.vqc.api.job.repository.JobRepository;
+import me.nghlong3004.vqc.api.storage.model.StoreObjectCommand;
+import me.nghlong3004.vqc.api.storage.model.StoredObject;
+import me.nghlong3004.vqc.api.storage.service.ObjectStorageService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +35,7 @@ public class ExportJobHandler {
   private final ExportFileRepository exportFileRepository;
   private final EvaluationResultRepository evaluationResultRepository;
   private final List<ExportGenerator> exportGenerators;
+  private final ObjectStorageService objectStorageService;
 
   @Transactional
   public void handle(UUID jobPublicId) {
@@ -61,10 +65,20 @@ public class ExportJobHandler {
               .findFirst()
               .orElseThrow(() -> new IllegalStateException("No export generator for " + exportFile.getFileType()));
       GeneratedExportFile generated = generator.generate(exportFile, results);
+      StoredObject stored =
+          objectStorageService.store(
+              new StoreObjectCommand(
+                  storageKey(exportFile, generated.fileName()),
+                  generated.fileName(),
+                  generated.contentType(),
+                  generated.content()));
 
       exportFile.setStatus(ExportFileStatus.READY);
       exportFile.setFileName(generated.fileName());
-      exportFile.setFilePath(generated.filePath());
+      exportFile.setStorageProvider(stored.provider());
+      exportFile.setStorageKey(stored.key());
+      exportFile.setContentType(stored.contentType());
+      exportFile.setSizeBytes(stored.sizeBytes());
       exportFile.setReadyAt(OffsetDateTime.now());
       exportFile.setErrorMessage(null);
       exportFileRepository.save(exportFile);
@@ -92,5 +106,9 @@ public class ExportJobHandler {
       exportFile.setErrorMessage(safeMessage);
       exportFileRepository.save(exportFile);
     }
+  }
+
+  private String storageKey(ExportFile exportFile, String fileName) {
+    return "exports/" + exportFile.getPublicId() + "/" + fileName;
   }
 }

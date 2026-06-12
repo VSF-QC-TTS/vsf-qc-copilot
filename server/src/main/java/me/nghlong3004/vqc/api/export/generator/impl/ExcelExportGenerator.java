@@ -1,11 +1,7 @@
 package me.nghlong3004.vqc.api.export.generator.impl;
 
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.ByteArrayOutputStream;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
-import me.nghlong3004.vqc.api.config.ExportProperties;
 import me.nghlong3004.vqc.api.evaluation.entity.EvaluationResult;
 import me.nghlong3004.vqc.api.export.entity.ExportFile;
 import me.nghlong3004.vqc.api.export.enums.ExportFileType;
@@ -23,8 +19,10 @@ import org.springframework.stereotype.Component;
  * @since 6/11/2026
  */
 @Component
-@RequiredArgsConstructor
 public class ExcelExportGenerator implements ExportGenerator {
+
+  private static final String CONTENT_TYPE =
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
   private static final List<String> HEADERS =
       List.of(
@@ -39,8 +37,6 @@ public class ExcelExportGenerator implements ExportGenerator {
           "qcNote",
           "picBug");
 
-  private final ExportProperties exportProperties;
-
   @Override
   public boolean supports(ExportFileType fileType) {
     return fileType == ExportFileType.EXCEL;
@@ -49,11 +45,9 @@ public class ExcelExportGenerator implements ExportGenerator {
   @Override
   public GeneratedExportFile generate(ExportFile exportFile, List<EvaluationResult> results) {
     try {
-      Path dir = Files.createDirectories(Path.of(exportProperties.getDir()));
       String fileName = "evaluation-run-" + exportFile.getEvaluationRun().getPublicId() + ".xlsx";
-      Path path = dir.resolve(fileName);
       try (Workbook workbook = new XSSFWorkbook();
-          OutputStream outputStream = Files.newOutputStream(path)) {
+          ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
         Sheet sheet = workbook.createSheet("Evaluation Results");
         writeRow(sheet.createRow(0), HEADERS);
         for (int i = 0; i < results.size(); i++) {
@@ -63,8 +57,8 @@ public class ExcelExportGenerator implements ExportGenerator {
           sheet.autoSizeColumn(i);
         }
         workbook.write(outputStream);
+        return new GeneratedExportFile(fileName, CONTENT_TYPE, outputStream.toByteArray());
       }
-      return new GeneratedExportFile(fileName, path.toString());
     } catch (Exception ex) {
       throw new IllegalStateException("Failed to generate Excel export.", ex);
     }
@@ -94,5 +88,4 @@ public class ExcelExportGenerator implements ExportGenerator {
   private String value(Object value) {
     return value == null ? "" : String.valueOf(value);
   }
-
 }

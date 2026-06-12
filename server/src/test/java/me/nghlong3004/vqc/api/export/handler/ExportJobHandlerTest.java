@@ -22,6 +22,10 @@ import me.nghlong3004.vqc.api.job.enums.JobType;
 import me.nghlong3004.vqc.api.job.enums.ResourceType;
 import me.nghlong3004.vqc.api.job.repository.JobRepository;
 import me.nghlong3004.vqc.api.project.entity.Project;
+import me.nghlong3004.vqc.api.storage.model.StoreObjectCommand;
+import me.nghlong3004.vqc.api.storage.model.StorageResource;
+import me.nghlong3004.vqc.api.storage.model.StoredObject;
+import me.nghlong3004.vqc.api.storage.service.ObjectStorageService;
 import me.nghlong3004.vqc.api.user.entity.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageImpl;
@@ -41,19 +45,26 @@ class ExportJobHandlerTest {
     Job job = job(exportFile, project, creator, JobType.EXPORT_JSON);
     AtomicReference<Job> savedJob = new AtomicReference<>();
     AtomicReference<ExportFile> savedExport = new AtomicReference<>();
+    AtomicReference<StoreObjectCommand> storeCommand = new AtomicReference<>();
     ExportJobHandler handler =
         new ExportJobHandler(
             jobRepository(Optional.of(job), savedJob),
             exportFileRepository(Optional.of(exportFile), savedExport),
             evaluationResultRepository(),
-            List.of(generator(ExportFileType.JSON, false)));
+            List.of(generator(ExportFileType.JSON, false)),
+            storageService(storeCommand, false));
 
     handler.handle(job.getPublicId());
 
     assertThat(savedExport.get().getStatus()).isEqualTo(ExportFileStatus.READY);
     assertThat(savedExport.get().getFileName()).isEqualTo("export.json");
-    assertThat(savedExport.get().getFilePath()).isEqualTo("/tmp/export.json");
+    assertThat(savedExport.get().getStorageProvider()).isEqualTo("LOCAL");
+    assertThat(savedExport.get().getStorageKey())
+        .isEqualTo("exports/" + exportFile.getPublicId() + "/export.json");
+    assertThat(savedExport.get().getContentType()).isEqualTo("application/json");
+    assertThat(savedExport.get().getSizeBytes()).isEqualTo(2L);
     assertThat(savedExport.get().getReadyAt()).isNotNull();
+    assertThat(storeCommand.get().content()).containsExactly((byte) '[', (byte) ']');
     assertThat(savedJob.get().getStatus()).isEqualTo(JobStatus.COMPLETED);
     assertThat(savedJob.get().getProgressCurrent()).isEqualTo(1);
     assertThat(savedJob.get().getProgressTotal()).isEqualTo(1);
@@ -73,7 +84,8 @@ class ExportJobHandlerTest {
             jobRepository(Optional.of(job), savedJob),
             exportFileRepository(Optional.of(exportFile), savedExport),
             evaluationResultRepository(),
-            List.of(generator(ExportFileType.EXCEL, true)));
+            List.of(generator(ExportFileType.EXCEL, true)),
+            storageService(new AtomicReference<>(), false));
 
     handler.handle(job.getPublicId());
 
@@ -84,6 +96,31 @@ class ExportJobHandlerTest {
   }
 
   @Test
+  void handleMarksJobAndExportFailedWhenStorageFails() {
+    User creator = user();
+    Project project = project(creator);
+    EvaluationRun run = run(project, creator);
+    ExportFile exportFile = exportFile(run, project, creator, ExportFileType.JSON);
+    Job job = job(exportFile, project, creator, JobType.EXPORT_JSON);
+    AtomicReference<Job> savedJob = new AtomicReference<>();
+    AtomicReference<ExportFile> savedExport = new AtomicReference<>();
+    ExportJobHandler handler =
+        new ExportJobHandler(
+            jobRepository(Optional.of(job), savedJob),
+            exportFileRepository(Optional.of(exportFile), savedExport),
+            evaluationResultRepository(),
+            List.of(generator(ExportFileType.JSON, false)),
+            storageService(new AtomicReference<>(), true));
+
+    handler.handle(job.getPublicId());
+
+    assertThat(savedJob.get().getStatus()).isEqualTo(JobStatus.FAILED);
+    assertThat(savedJob.get().getErrorMessage()).contains("storage failed");
+    assertThat(savedExport.get().getStatus()).isEqualTo(ExportFileStatus.FAILED);
+    assertThat(savedExport.get().getErrorMessage()).contains("storage failed");
+  }
+
+  @Test
   void handleIgnoresMissingJob() {
     AtomicReference<Job> savedJob = new AtomicReference<>();
     ExportJobHandler handler =
@@ -91,7 +128,8 @@ class ExportJobHandlerTest {
             jobRepository(Optional.empty(), savedJob),
             exportFileRepository(Optional.empty(), new AtomicReference<>()),
             evaluationResultRepository(),
-            List.of(generator(ExportFileType.JSON, false)));
+            List.of(generator(ExportFileType.JSON, false)),
+            storageService(new AtomicReference<>(), false));
 
     handler.handle(UUID.randomUUID());
 
@@ -146,7 +184,26 @@ class ExportJobHandlerTest {
         if (fail) {
           throw new IllegalStateException("generate failed");
         }
-        return new GeneratedExportFile("export.json", "/tmp/export.json");
+        return new GeneratedExportFile("export.json", "application/json", "[]".getBytes());
+      }
+    };
+  }
+
+  private ObjectStorageService storageService(
+      AtomicReference<StoreObjectCommand> storeCommand, boolean fail) {
+    return new ObjectStorageService() {
+      @Override
+      public StoredObject store(StoreObjectCommand command) {
+        storeCommand.set(command);
+        if (fail) {
+          throw new IllegalStateException("storage failed");
+        }
+        return new StoredObject("LOCAL", command.key(), command.contentType(), command.content().length);
+      }
+
+      @Override
+      public StorageResource load(String key) {
+        throw new UnsupportedOperationException("load");
       }
     };
   }

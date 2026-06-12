@@ -1,7 +1,5 @@
 package me.nghlong3004.vqc.api.export.service.impl;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,12 +23,13 @@ import me.nghlong3004.vqc.api.job.enums.JobType;
 import me.nghlong3004.vqc.api.job.enums.ResourceType;
 import me.nghlong3004.vqc.api.job.repository.JobRepository;
 import me.nghlong3004.vqc.api.job.service.JobQueuePublisher;
+import me.nghlong3004.vqc.api.storage.model.StorageResource;
+import me.nghlong3004.vqc.api.storage.service.ObjectStorageService;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.http.MediaType;
 
 /**
  * @author nghlong3004 (Long Nguyen Hoang)
@@ -47,6 +46,7 @@ public class ExportServiceImpl implements ExportService {
   private final UserRepository userRepository;
   private final JobQueuePublisher jobQueuePublisher;
   private final ExportFileMapper exportFileMapper;
+  private final ObjectStorageService objectStorageService;
 
   @Override
   @Transactional
@@ -123,17 +123,26 @@ public class ExportServiceImpl implements ExportService {
     if (exportFile.getStatus() != ExportFileStatus.READY) {
       throw new ResourceException(ErrorCode.EXPORT_FILE_NOT_READY);
     }
-    if (exportFile.getFilePath() == null || !Files.exists(Path.of(exportFile.getFilePath()))) {
+    if (exportFile.getStorageKey() == null || exportFile.getStorageKey().isBlank()) {
+      throw new ResourceException(ErrorCode.EXPORT_FILE_NOT_FOUND);
+    }
+    StorageResource resource;
+    try {
+      resource = objectStorageService.load(exportFile.getStorageKey());
+    } catch (RuntimeException ex) {
       throw new ResourceException(ErrorCode.EXPORT_FILE_NOT_FOUND);
     }
     return new ExportDownloadResponse(
         exportFile.getFileName(),
-        mediaType(exportFile.getFileType()),
-        new FileSystemResource(exportFile.getFilePath()));
+        mediaType(exportFile),
+        resource.resource());
   }
 
-  private MediaType mediaType(ExportFileType fileType) {
-    return fileType == ExportFileType.EXCEL
+  private MediaType mediaType(ExportFile exportFile) {
+    if (exportFile.getContentType() != null && !exportFile.getContentType().isBlank()) {
+      return MediaType.parseMediaType(exportFile.getContentType());
+    }
+    return exportFile.getFileType() == ExportFileType.EXCEL
         ? MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         : MediaType.APPLICATION_JSON;
   }

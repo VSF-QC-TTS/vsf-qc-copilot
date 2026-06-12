@@ -75,11 +75,20 @@ public class ExportFile {
   @Builder.Default
   private ExportFileStatus status = ExportFileStatus.PENDING;
 
-  @Column(name = "file_path", columnDefinition = "TEXT")
-  private String filePath;
-
   @Column(name = "file_name")
   private String fileName;
+
+  @Column(name = "storage_provider", length = 50)
+  private String storageProvider;
+
+  @Column(name = "storage_key", columnDefinition = "TEXT")
+  private String storageKey;
+
+  @Column(name = "content_type")
+  private String contentType;
+
+  @Column(name = "size_bytes")
+  private Long sizeBytes;
 
   @Column(name = "error_message", columnDefinition = "TEXT")
   private String errorMessage;

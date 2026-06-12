@@ -4,8 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.lang.reflect.Proxy;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -23,10 +21,14 @@ import me.nghlong3004.vqc.api.job.enums.JobType;
 import me.nghlong3004.vqc.api.job.repository.JobRepository;
 import me.nghlong3004.vqc.api.job.service.JobQueuePublisher;
 import me.nghlong3004.vqc.api.project.entity.Project;
+import me.nghlong3004.vqc.api.storage.model.StoreObjectCommand;
+import me.nghlong3004.vqc.api.storage.model.StorageResource;
+import me.nghlong3004.vqc.api.storage.model.StoredObject;
+import me.nghlong3004.vqc.api.storage.service.ObjectStorageService;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
 
 /**
@@ -182,12 +184,10 @@ class ExportServiceImplTest {
   }
 
   @Test
-  void downloadExportReturnsReadyFile(@TempDir Path tempDir) throws Exception {
+  void downloadExportReturnsReadyFile() {
     User creator = user();
     Project project = project(creator);
     EvaluationRun run = run(project, creator);
-    Path file = tempDir.resolve("export.json");
-    Files.writeString(file, "[]");
     ExportFile exportFile =
         ExportFile.builder()
             .id(1L)
@@ -197,9 +197,11 @@ class ExportServiceImplTest {
             .fileType(ExportFileType.JSON)
             .status(ExportFileStatus.READY)
             .fileName("export.json")
-            .filePath(file.toString())
+            .storageKey("exports/export.json")
+            .contentType("application/json")
             .createdBy(creator)
             .build();
+    AtomicReference<String> loadedKey = new AtomicReference<>();
     ExportServiceImpl service =
         service(
             Optional.of(creator),
@@ -207,13 +209,15 @@ class ExportServiceImplTest {
             Optional.of(exportFile),
             new AtomicReference<>(),
             new AtomicReference<>(),
-            new AtomicReference<>());
+            new AtomicReference<>(),
+            storageService(loadedKey, false));
 
     var response = service.downloadExport(exportFile.getPublicId(), creator.getUsername());
 
     assertThat(response.fileName()).isEqualTo("export.json");
     assertThat(response.mediaType()).isEqualTo(MediaType.APPLICATION_JSON);
     assertThat(response.resource().exists()).isTrue();
+    assertThat(loadedKey.get()).isEqualTo("exports/export.json");
   }
 
   @Test
@@ -260,7 +264,40 @@ class ExportServiceImplTest {
             .fileType(ExportFileType.JSON)
             .status(ExportFileStatus.READY)
             .fileName("missing.json")
-            .filePath("/tmp/vqc-missing-export-file.json")
+            .storageKey("exports/missing.json")
+            .contentType("application/json")
+            .createdBy(creator)
+            .build();
+    ExportServiceImpl service =
+        service(
+            Optional.of(creator),
+            Optional.of(run),
+            Optional.of(exportFile),
+            new AtomicReference<>(),
+            new AtomicReference<>(),
+            new AtomicReference<>(),
+            storageService(new AtomicReference<>(), true));
+
+    assertThatThrownBy(() -> service.downloadExport(exportFile.getPublicId(), creator.getUsername()))
+        .isInstanceOf(ResourceException.class)
+        .extracting(e -> ((ResourceException) e).getResponse().code())
+        .isEqualTo("EXPORT_FILE_NOT_FOUND");
+  }
+
+  @Test
+  void downloadExportRejectsMissingStorageKey() {
+    User creator = user();
+    Project project = project(creator);
+    EvaluationRun run = run(project, creator);
+    ExportFile exportFile =
+        ExportFile.builder()
+            .id(1L)
+            .publicId(UUID.randomUUID())
+            .project(project)
+            .evaluationRun(run)
+            .fileType(ExportFileType.JSON)
+            .status(ExportFileStatus.READY)
+            .fileName("missing.json")
             .createdBy(creator)
             .build();
     ExportServiceImpl service =
@@ -285,13 +322,50 @@ class ExportServiceImplTest {
       AtomicReference<ExportFile> savedExport,
       AtomicReference<Job> savedJob,
       AtomicReference<String> publishedJobId) {
+    return service(
+        creator,
+        run,
+        exportFile,
+        savedExport,
+        savedJob,
+        publishedJobId,
+        storageService(new AtomicReference<>(), false));
+  }
+
+  private ExportServiceImpl service(
+      Optional<User> creator,
+      Optional<EvaluationRun> run,
+      Optional<ExportFile> exportFile,
+      AtomicReference<ExportFile> savedExport,
+      AtomicReference<Job> savedJob,
+      AtomicReference<String> publishedJobId,
+      ObjectStorageService objectStorageService) {
     return new ExportServiceImpl(
         exportFileRepository(savedExport, exportFile),
         evaluationRunRepository(run),
         jobRepository(savedJob),
         userRepository(creator),
         publisher(publishedJobId),
-        new ExportFileMapper());
+        new ExportFileMapper(),
+        objectStorageService);
+  }
+
+  private ObjectStorageService storageService(AtomicReference<String> loadedKey, boolean failLoad) {
+    return new ObjectStorageService() {
+      @Override
+      public StoredObject store(StoreObjectCommand command) {
+        throw new UnsupportedOperationException("store");
+      }
+
+      @Override
+      public StorageResource load(String key) {
+        loadedKey.set(key);
+        if (failLoad) {
+          throw new IllegalStateException("missing");
+        }
+        return new StorageResource(key, new ByteArrayResource("[]".getBytes()));
+      }
+    };
   }
 
   private ExportFileRepository exportFileRepository(

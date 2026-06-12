@@ -36,18 +36,19 @@ Purpose: keep the immediate backend plan short. `API_TODO.md` and `API_TREE.md` 
    - `GET /api/v1/exports/{exportPublicId}/file`
    - Export job generation uses `ExportGenerator` Strategy for JSON and Excel.
    - Excel uses Apache POI `poi-ooxml`; JSON uses Jackson.
-   - Export files are written under `vqc.export.dir` (default `./exports`).
+   - Export files are written through `ObjectStorageService`; local storage is the current implementation.
    - Commits:
      - `feat(export): create export jobs`
      - `feat(export): get export detail`
-     - Pending current commit: `feat(export): generate and download export files`
+     - `feat(export): generate and download export files`
+     - Pending current commit: `feat(export): abstract export file storage`
 
 ## Current Verify Commands
 
 Focused export/job suite:
 
 ```bash
-rtk bash mvnw -Dtest=ExportControllerTest,ExportServiceImplTest,ExportJobHandlerTest,JobWorkerTest,JobServiceImplTest test
+rtk bash mvnw -Dtest=ExportControllerTest,ExportServiceImplTest,ExportJobHandlerTest,LocalObjectStorageServiceTest,JobWorkerTest,JobServiceImplTest test
 ```
 
 Previously passed focused suites:

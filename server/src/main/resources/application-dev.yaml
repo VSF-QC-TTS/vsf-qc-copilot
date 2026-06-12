@@ -113,6 +113,10 @@ vqc:
     work-dir: ./runs
     command: ./infra/scripts/run-promptfoo.sh
     max-concurrency: 1
+  storage:
+    type: local
+    local:
+      base-dir: ${VQC_STORAGE_LOCAL_BASE_DIR:./exports}
   worker:
     enabled: true
     queue-key: vqc:jobs:queue

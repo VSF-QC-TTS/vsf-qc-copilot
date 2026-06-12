@@ -154,7 +154,9 @@ Implemented API slices after auth:
   - `GET /api/v1/exports/{exportPublicId}` returns owner-scoped export metadata and includes `downloadUrl` only when status is `READY`.
   - `GET /api/v1/exports/{exportPublicId}/file` downloads a READY export file and rejects pending/failed exports with `EXPORT_FILE_NOT_READY`.
   - `JobWorker` routes `EXPORT_EXCEL` and `EXPORT_JSON` jobs to `ExportJobHandler`.
-  - Export generation uses an `ExportGenerator` Strategy (`ExcelExportGenerator`, `JsonExportGenerator`) and writes files under `vqc.export.dir` (default `./exports`).
+  - Export generation uses an `ExportGenerator` Strategy (`ExcelExportGenerator`, `JsonExportGenerator`) that returns bytes and content type; generators do not choose the storage backend.
+  - Export storage uses `ObjectStorageService`; current implementation is local filesystem via `vqc.storage.type=local` and `vqc.storage.local.base-dir`.
+  - `export_files` stores storage metadata (`storageProvider`, `storageKey`, `contentType`, `sizeBytes`) instead of a local-only file path.
   - Excel generation uses Apache POI `poi-ooxml` and JSON generation uses Jackson; optional/missing export fields are written blank/default rather than failing.
 
 ## [FUTURE_SLICE] Known Current Gaps
@@ -164,7 +166,7 @@ Known current gaps:
 - Connector secrets are not persisted in a real encrypted secret store yet; placeholder resolution for real outbound auth secrets is future work.
 - OAuth persistence/linking remains incomplete.
 - Connector response extraction only supports the current simple selector path used by tests.
-- Export generation is local filesystem based; moving generated files to object storage is future work if deployment needs it.
+- S3/R2/MinIO export storage providers are future work; the storage interface is in place and local is the only current provider.
 
 ## [FUTURE_SLICE] Next Implementation Steps
 
@@ -178,7 +180,7 @@ Step 11 — QC Review APIs:
 - Commit each API slice separately.
 
 Step 12 — Export download + worker generation:
-- Done: download API, generator Strategy for Excel vs JSON, and worker generation.
+- Done: download API, generator Strategy for Excel vs JSON, worker generation, and local storage abstraction.
 - Next likely backend slice: replace the mock/placeholder Promptfoo CLI path with a real pinned `promptfoo eval` integration.
 
 ## [FUTURE_SLICE] Product Direction
@@ -233,5 +235,5 @@ Focused tests:
 - Evaluation run/job focused suite:
   `rtk bash mvnw -Dtest=EvaluationRunControllerTest,EvaluationRunServiceImplTest,JobControllerTest,JobServiceImplTest test`
 - Export/job focused suite:
-  `rtk bash mvnw -Dtest=ExportControllerTest,ExportServiceImplTest,ExportJobHandlerTest,JobWorkerTest,JobServiceImplTest test`
+  `rtk bash mvnw -Dtest=ExportControllerTest,ExportServiceImplTest,ExportJobHandlerTest,LocalObjectStorageServiceTest,JobWorkerTest,JobServiceImplTest test`
 - Public controller tests should cover HTTP status, JSON body, Problem Details validation errors, cookies/headers, and service delegation.
