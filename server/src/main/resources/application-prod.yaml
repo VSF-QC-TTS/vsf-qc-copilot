@@ -136,8 +136,10 @@ vqc:
   promptfoo:
     mode: cli
     work-dir: /app/runs
-    command: promptfoo
+    binary-path: ./tooling/promptfoo-runner/node_modules/.bin/promptfoo
     max-concurrency: 1
+    max-eval-time-ms: 300000
+    per-test-timeout-ms: 60000
   storage:
     type: ${VQC_STORAGE_TYPE:local}
     local:

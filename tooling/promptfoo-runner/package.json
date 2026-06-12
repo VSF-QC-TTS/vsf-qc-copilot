@@ -1,0 +1,12 @@
+{
+  "name": "vqc-promptfoo-runner",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pinned local promptfoo CLI runner for VSF QC Copilot.",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "promptfoo": "0.121.15"
+  }
+}

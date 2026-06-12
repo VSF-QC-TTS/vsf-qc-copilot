@@ -4,9 +4,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import me.nghlong3004.vqc.api.evaluation.entity.EvaluationRun;
 import me.nghlong3004.vqc.api.evaluation.enums.JudgeStatus;
-import me.nghlong3004.vqc.api.rubric.entity.RubricVersion;
-import me.nghlong3004.vqc.api.targetconnector.entity.TargetApiConnector;
 import me.nghlong3004.vqc.api.testcase.entity.TestCase;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -20,8 +19,7 @@ import org.springframework.stereotype.Component;
 public class MockPromptfooExecutor implements PromptfooExecutor {
 
   @Override
-  public List<PromptfooResult> evaluate(
-      List<TestCase> testCases, RubricVersion rubricVersion, TargetApiConnector connector) {
+  public List<PromptfooResult> evaluate(EvaluationRun run, List<TestCase> testCases) {
     return testCases.stream().map(this::evaluateOne).toList();
   }
 

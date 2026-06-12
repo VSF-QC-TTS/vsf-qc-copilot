@@ -284,7 +284,7 @@ User
 19. GET  /api/v1/evaluation-runs/{runPublicId}/results
     `-- xem kết quả chi tiết từng test case, gồm qcStatus/qcNote/picBug
 20. Worker consumes Redis queue `vqc:jobs:queue`
-    `-- mock promptfoo executor writes evaluation results and job events
+    `-- promptfoo executor writes evaluation results and job events; mock mode for local fallback, CLI mode for real promptfoo eval
 21. PUT  /api/v1/evaluation-results/{resultPublicId}/review-decision
     `-- QC upsert final decision cho một result
 22. GET  /api/v1/evaluation-results/{resultPublicId}/review-decision
@@ -315,6 +315,7 @@ User
 Project
 |-- Evaluation Run / Job
 |   |-- Worker + Promptfoo mock executor [done]
+|   |-- Worker + Promptfoo CLI executor [done: local binary, validation, no-cache, results parser]
 |   |-- QC Review [done: upsert/get/patch decision]
 |   `-- Export [done: create/detail/download + worker generation]
 |       `-- flexible mapping; optional missing fields thì để blank

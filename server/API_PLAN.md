@@ -1,7 +1,7 @@
 # API Plan — Current Backend Slice Tracker
 
-Date: 2026-06-11
-Status: **QC review and export API slices completed**
+Date: 2026-06-12
+Status: **Promptfoo CLI integration implemented; runner lockfile pending npm registry access**
 
 Purpose: keep the immediate backend plan short. `API_TODO.md` and `API_TREE.md` remain the source for completed endpoint inventory and resource relationships.
 
@@ -10,7 +10,7 @@ Purpose: keep the immediate backend plan short. `API_TODO.md` and `API_TREE.md` 
 1. Worker + Promptfoo mock executor.
    - `JobWorker` consumes Redis queue messages.
    - `EvaluationJobHandler` writes evaluation results and job events.
-   - Promptfoo executor uses Strategy: mock mode implemented, CLI mode still placeholder.
+   - Promptfoo executor uses Strategy: mock mode implemented.
    - Commits:
      - `feat(worker): process evaluation jobs with mock promptfoo`
      - `docs(server): update handoff docs for evaluation worker`
@@ -41,19 +41,29 @@ Purpose: keep the immediate backend plan short. `API_TODO.md` and `API_TREE.md` 
      - `feat(export): create export jobs`
      - `feat(export): get export detail`
      - `feat(export): generate and download export files`
-     - Pending current commit: `feat(export): abstract export file storage`
+     - `feat(export): abstract export file storage`
+
+5. Real Promptfoo CLI integration.
+   - Redis remains the server-to-worker queue boundary; promptfoo is invoked only after `JobWorker` consumes an evaluation job.
+   - `CliPromptfooExecutor` generates per-run files under `vqc.promptfoo.work-dir/{runPublicId}`.
+   - Config validation runs before eval and stores validation stdout/stderr logs.
+   - Eval uses local binary path `tooling/promptfoo-runner/node_modules/.bin/promptfoo`, `--no-cache`, per-run promptfoo config/log dirs, and `results.outputs[]` parsing.
+   - Supported selectors: `$.answer`, `$.data.answer`; persisted secret placeholders fail fast.
+   - Commit:
+     - Pending current commit: `feat(promptfoo): run evaluations with local promptfoo cli`
 
 ## Current Verify Commands
 
-Focused export/job suite:
+Focused promptfoo/job suite:
 
 ```bash
-rtk bash mvnw -Dtest=ExportControllerTest,ExportServiceImplTest,ExportJobHandlerTest,LocalObjectStorageServiceTest,JobWorkerTest,JobServiceImplTest test
+rtk bash mvnw -Dtest=CliPromptfooExecutorTest,MockPromptfooExecutorTest,EvaluationJobHandlerTest,JobWorkerTest test
 ```
 
 Previously passed focused suites:
 
 ```bash
+rtk bash mvnw -Dtest=ExportControllerTest,ExportServiceImplTest,ExportJobHandlerTest,LocalObjectStorageServiceTest,JobWorkerTest,JobServiceImplTest test
 rtk bash mvnw -Dtest=ReviewDecisionControllerTest,ReviewDecisionServiceImplTest test
 rtk bash mvnw -Dtest=EvaluationRunControllerTest,EvaluationRunServiceImplTest test
 rtk bash mvnw -Dtest=EvaluationRunControllerTest,EvaluationRunServiceImplTest,JobControllerTest,JobServiceImplTest,MockPromptfooExecutorTest,EvaluationJobHandlerTest,JobWorkerTest test
@@ -61,8 +71,6 @@ rtk bash mvnw -Dtest=EvaluationRunControllerTest,EvaluationRunServiceImplTest,Jo
 
 ## Next Likely Backend Slice
 
-Real Promptfoo CLI integration:
-- Replace the CLI placeholder with a pinned, repeatable `promptfoo eval` invocation.
-- Keep evaluation execution async through Redis/job/worker.
-- Convert promptfoo output into existing `PromptfooResult` records.
-- Preserve the mock executor for local demo fallback.
+Promptfoo follow-up:
+- Generate and commit `tooling/promptfoo-runner/package-lock.json` once npm registry access is allowed.
+- Add encrypted secret storage or map richer rubric criteria into Promptfoo judge configuration.

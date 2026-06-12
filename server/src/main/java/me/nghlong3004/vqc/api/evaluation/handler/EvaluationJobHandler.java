@@ -82,7 +82,7 @@ public class EvaluationJobHandler {
       }
 
       List<PromptfooResult> promptfooResults =
-          promptfooExecutor.evaluate(testCases, run.getRubricVersion(), run.getTargetApiConnector());
+          promptfooExecutor.evaluate(run, testCases);
       Map<Long, PromptfooResult> resultsByTestCaseId =
           promptfooResults.stream()
               .filter(result -> result.testCaseId() != null)

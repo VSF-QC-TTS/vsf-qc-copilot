@@ -21,9 +21,15 @@ public class PromptfooProperties {
   /** Working directory for promptfoo run files. */
   private String workDir = "./runs";
 
-  /** Command to execute promptfoo CLI. */
-  private String command = "./infra/scripts/run-promptfoo.sh";
+  /** Local promptfoo CLI binary path. */
+  private String binaryPath = "./tooling/promptfoo-runner/node_modules/.bin/promptfoo";
 
   /** Maximum concurrent evaluations. */
   private int maxConcurrency = 1;
+
+  /** Maximum wall-clock time for one promptfoo eval command. */
+  private long maxEvalTimeMs = 300000;
+
+  /** Maximum time for one promptfoo test case. */
+  private long perTestTimeoutMs = 60000;
 }

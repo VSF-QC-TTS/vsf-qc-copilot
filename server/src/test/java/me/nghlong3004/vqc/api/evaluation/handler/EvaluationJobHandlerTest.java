@@ -47,7 +47,7 @@ class EvaluationJobHandlerTest {
   void handleCompletesJobRunAndWritesResults() {
     Fixture fixture = fixture();
     PromptfooExecutor executor =
-        (testCases, rubricVersion, connector) ->
+        (run, testCases) ->
             testCases.stream()
                 .map(
                     testCase ->
@@ -80,7 +80,7 @@ class EvaluationJobHandlerTest {
     Fixture fixture = fixture();
     EvaluationJobHandler handler =
         fixture.handler(
-            (testCases, rubricVersion, connector) -> {
+            (run, testCases) -> {
               throw new IllegalStateException("executor failed");
             });
 
@@ -98,7 +98,7 @@ class EvaluationJobHandlerTest {
     Fixture fixture = fixture();
     EvaluationJobHandler handler =
         fixture.handler(
-            (testCases, rubricVersion, connector) ->
+            (run, testCases) ->
                 List.of(
                     new PromptfooResult(
                         testCases.getFirst().getId(),

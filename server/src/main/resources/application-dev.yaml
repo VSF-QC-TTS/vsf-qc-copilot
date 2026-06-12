@@ -111,8 +111,10 @@ vqc:
   promptfoo:
     mode: mock
     work-dir: ./runs
-    command: ./infra/scripts/run-promptfoo.sh
+    binary-path: ./tooling/promptfoo-runner/node_modules/.bin/promptfoo
     max-concurrency: 1
+    max-eval-time-ms: 300000
+    per-test-timeout-ms: 60000
   storage:
     type: local
     local:

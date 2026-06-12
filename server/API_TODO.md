@@ -1,6 +1,6 @@
 # Server API TODO
 
-Date: 2026-06-11
+Date: 2026-06-12
 
 Purpose: track API slices while keeping `SERVER_CONTEXT.md` short.
 
@@ -24,9 +24,10 @@ Update rule:
 - Evaluation Events: list job events under run.
 - Job: detail flat path with resolved `resourcePublicId`.
 - Worker + Promptfoo mock executor (Step 10).
+- Real Promptfoo CLI integration through Redis worker path.
 - QC Review: upsert/get review decision by evaluation result; patch by review decision.
 - Export: create export job under evaluation run; get export detail; download READY export file; local storage abstraction.
 
 ## Next
 
-- Real Promptfoo CLI integration.
+- Generate pinned promptfoo runner lockfile when npm registry access is allowed; then choose secret-store support or richer rubric judge mapping.

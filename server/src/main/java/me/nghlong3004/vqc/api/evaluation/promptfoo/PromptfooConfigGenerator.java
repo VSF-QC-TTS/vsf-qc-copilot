@@ -1,0 +1,127 @@
+package me.nghlong3004.vqc.api.evaluation.promptfoo;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import me.nghlong3004.vqc.api.evaluation.entity.EvaluationRun;
+import me.nghlong3004.vqc.api.targetconnector.entity.TargetApiConnector;
+import me.nghlong3004.vqc.api.testcase.entity.TestCase;
+import org.springframework.stereotype.Component;
+
+/**
+ * @author nghlong3004 (Long Nguyen Hoang)
+ * @since 6/12/2026
+ */
+@Component
+@RequiredArgsConstructor
+public class PromptfooConfigGenerator {
+
+  private static final String SECRET_PLACEHOLDER_PREFIX = "{{secret:";
+
+  private final ObjectMapper objectMapper;
+
+  public void generate(EvaluationRun run, List<TestCase> testCases, Path runDir) {
+    try {
+      Files.createDirectories(runDir);
+      objectMapper.writeValue(runDir.resolve("tests.json").toFile(), tests(testCases));
+      objectMapper.writeValue(runDir.resolve("promptfooconfig.json").toFile(), config(run));
+    } catch (IOException ex) {
+      throw new PromptfooExecutionException("Failed to write promptfoo run files.", ex);
+    }
+  }
+
+  Map<String, Object> config(EvaluationRun run) {
+    TargetApiConnector connector = run.getTargetApiConnector();
+    Map<String, Object> config = new LinkedHashMap<>();
+    config.put("description", "VQC evaluation run " + run.getPublicId());
+    config.put("prompts", List.of("{{question}}"));
+    config.put("providers", List.of(provider(connector)));
+    config.put("tests", "file://tests.json");
+    return config;
+  }
+
+  private Map<String, Object> provider(TargetApiConnector connector) {
+    Map<String, Object> provider = new LinkedHashMap<>();
+    provider.put("id", providerId(connector));
+    Map<String, Object> config = new LinkedHashMap<>();
+    config.put("url", rejectSecrets(connector.getUrl()));
+    config.put("method", connector.getMethod().name());
+    putIfNotEmpty(config, "headers", connector.getHeaders());
+    putIfNotEmpty(config, "queryParams", connector.getQueryParams());
+    Object body = connector.getBodyTemplate();
+    if (body == null && connector.getBodyTemplateText() != null && !connector.getBodyTemplateText().isBlank()) {
+      body = connector.getBodyTemplateText();
+    }
+    if (body != null) {
+      config.put("body", rejectSecrets(body));
+    }
+    config.put("transformResponse", transformResponse(connector.getResponseSelector()));
+    provider.put("config", config);
+    return provider;
+  }
+
+  private void putIfNotEmpty(Map<String, Object> target, String key, Map<String, Object> value) {
+    if (value != null && !value.isEmpty()) {
+      target.put(key, rejectSecrets(value));
+    }
+  }
+
+  private String providerId(TargetApiConnector connector) {
+    String url = connector.getUrl() == null ? "" : connector.getUrl().trim().toLowerCase();
+    return url.startsWith("https://") ? "https" : "http";
+  }
+
+  String transformResponse(String responseSelector) {
+    return switch (responseSelector) {
+      case "$.answer" -> "json.answer";
+      case "$.data.answer" -> "json.data.answer";
+      default -> throw new PromptfooExecutionException("Unsupported response selector: " + responseSelector);
+    };
+  }
+
+  List<Map<String, Object>> tests(List<TestCase> testCases) {
+    return testCases.stream().map(this::test).toList();
+  }
+
+  private Map<String, Object> test(TestCase testCase) {
+    Map<String, Object> test = new LinkedHashMap<>();
+    Map<String, Object> vars = new LinkedHashMap<>();
+    vars.put("vqcTestCaseId", testCase.getId());
+    vars.put("vqcTestCasePublicId", String.valueOf(testCase.getPublicId()));
+    vars.put("question", testCase.getQuestion());
+    vars.put("precondition", testCase.getPrecondition() == null ? Map.of() : testCase.getPrecondition());
+    vars.put("metadata", testCase.getMetadata() == null ? Map.of() : testCase.getMetadata());
+    if (testCase.getExternalId() != null && !testCase.getExternalId().isBlank()) {
+      vars.put("externalId", testCase.getExternalId());
+    }
+    test.put("vars", vars);
+    if (testCase.getGroundTruth() != null && !testCase.getGroundTruth().isBlank()) {
+      test.put("assert", List.of(Map.of("type", "contains", "value", testCase.getGroundTruth())));
+    }
+    return test;
+  }
+
+  @SuppressWarnings("unchecked")
+  private Object rejectSecrets(Object value) {
+    if (value instanceof String text) {
+      if (text.contains(SECRET_PLACEHOLDER_PREFIX)) {
+        throw new PromptfooExecutionException("Promptfoo CLI cannot run with connector secret placeholders.");
+      }
+      return text;
+    }
+    if (value instanceof Map<?, ?> map) {
+      Map<String, Object> safe = new LinkedHashMap<>();
+      map.forEach((key, item) -> safe.put(String.valueOf(key), rejectSecrets(item)));
+      return safe;
+    }
+    if (value instanceof List<?> list) {
+      return list.stream().map(this::rejectSecrets).toList();
+    }
+    return value;
+  }
+}
