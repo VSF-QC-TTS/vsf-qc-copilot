@@ -1,7 +1,7 @@
 # API Plan — Current Backend Slice Tracker
 
 Date: 2026-06-12
-Status: **Promptfoo CLI integration implemented; runner lockfile pending npm registry access**
+Status: **Promptfoo CLI integration implemented; real worker smoke verified**
 
 Purpose: keep the immediate backend plan short. `API_TODO.md` and `API_TREE.md` remain the source for completed endpoint inventory and resource relationships.
 
@@ -47,10 +47,12 @@ Purpose: keep the immediate backend plan short. `API_TODO.md` and `API_TREE.md` 
    - Redis remains the server-to-worker queue boundary; promptfoo is invoked only after `JobWorker` consumes an evaluation job.
    - `CliPromptfooExecutor` generates per-run files under `vqc.promptfoo.work-dir/{runPublicId}`.
    - Config validation runs before eval and stores validation stdout/stderr logs.
-   - Eval uses local binary path `tooling/promptfoo-runner/node_modules/.bin/promptfoo`, `--no-cache`, per-run promptfoo config/log dirs, and `results.outputs[]` parsing.
+   - Eval uses local binary path `tooling/promptfoo-runner/node_modules/.bin/promptfoo`, `--no-cache`, per-run promptfoo config/log dirs, and `results.results[]` parsing with compatibility for `results.outputs[]`.
    - Supported selectors: `$.answer`, `$.data.answer`; persisted secret placeholders fail fast.
-   - Commit:
-     - Pending current commit: `feat(promptfoo): run evaluations with local promptfoo cli`
+   - Commits:
+     - `feat(promptfoo): run evaluations with local promptfoo cli`
+     - `chore(promptfoo): lock local runner dependencies`
+     - Pending current commit: `fix(promptfoo): parse real cli result rows`
 
 ## Current Verify Commands
 
@@ -58,6 +60,7 @@ Focused promptfoo/job suite:
 
 ```bash
 rtk bash mvnw -Dtest=CliPromptfooExecutorTest,MockPromptfooExecutorTest,EvaluationJobHandlerTest,JobWorkerTest test
+rtk bash mvnw -Dtest=PromptfooWorkerSmokeTest -Dvqc.promptfoo.smoke=true test
 ```
 
 Previously passed focused suites:
@@ -72,5 +75,4 @@ rtk bash mvnw -Dtest=EvaluationRunControllerTest,EvaluationRunServiceImplTest,Jo
 ## Next Likely Backend Slice
 
 Promptfoo follow-up:
-- Generate and commit `tooling/promptfoo-runner/package-lock.json` once npm registry access is allowed.
 - Add encrypted secret storage or map richer rubric criteria into Promptfoo judge configuration.

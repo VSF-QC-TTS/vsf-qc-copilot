@@ -75,7 +75,7 @@ Relevant facts:
    - Missing `results.json`, timeout, command-not-found, malformed JSON, validation failure, or other non-zero exit codes are job failures.
 
 3. What output JSON shape should the parser target?
-   - Decision: parse Promptfoo JSON from `results.outputs[]`.
+   - Decision: parse Promptfoo JSON from `results.results[]` for `promptfoo@0.121.15`, while keeping parser compatibility with `results.outputs[]`.
    - Parser maps each output into internal `PromptfooResult`.
    - Malformed or missing output raises `PromptfooExecutionException`.
 
@@ -172,17 +172,17 @@ PROMPTFOO_EVAL_TIMEOUT_MS="$PER_TEST_TIMEOUT_MS" \
 
 ### Phase 3 - Output Parsing
 
-- Parse JSON output from:
+- Parse JSON output from `promptfoo@0.121.15`:
 
 ```json
 {
   "results": {
-    "outputs": []
+    "results": []
   }
 }
 ```
 
-- Map `results.outputs[]` into existing `PromptfooResult`, extracting when available:
+- Map each result row into existing `PromptfooResult`, extracting when available:
   - test case id
   - actual answer
   - score
@@ -198,7 +198,8 @@ PROMPTFOO_EVAL_TIMEOUT_MS="$PER_TEST_TIMEOUT_MS" \
 ### Phase 4 - Tests
 
 - Add unit tests for config generation.
-- Add unit tests for output parsing using `results.outputs[]` fixture JSON.
+- Add unit tests for output parsing using the real `results.results[]` fixture shape and compatibility coverage for `results.outputs[]`.
+- Add a gated real smoke test: `JobWorker -> EvaluationJobHandler -> CliPromptfooExecutor -> promptfoo@0.121.15 -> local HTTP target`.
 - Add process execution tests using a fake local command/script, not real network or real Promptfoo.
 - Add tests for:
   - config validation command success/failure
@@ -233,4 +234,4 @@ PROMPTFOO_EVAL_TIMEOUT_MS="$PER_TEST_TIMEOUT_MS" \
 
 ## Recommended First Slice
 
-Implement CLI mode for no-secret HTTP connectors using generated JSON config, local pinned `promptfoo@0.121.15`, config validation, isolated run directories, captured logs, `--no-cache`, and `results.outputs[]` parsing. Keep mock mode unchanged. Treat secret placeholder support, advanced selectors, and advanced rubric scoring as follow-up slices.
+Implement CLI mode for no-secret HTTP connectors using generated JSON config, local pinned `promptfoo@0.121.15`, config validation, isolated run directories, captured logs, `--no-cache`, and `results.results[]` parsing. Keep mock mode unchanged. Treat secret placeholder support, advanced selectors, and advanced rubric scoring as follow-up slices.

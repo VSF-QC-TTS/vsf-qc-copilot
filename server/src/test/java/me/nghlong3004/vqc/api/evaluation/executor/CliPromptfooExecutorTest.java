@@ -130,6 +130,19 @@ class CliPromptfooExecutorTest {
   }
 
   @Test
+  void evaluateParsesLegacyOutputsShape(@TempDir Path tempDir) throws Exception {
+    CliPromptfooExecutor executor = executor(tempDir, fakePromptfoo(tempDir, FakeMode.OUTPUTS_SHAPE));
+
+    List<PromptfooResult> results =
+        executor.evaluate(run(UUID.randomUUID(), "$.answer", Map.of()), testCases());
+
+    assertThat(results).hasSize(1);
+    assertThat(results.getFirst().testCaseId()).isEqualTo(1L);
+    assertThat(results.getFirst().judgeStatus()).isEqualTo(JudgeStatus.PASS);
+  }
+
+
+  @Test
   void evaluateFailsExitCode100WithoutResults(@TempDir Path tempDir) throws Exception {
     CliPromptfooExecutor executor = executor(tempDir, fakePromptfoo(tempDir, FakeMode.EXIT_100_NO_RESULTS));
 
@@ -146,7 +159,7 @@ class CliPromptfooExecutorTest {
     assertThatThrownBy(
             () -> executor.evaluate(run(UUID.randomUUID(), "$.answer", Map.of()), testCases()))
         .isInstanceOf(PromptfooExecutionException.class)
-        .hasMessageContaining("results.outputs");
+        .hasMessageContaining("results array");
   }
 
   private CliPromptfooExecutor executor(Path tempDir, Path fakePromptfoo) {
@@ -240,7 +253,8 @@ class CliPromptfooExecutorTest {
             printf '{"results":{}}' > "$output"
             exit 0
           fi
-          cat > "$output" <<'JSON'
+          if [ "__MODE__" = "OUTPUTS_SHAPE" ]; then
+            cat > "$output" <<'JSON'
         {
           "results": {
             "outputs": [
@@ -257,6 +271,33 @@ class CliPromptfooExecutorTest {
                   "score": 0.91,
                   "reason": "matched"
                 }
+              }
+            ]
+          }
+        }
+        JSON
+            exit 0
+          fi
+          cat > "$output" <<'JSON'
+        {
+          "results": {
+            "results": [
+              {
+                "testCase": {
+                  "vars": {
+                    "vqcTestCaseId": 1
+                  }
+                },
+                "response": {
+                  "output": "Actual answer",
+                  "latencyMs": 123
+                },
+                "gradingResult": {
+                  "pass": true,
+                  "score": 0.91,
+                  "reason": "matched"
+                },
+                "failureReason": 0
               }
             ]
           }
@@ -282,6 +323,7 @@ class CliPromptfooExecutorTest {
     VALIDATION_FAIL,
     EXIT_100,
     EXIT_100_NO_RESULTS,
-    MALFORMED_RESULTS
+    MALFORMED_RESULTS,
+    OUTPUTS_SHAPE
   }
 }

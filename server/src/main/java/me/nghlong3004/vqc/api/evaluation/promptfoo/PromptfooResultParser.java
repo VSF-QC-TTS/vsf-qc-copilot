@@ -25,9 +25,9 @@ public class PromptfooResultParser {
   public List<PromptfooResult> parse(Path resultsPath) {
     try {
       JsonNode root = objectMapper.readTree(resultsPath.toFile());
-      JsonNode outputs = root.path("results").path("outputs");
+      JsonNode outputs = resultRows(root);
       if (!outputs.isArray()) {
-        throw new PromptfooExecutionException("Promptfoo results.outputs is missing or malformed.");
+        throw new PromptfooExecutionException("Promptfoo results array is missing or malformed.");
       }
       List<PromptfooResult> results = new ArrayList<>();
       for (JsonNode output : outputs) {
@@ -39,10 +39,18 @@ public class PromptfooResultParser {
     }
   }
 
+  private JsonNode resultRows(JsonNode root) {
+    JsonNode outputs = root.path("results").path("outputs");
+    if (outputs.isArray()) {
+      return outputs;
+    }
+    return root.path("results").path("results");
+  }
+
   private PromptfooResult toResult(JsonNode output) throws IOException {
     JsonNode grading = output.path("gradingResult");
     BigDecimal score = decimalValue(firstPresent(grading.path("score"), output.path("score")));
-    String error = textValue(firstPresent(output.path("error"), output.path("failureReason")));
+    String error = errorValue(firstPresent(output.path("error"), output.path("failureReason")));
     return new PromptfooResult(
         testCaseId(output),
         actualAnswer(output),
@@ -59,6 +67,7 @@ public class PromptfooResultParser {
         firstPresent(
             output.path("vars"),
             output.path("test").path("vars"),
+            output.path("testCase").path("vars"),
             output.path("metadata").path("vars"));
     JsonNode id = firstPresent(vars.path("vqcTestCaseId"), vars.path("testCaseId"));
     if (id.isNumber()) {
@@ -159,5 +168,18 @@ public class PromptfooResultParser {
       return null;
     }
     return node.isTextual() ? node.asText() : node.toString();
+  }
+
+  private String errorValue(JsonNode node) {
+    if (node == null || node.isMissingNode() || node.isNull()) {
+      return null;
+    }
+    if (node.isNumber() && node.asInt() == 0) {
+      return null;
+    }
+    if (node.isBoolean() && !node.asBoolean()) {
+      return null;
+    }
+    return textValue(node);
   }
 }
