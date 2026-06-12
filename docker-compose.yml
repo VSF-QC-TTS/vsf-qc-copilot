@@ -1,6 +1,6 @@
 # ============================================================
 # VSF QC Copilot — Local Docker Compose
-# All ports bound to 127.0.0.1 only (nginx reverse proxies API)
+# All ports bound to 127.0.0.1 only
 # ============================================================
 # Usage:
 #   docker compose up --build
@@ -44,13 +44,14 @@ services:
       retries: 5
 
   # ---------------------------------------------------------
-  # Backend API (nginx reverse proxies to this)
+  # Backend API
   # ---------------------------------------------------------
   api:
     build:
       context: .
       dockerfile: server/Dockerfile
     restart: unless-stopped
+    init: true
     ports:
       - "127.0.0.1:8080:8080"
     depends_on:
@@ -61,10 +62,18 @@ services:
     env_file: server/.env
     environment:
       # Override to point to compose services instead of localhost/cloud
+      SPRING_PROFILES_ACTIVE: prod
       DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-vqc_dev}
       DB_USERNAME: ${POSTGRES_USER:-vqc}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-vqc}
       REDIS_HOST: redis
+    volumes:
+      - app-runs:/app/runs
+      - app-exports:/app/exports
+      - app-logs:/app/logs
 
 volumes:
   pgdata:
+  app-runs:
+  app-exports:
+  app-logs:
