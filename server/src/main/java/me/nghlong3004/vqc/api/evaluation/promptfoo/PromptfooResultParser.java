@@ -6,8 +6,11 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import me.nghlong3004.vqc.api.evaluation.enums.JudgeStatus;
 import me.nghlong3004.vqc.api.evaluation.executor.PromptfooResult;
 import org.springframework.stereotype.Component;
@@ -18,6 +21,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class PromptfooResultParser {
 
   private final ObjectMapper objectMapper;
@@ -51,6 +55,7 @@ public class PromptfooResultParser {
     JsonNode grading = output.path("gradingResult");
     BigDecimal score = decimalValue(firstPresent(grading.path("score"), output.path("score")));
     String error = errorValue(firstPresent(output.path("error"), output.path("failureReason")));
+    String criteriaResultsJson = extractCriteriaResults(grading);
     return new PromptfooResult(
         testCaseId(output),
         actualAnswer(output),
@@ -59,7 +64,8 @@ public class PromptfooResultParser {
         textValue(firstPresent(grading.path("reason"), output.path("reason"))),
         intValue(firstPresent(output.path("latencyMs"), output.path("response").path("latencyMs"))),
         error,
-        objectMapper.writeValueAsString(output));
+        objectMapper.writeValueAsString(output),
+        criteriaResultsJson);
   }
 
   private Long testCaseId(JsonNode output) {
@@ -181,5 +187,44 @@ public class PromptfooResultParser {
       return null;
     }
     return textValue(node);
+  }
+
+  /**
+   * Extracts per-criterion results from gradingResult.componentResults.
+   * Each componentResult has: {pass, score, reason, assertion: {metric, type}}.
+   * Builds JSON array of {metricKey, pass, score, reason} for each llm-rubric assertion.
+   */
+  private String extractCriteriaResults(JsonNode grading) {
+    JsonNode componentResults = grading.path("componentResults");
+    if (!componentResults.isArray() || componentResults.isEmpty()) {
+      return null;
+    }
+    List<Map<String, Object>> criteriaResults = new ArrayList<>();
+    for (JsonNode component : componentResults) {
+      JsonNode assertion = component.path("assertion");
+      String type = assertion.path("type").asText("");
+      if (!"llm-rubric".equals(type)) {
+        continue;
+      }
+      String metricKey = assertion.path("metric").asText(null);
+      if (metricKey == null || metricKey.isBlank()) {
+        continue;
+      }
+      Map<String, Object> entry = new LinkedHashMap<>();
+      entry.put("metricKey", metricKey);
+      entry.put("pass", component.path("pass").asBoolean(false));
+      entry.put("score", component.path("score").asDouble(0.0));
+      entry.put("reason", component.path("reason").asText(""));
+      criteriaResults.add(entry);
+    }
+    if (criteriaResults.isEmpty()) {
+      return null;
+    }
+    try {
+      return objectMapper.writeValueAsString(criteriaResults);
+    } catch (IOException ex) {
+      log.warn("Failed to serialize criteria results: {}", ex.getMessage());
+      return null;
+    }
   }
 }

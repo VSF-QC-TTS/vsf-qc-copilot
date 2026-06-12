@@ -39,7 +39,8 @@ public class MockPromptfooExecutor implements PromptfooExecutor {
         "Mock promptfoo evaluation generated for development mode.",
         latencyMs,
         status == JudgeStatus.ERROR ? "Mock evaluation error." : null,
-        "{\"mode\":\"mock\"}");
+        "{\"mode\":\"mock\"}",
+        null);
   }
 
   private JudgeStatus randomStatus() {

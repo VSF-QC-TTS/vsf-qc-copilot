@@ -88,7 +88,7 @@ class JobWorkerTest {
   }
 
   private EvaluationJobHandler evaluationHandler(AtomicReference<UUID> handled, boolean fail) {
-    return new EvaluationJobHandler(null, null, null, null, null, null, null) {
+    return new EvaluationJobHandler(null, null, null, null, null, null, null, null, null) {
       @Override
       public void handle(UUID jobPublicId) {
         handled.set(jobPublicId);

@@ -23,6 +23,7 @@ import me.nghlong3004.vqc.api.evaluation.entity.EvaluationResult;
 import me.nghlong3004.vqc.api.evaluation.entity.EvaluationRun;
 import me.nghlong3004.vqc.api.evaluation.enums.EvaluationRunStatus;
 import me.nghlong3004.vqc.api.evaluation.executor.CliPromptfooExecutor;
+import me.nghlong3004.vqc.api.evaluation.handler.CriteriaScoreCalculator;
 import me.nghlong3004.vqc.api.evaluation.handler.EvaluationJobHandler;
 import me.nghlong3004.vqc.api.evaluation.promptfoo.PromptfooCommandExecutor;
 import me.nghlong3004.vqc.api.evaluation.promptfoo.PromptfooConfigGenerator;
@@ -288,7 +289,16 @@ class PromptfooWorkerSmokeTest {
                 throw new UnsupportedOperationException(method.getName());
               }),
           executor,
-          JsonMapper.builder().findAndAddModules().build());
+          JsonMapper.builder().findAndAddModules().build(),
+          new CriteriaScoreCalculator(JsonMapper.builder().build()),
+          proxy(
+              RubricCriterionRepository.class,
+              (proxy, method, args) -> {
+                if (method.getReturnType() == List.class) return List.of();
+                if (method.getReturnType() == long.class) return 0L;
+                if (method.getReturnType() == boolean.class) return false;
+                return null;
+              }));
     }
   }
 }

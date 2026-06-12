@@ -26,6 +26,8 @@ import me.nghlong3004.vqc.api.job.enums.JobStatus;
 import me.nghlong3004.vqc.api.job.enums.JobType;
 import me.nghlong3004.vqc.api.job.repository.JobEventRepository;
 import me.nghlong3004.vqc.api.job.repository.JobRepository;
+import me.nghlong3004.vqc.api.rubric.entity.RubricCriterion;
+import me.nghlong3004.vqc.api.rubric.repository.RubricCriterionRepository;
 import me.nghlong3004.vqc.api.testcase.entity.TestCase;
 import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
 import me.nghlong3004.vqc.api.testcase.repository.TestCaseRepository;
@@ -48,6 +50,8 @@ public class EvaluationJobHandler {
   private final TestCaseRepository testCaseRepository;
   private final PromptfooExecutor promptfooExecutor;
   private final ObjectMapper objectMapper;
+  private final CriteriaScoreCalculator criteriaScoreCalculator;
+  private final RubricCriterionRepository rubricCriterionRepository;
 
   /**
    * Handles one queued evaluation job.
@@ -81,6 +85,8 @@ public class EvaluationJobHandler {
         throw new IllegalStateException("Evaluation run has no active test cases.");
       }
 
+      List<RubricCriterion> criteria = loadCriteria(run);
+
       List<PromptfooResult> promptfooResults =
           promptfooExecutor.evaluate(run, testCases);
       Map<Long, PromptfooResult> resultsByTestCaseId =
@@ -91,7 +97,7 @@ public class EvaluationJobHandler {
       int completed = 0;
       for (TestCase testCase : testCases) {
         PromptfooResult promptfooResult = resultsByTestCaseId.get(testCase.getId());
-        EvaluationResult result = toEvaluationResult(run, testCase, promptfooResult);
+        EvaluationResult result = toEvaluationResult(run, testCase, promptfooResult, criteria);
         evaluationResultRepository.save(result);
         completed++;
         job.setProgressCurrent(completed);
@@ -125,8 +131,19 @@ public class EvaluationJobHandler {
     emitEvent(job, "RUNNING", Map.of("runPublicId", run.getPublicId()));
   }
 
+  private List<RubricCriterion> loadCriteria(EvaluationRun run) {
+    if (run.getRubricVersion() == null) {
+      return List.of();
+    }
+    return rubricCriterionRepository.findByRubricVersionOrderBySortOrderAscIdAsc(
+        run.getRubricVersion());
+  }
+
   private EvaluationResult toEvaluationResult(
-      EvaluationRun run, TestCase testCase, PromptfooResult promptfooResult) {
+      EvaluationRun run,
+      TestCase testCase,
+      PromptfooResult promptfooResult,
+      List<RubricCriterion> criteria) {
     if (promptfooResult == null) {
       return EvaluationResult.builder()
           .evaluationRun(run)
@@ -136,13 +153,20 @@ public class EvaluationJobHandler {
           .errorMessage("Missing promptfoo result.")
           .build();
     }
+
+    // Compute weighted score from criteria if available
+    ScoringResult scoring =
+        criteriaScoreCalculator.computeScore(
+            promptfooResult.criteriaResultsJson(), criteria, promptfooResult.judgeStatus());
+
     return EvaluationResult.builder()
         .evaluationRun(run)
         .testCase(testCase)
         .actualAnswer(promptfooResult.actualAnswer())
-        .judgeScore(promptfooResult.judgeScore())
-        .judgeStatus(promptfooResult.judgeStatus())
+        .judgeScore(scoring.judgeScore() != null ? scoring.judgeScore() : promptfooResult.judgeScore())
+        .judgeStatus(scoring.judgeStatus())
         .judgeReason(promptfooResult.judgeReason())
+        .criteriaResultsJson(promptfooResult.criteriaResultsJson())
         .latencyMs(promptfooResult.latencyMs())
         .errorMessage(promptfooResult.errorMessage())
         .rawPromptfooResultJson(promptfooResult.rawPromptfooResultJson())

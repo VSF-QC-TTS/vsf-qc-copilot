@@ -28,7 +28,9 @@ import me.nghlong3004.vqc.api.job.enums.ResourceType;
 import me.nghlong3004.vqc.api.job.repository.JobEventRepository;
 import me.nghlong3004.vqc.api.job.repository.JobRepository;
 import me.nghlong3004.vqc.api.project.entity.Project;
+import me.nghlong3004.vqc.api.rubric.entity.RubricCriterion;
 import me.nghlong3004.vqc.api.rubric.entity.RubricVersion;
+import me.nghlong3004.vqc.api.rubric.repository.RubricCriterionRepository;
 import me.nghlong3004.vqc.api.targetconnector.entity.TargetApiConnector;
 import me.nghlong3004.vqc.api.testcase.entity.TestCase;
 import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
@@ -59,7 +61,8 @@ class EvaluationJobHandlerTest {
                             "ok",
                             120,
                             null,
-                            "{\"mode\":\"test\"}"))
+                            "{\"mode\":\"test\"}",
+                            null))
                 .toList();
     EvaluationJobHandler handler = fixture.handler(executor);
 
@@ -108,7 +111,8 @@ class EvaluationJobHandlerTest {
                         "ok",
                         100,
                         null,
-                        "{}")));
+                        "{}",
+                        null)));
 
     handler.handle(fixture.job.getPublicId());
 
@@ -257,7 +261,16 @@ class EvaluationJobHandlerTest {
                 throw new UnsupportedOperationException(method.getName());
               }),
           executor,
-          JsonMapper.builder().findAndAddModules().build());
+          JsonMapper.builder().findAndAddModules().build(),
+          new CriteriaScoreCalculator(JsonMapper.builder().build()),
+          proxy(
+              RubricCriterionRepository.class,
+              (proxy, method, args) -> {
+                if (method.getReturnType() == List.class) return List.of();
+                if (method.getReturnType() == long.class) return 0L;
+                if (method.getReturnType() == boolean.class) return false;
+                return null;
+              }));
     }
   }
 }

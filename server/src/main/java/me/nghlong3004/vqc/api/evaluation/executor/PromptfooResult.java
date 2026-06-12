@@ -15,4 +15,5 @@ public record PromptfooResult(
     String judgeReason,
     Integer latencyMs,
     String errorMessage,
-    String rawPromptfooResultJson) {}
+    String rawPromptfooResultJson,
+    String criteriaResultsJson) {}
