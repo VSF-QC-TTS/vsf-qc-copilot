@@ -42,6 +42,11 @@ public class PromptfooConfigGenerator {
     config.put("prompts", List.of("{{question}}"));
     config.put("providers", List.of(provider(connector)));
     config.put("tests", "file://tests.json");
+    if (connector.getTimeoutSeconds() != null && connector.getTimeoutSeconds() > 0) {
+      config.put(
+          "evaluateOptions",
+          Map.of("timeoutMs", connector.getTimeoutSeconds() * 1_000L));
+    }
     return config;
   }
 
@@ -61,6 +66,9 @@ public class PromptfooConfigGenerator {
       config.put("body", rejectSecrets(body));
     }
     config.put("transformResponse", transformResponse(connector.getResponseSelector()));
+    if (connector.getRetryCount() != null && connector.getRetryCount() > 0) {
+      config.put("maxRetries", connector.getRetryCount());
+    }
     provider.put("config", config);
     return provider;
   }
