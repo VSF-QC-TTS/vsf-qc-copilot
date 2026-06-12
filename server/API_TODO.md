@@ -30,4 +30,4 @@ Update rule:
 
 ## Next
 
-- Generate pinned promptfoo runner lockfile when npm registry access is allowed; then choose secret-store support or richer rubric judge mapping.
+- Choose the next backend slice: Promptfoo secret-store support, richer rubric judge mapping, connector timeout/retry behavior, or an export storage provider beyond local filesystem.

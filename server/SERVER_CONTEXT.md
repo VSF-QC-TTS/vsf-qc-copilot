@@ -4,7 +4,7 @@ Date: 2026-06-12
 Repo area: `server/`
 Last full-suite pass: 226 tests, 0 failures (2026-06-11). Latest focused promptfoo/job suite pass: 17 tests, 0 failures (2026-06-12). Latest real promptfoo worker smoke pass: 1 test, 0 failures (2026-06-12).
 
-Purpose: this is the short server handoff. Use it before reading broader docs. Current code is the source of truth when docs and implementation differ. The full product target lives in `docs/`; treat docs as roadmap/contract intent unless the user explicitly asks to migrate current code toward them.
+Purpose: this is the server bootstrap handoff. If a user only says "read `server/SERVER_CONTEXT.md`", the agent must use this file to discover the next files to read without asking for more pointers. Current code is the source of truth when docs and implementation differ. The full product target lives in `docs/`; treat docs as roadmap/contract intent unless the user explicitly asks to migrate current code toward them.
 
 Reading tags:
 - `[START_HERE]`: always read first; includes rules, docs map, and agent startup order.
@@ -30,9 +30,11 @@ Rules:
 ## [START_HERE] Docs Map
 
 Docs map:
+- `server/SERVER_CONTEXT.md`: read first; this file routes the rest of the backend context.
 - `server/API_TREE.md`: current API/resource relationship tree and main workflow.
 - `server/API_TODO.md`: completed/in-progress/next API slice tracker.
 - `server/API_PLAN.md`: concrete implementation plan for the current in-progress step (classes, packages, tests, commits).
+- `server/PROMPTFOO_FINDINGS_PLAN.md`: Promptfoo CLI decision record; read before changing Promptfoo, evaluation execution, result parsing, or worker integration.
 - `docs/backend-codex-implementation-brief.md`: best full backend implementation brief when building new domains.
 - `docs/api_contract_mvp_updated.md`: target MVP API contract, but some paths/fields are older than current server.
 - `docs/db_schema.md`: target MVP schema and publicId/internal-id rules.
@@ -45,7 +47,15 @@ Agent startup order:
 1. Read this `server/SERVER_CONTEXT.md`.
 2. Read `server/API_TODO.md` to know completed/in-progress/next slices.
 3. Read `server/API_TREE.md` to understand API/resource relationships and the main workflow.
-4. Read broader `docs/` files only when the task needs product contract, DB schema, runtime setup, or new-domain implementation detail.
+4. Read `server/API_PLAN.md` before planning or implementing the next backend slice.
+5. Read specialized files based on scope:
+   - Promptfoo/evaluation worker/result parser: `server/PROMPTFOO_FINDINGS_PLAN.md`.
+   - New or changed API endpoint: `server/API_TREE.md`, `server/API_TODO.md`, target controller/service/tests, and relevant docs contract if the path is unclear.
+   - Persistence/schema change: current Flyway migrations plus `docs/db_schema.md`.
+   - Runtime/setup change: `docs/dev-setup-updated.md`.
+   - Product-contract question: `docs/api_contract_mvp_updated.md` and relevant `docs/01..06*.md`.
+6. Read broader `docs/` files only when the task needs product contract, DB schema, runtime setup, or new-domain implementation detail.
+7. After each backend slice, update `SERVER_CONTEXT.md` plus `API_TODO.md`/`API_PLAN.md`/`API_TREE.md` when their tracked facts change, then commit with `type(scope): summary`.
 
 ## [CURRENT_STATE] Auth
 
@@ -180,21 +190,11 @@ Known current gaps:
 
 ## [FUTURE_SLICE] Next Implementation Steps
 
-Next concrete steps (in order):
-
-Step 11 — QC Review APIs:
-- Add review decision persistence and APIs: upsert/get by evaluation result and patch by review decision.
-- `NOT_REVIEWED` is derived when no review row exists; write APIs should accept only `PASS`, `FAIL`, `NEED_FIX`, and `IGNORED`.
-- `picBug` is an active user reference via `picBugUserPublicId` until project membership exists.
-- Add tests for create/update/default-not-reviewed/ownership/validation.
-- Commit each API slice separately.
-
-Step 12 — Export download + worker generation:
-- Done: download API, generator Strategy for Excel vs JSON, worker generation, and local storage abstraction.
-
-Step 13 — Real Promptfoo CLI integration:
-- Done: Redis worker path now supports real `promptfoo eval` CLI mode with local binary config, per-run isolation, validation, output parsing, and focused tests.
-- Next likely backend slice: generate the missing pinned runner lockfile when npm registry access is available, then decide between secret-store support or richer rubric judge mapping.
+Next likely backend slices:
+- Promptfoo secret-store support: persist encrypted connector secrets and map safe runtime values into Promptfoo without writing raw secrets into generated config.
+- Promptfoo rubric judge mapping: translate richer rubric criteria into Promptfoo assertions/judging instead of only ground-truth assertions.
+- Connector runtime hardening: align connector timeout/retry settings with real outbound calls and Promptfoo execution.
+- Export storage provider: add S3/R2/MinIO behind the existing `ObjectStorageService`.
 
 ## [FUTURE_SLICE] Product Direction
 

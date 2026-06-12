@@ -1,19 +1,19 @@
 # Promptfoo Findings and Plan
 
 Date: 2026-06-12
-Status: planning only. Do not implement until this plan is reviewed and approved.
+Status: implemented and smoke verified. Keep this file as the planning/decision artifact for the real Promptfoo CLI slice.
 
 ## Process Reminder
 
 - First read current handoff/context files.
 - Then collect current implementation facts and official docs facts.
 - Then write a plan in markdown.
-- Only after approval, edit code.
+- Only after approval, edit code. This slice has already passed review, implementation, focused tests, and a gated real CLI smoke test.
 - Keep each backend slice focused and commit separately.
 
 ## Current Repo Facts
 
-- `server/SERVER_CONTEXT.md`, `server/API_TODO.md`, and `server/API_PLAN.md` all point to the next likely backend slice: real Promptfoo CLI integration.
+- Real Promptfoo CLI integration is implemented. `server/SERVER_CONTEXT.md`, `server/API_TODO.md`, and `server/API_PLAN.md` now track follow-up backend slices such as secret-store support and richer rubric judge mapping.
 - Redis is the queue boundary between API server and worker:
   - API creates an evaluation job and publishes the job public ID.
   - Worker consumes the Redis queue and invokes Promptfoo after loading the job/run context.
@@ -23,14 +23,16 @@ Status: planning only. Do not implement until this plan is reviewed and approved
   - `EvaluationJobHandler` loads active test cases, calls `PromptfooExecutor`, writes one `EvaluationResult` per active test case, updates run/job counters, and emits job events.
 - `PromptfooExecutor` is already a Strategy:
   - `MockPromptfooExecutor` is enabled by `vqc.promptfoo.mode=mock` and returns generated local results.
-  - `CliPromptfooExecutor` is enabled by `vqc.promptfoo.mode=cli` but currently only logs a warning and returns an empty list.
+  - `CliPromptfooExecutor` is enabled by `vqc.promptfoo.mode=cli` and runs the local pinned Promptfoo CLI after the Redis-backed worker consumes an evaluation job.
 - Current promptfoo config properties:
   - `vqc.promptfoo.mode`
   - `vqc.promptfoo.work-dir`
-  - `vqc.promptfoo.command`
+  - `vqc.promptfoo.binary-path`
   - `vqc.promptfoo.max-concurrency`
+  - `vqc.promptfoo.max-eval-time-ms`
+  - `vqc.promptfoo.per-test-timeout-ms`
 - `application-dev.yaml` uses mock mode by default.
-- `application-prod.yaml` currently uses CLI mode with `command: promptfoo`, but this slice will move to the local pinned binary instead of global `promptfoo`.
+- `application-prod.yaml` uses CLI mode with the local pinned binary path, not global `promptfoo`.
 - Target connector config stores placeholders such as `{{question}}`, `{{precondition}}`, `{{metadata}}`, and `{{secret:KEY}}`.
 - Connector secrets are not stored in a real encrypted secret store yet. This is important because CLI execution cannot recover raw secret values from persisted connector config.
 - Connector response extraction in current test-run flow only supports simple `$.answer`.
@@ -86,14 +88,13 @@ Relevant facts:
    - Decision: use ground truth assertions as the first slice.
    - Full rubric/criteria scoring is a follow-up slice.
 
-## Proposed Implementation Plan
+## Implemented Plan
 
 ### Phase 0 - Runtime Pinning
 
-- Add a local runner under `tooling/promptfoo-runner`.
-- Pin Promptfoo to `promptfoo@0.121.15`.
-- Commit `package.json` and lockfile for the pinned runner.
-- Implementation note: `package.json` is added now; `package-lock.json` must be generated with npm registry access because dependency download was intentionally skipped during this slice.
+- Local runner exists under `tooling/promptfoo-runner`.
+- Promptfoo is pinned to `promptfoo@0.121.15`.
+- `package.json` and `package-lock.json` are committed for the pinned runner.
 - Backend must call the local binary from `tooling/promptfoo-runner/node_modules/.bin/promptfoo`.
 - Do not use global `promptfoo`; do not use `promptfoo@latest`.
 - Node must satisfy Promptfoo requirements; prefer Node 22+ for the demo environment.

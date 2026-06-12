@@ -52,7 +52,7 @@ Purpose: keep the immediate backend plan short. `API_TODO.md` and `API_TREE.md` 
    - Commits:
      - `feat(promptfoo): run evaluations with local promptfoo cli`
      - `chore(promptfoo): lock local runner dependencies`
-     - Pending current commit: `fix(promptfoo): parse real cli result rows`
+     - `fix(promptfoo): parse real cli result rows`
 
 ## Current Verify Commands
 
