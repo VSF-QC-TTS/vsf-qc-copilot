@@ -108,6 +108,7 @@ vqc:
     cookie:
       secure: false
       same-site: lax
+    secret-encryption-key: ${VQC_SECRET_ENCRYPTION_KEY}
   promptfoo:
     mode: mock
     work-dir: ./runs

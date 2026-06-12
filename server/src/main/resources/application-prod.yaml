@@ -133,6 +133,7 @@ vqc:
     cookie:
       secure: true
       same-site: Strict
+    secret-encryption-key: ${VQC_SECRET_ENCRYPTION_KEY}
   promptfoo:
     mode: cli
     work-dir: /app/runs
