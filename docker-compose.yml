@@ -1,0 +1,70 @@
+# ============================================================
+# VSF QC Copilot — Local Docker Compose
+# All ports bound to 127.0.0.1 only (nginx reverse proxies API)
+# ============================================================
+# Usage:
+#   docker compose up --build
+#   docker compose down -v
+#   docker compose logs -f api
+# ============================================================
+
+services:
+  # ---------------------------------------------------------
+  # PostgreSQL
+  # ---------------------------------------------------------
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_DB: vqc_dev
+      POSTGRES_USER: vqc
+      POSTGRES_PASSWORD: vqc
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vqc -d vqc_dev"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ---------------------------------------------------------
+  # Redis
+  # ---------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ---------------------------------------------------------
+  # Backend API (nginx reverse proxies to this)
+  # ---------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file: server/.env
+    environment:
+      # Override to point to compose services instead of localhost/cloud
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-vqc_dev}
+      DB_USERNAME: ${POSTGRES_USER:-vqc}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-vqc}
+      REDIS_HOST: redis
+
+volumes:
+  pgdata:

@@ -35,6 +35,9 @@ Docs map:
 - `server/API_TODO.md`: completed/in-progress/next API slice tracker.
 - `server/API_PLAN.md`: concrete implementation plan for the current in-progress step (classes, packages, tests, commits).
 - `server/PROMPTFOO_FINDINGS_PLAN.md`: Promptfoo CLI decision record; read before changing Promptfoo, evaluation execution, result parsing, or worker integration.
+- `server/Dockerfile`: multi-stage build (Maven → Node/promptfoo → JRE runtime). Build context is project root.
+- `server/.env.example`: template for `server/.env`; copy and fill secrets before running.
+- `docker-compose.yml`: local dev stack (PostgreSQL 17, Redis 7, API). All ports bound to 127.0.0.1. Uses `server/.env` via `env_file`.
 - `docs/backend-codex-implementation-brief.md`: best full backend implementation brief when building new domains.
 - `docs/api_contract_mvp_updated.md`: target MVP API contract, but some paths/fields are older than current server.
 - `docs/db_schema.md`: target MVP schema and publicId/internal-id rules.
