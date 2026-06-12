@@ -208,7 +208,8 @@ public class TargetApiConnectorServiceImpl implements TargetApiConnectorService 
         new TargetConnectorClientRequest(
             connector.getMethod(), connector.getUrl(), headers, renderedBody);
     TargetConnectorClientResult clientResult =
-        targetConnectorClient.execute(clientRequest, connector.getTimeoutSeconds());
+        targetConnectorClient.execute(
+            clientRequest, connector.getTimeoutSeconds(), connector.getRetryCount());
     return new TestTargetConnectorResponse(
         true,
         new TargetConnectorRequestPreview(

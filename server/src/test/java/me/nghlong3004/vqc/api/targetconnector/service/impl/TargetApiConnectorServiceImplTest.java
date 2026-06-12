@@ -455,13 +455,13 @@ class TargetApiConnectorServiceImplTest {
   }
 
   private TargetConnectorClient ignoredClient() {
-    return (request, timeoutSeconds) -> {
+    return (request, timeoutSeconds, retryCount) -> {
       throw new AssertionError("Target connector client should not be called");
     };
   }
 
   private TargetConnectorClient client(AtomicReference<TargetConnectorClientRequest> clientRequest) {
-    return (request, timeoutSeconds) -> {
+    return (request, timeoutSeconds, retryCount) -> {
       clientRequest.set(request);
       return new TargetConnectorClientResult(
           Map.of("answer", "Today you walked 8,200 steps."), 120);
