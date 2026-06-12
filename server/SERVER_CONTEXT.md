@@ -2,7 +2,7 @@
 
 Date: 2026-06-12
 Repo area: `server/`
-Last full-suite pass: 226 tests, 0 failures (2026-06-11). Latest focused promptfoo/job suite pass: 17 tests, 0 failures (2026-06-12). Latest focused secret-store/connector/crypto suite pass: 35 tests, 0 failures (2026-06-12). Latest real promptfoo worker smoke pass: 1 test, 0 failures (2026-06-12).
+Last full-suite pass: 226 tests, 0 failures (2026-06-11). Latest focused rubric/promptfoo/job suite pass: 40 tests, 0 failures (2026-06-12). Latest focused secret-store/connector/crypto suite pass: 35 tests, 0 failures (2026-06-12). Latest real promptfoo worker smoke pass: 1 test, 0 failures (2026-06-12).
 
 Purpose: this is the server bootstrap handoff. If a user only says "read `server/SERVER_CONTEXT.md`", the agent must use this file to discover the next files to read without asking for more pointers. Current code is the source of truth when docs and implementation differ. The full product target lives in `docs/`; treat docs as roadmap/contract intent unless the user explicitly asks to migrate current code toward them.
 

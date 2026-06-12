@@ -1,6 +1,6 @@
 # Server API Tree
 
-Date: 2026-06-11
+Date: 2026-06-12
 
 Purpose: ghi lại quan hệ API hiện tại dưới dạng cây để khi project phình to vẫn dễ nắm luồng.
 
@@ -249,9 +249,11 @@ User
     |-- links Job (1:1, job tracks async processing)
     |   `-- has many JobEvent (status changes, progress)
     |-- has many EvaluationResult (1 per test case)
-    |   `-- judgeStatus: PASS, FAIL, WARNING, ERROR
+    |   |-- judgeStatus: PASS, FAIL, WARNING, ERROR
+    |   `-- criteriaResultsJson: per-criterion LLM judge breakdown (when rubric criteria exist)
     |-- references Dataset (must be APPROVED)
     |-- references RubricVersion (must be PUBLISHED)
+    |   `-- criteria drive llm-rubric assertions + weighted scoring + isCritical override
     `-- references TargetApiConnector (must be active)
 ```
 
@@ -284,7 +286,10 @@ User
 19. GET  /api/v1/evaluation-runs/{runPublicId}/results
     `-- xem kết quả chi tiết từng test case, gồm qcStatus/qcNote/picBug
 20. Worker consumes Redis queue `vqc:jobs:queue`
-    `-- promptfoo executor writes evaluation results and job events; mock mode for local fallback, CLI mode for real promptfoo eval
+    |-- promptfoo executor writes evaluation results and job events
+    |-- mock mode for local fallback, CLI mode for real promptfoo eval
+    |-- rubric criteria → llm-rubric assertions; grading via google:gemini-2.5-flash
+    `-- weighted scoring + isCritical override for final judgeStatus/judgeScore
 21. PUT  /api/v1/evaluation-results/{resultPublicId}/review-decision
     `-- QC upsert final decision cho một result
 22. GET  /api/v1/evaluation-results/{resultPublicId}/review-decision
@@ -316,8 +321,10 @@ Project
 |-- Evaluation Run / Job
 |   |-- Worker + Promptfoo mock executor [done]
 |   |-- Worker + Promptfoo CLI executor [done: local binary, validation, no-cache, results parser]
+|   |-- Rubric judge mapping [done: llm-rubric assertions, weighted scoring, isCritical override, criteria results]
 |   |-- QC Review [done: upsert/get/patch decision]
 |   `-- Export [done: create/detail/download + worker generation]
 |       `-- flexible mapping; optional missing fields thì để blank
-`-- Connector secrets encryption [future]
+|-- Connector secrets encryption [done: AES-256-GCM, env var injection]
+`-- Dashboard/analytics [future]
 ```

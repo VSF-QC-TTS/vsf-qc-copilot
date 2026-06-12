@@ -1,7 +1,7 @@
 # API Plan — Current Backend Slice Tracker
 
 Date: 2026-06-12
-Status: **Promptfoo Secret-Store implemented; 35 focused tests pass**
+Status: **Promptfoo Rubric Judge Mapping implemented; 40 focused rubric/promptfoo/job tests pass**
 
 Purpose: keep the immediate backend plan short. `API_TODO.md` and `API_TREE.md` remain the source for completed endpoint inventory and resource relationships.
 
@@ -63,31 +63,46 @@ Purpose: keep the immediate backend plan short. `API_TODO.md` and `API_TREE.md` 
    - `CliPromptfooExecutor` decrypts secrets via `ConnectorSecretService` and passes `VQC_SECRET_*` env vars. Raw secrets never touch disk.
    - Tests: 9 `ConnectorSecretServiceImplTest`, 10 `CliPromptfooExecutorTest`, 7 `TargetApiConnectorServiceImplTest`, 9 `AesGcmEncryptorTest` — 35 total, 0 failures.
 
+7. Promptfoo Rubric Judge Mapping.
+   - `RubricAssertionMapper` (SRP) translates `RubricCriterion` entities into Promptfoo `llm-rubric` assertion maps; uses `judgeInstruction`, optional `passCondition`/`failCondition`, `weight`, and `metricKey`.
+   - `CriteriaScoreCalculator` (SRP) computes weighted `judgeScore` = Σ(weight × score) / Σ(weight) and applies `isCritical` override: any critical criterion failure → `JudgeStatus.FAIL`.
+   - `PromptfooConfigGenerator` delegates assertion building to `RubricAssertionMapper`; adds `defaultTest.options.provider` (`google:gemini-2.5-flash`) when criteria exist. Ground-truth `contains` assertions kept alongside rubric assertions.
+   - `PromptfooResultParser` extracts per-criterion results from `gradingResult.componentResults` into `criteriaResultsJson`.
+   - `EvaluationJobHandler` delegates score computation to `CriteriaScoreCalculator`; writes `criteriaResultsJson` to `EvaluationResult`.
+   - Config: `vqc.promptfoo.grading-provider` and `vqc.promptfoo.grading-api-key` in `PromptfooProperties`.
+   - Tests: 7 `RubricAssertionMapperTest`, 9 `CriteriaScoreCalculatorTest`, 11 `CliPromptfooExecutorTest`, 3 `EvaluationJobHandlerTest`, 4 `PromptfooConfigGeneratorTest` — 40 total, 0 failures.
+   - Commits:
+     - `feat(rubric): map criteria to promptfoo llm-rubric assertions`
+     - `feat(rubric): compute weighted score with critical override`
+     - `feat(promptfoo): generate rubric assertions in cli config`
+     - `feat(evaluation): parse criteria results and compute weighted scores`
+
 ## Current Verify Commands
+
+Focused rubric/promptfoo/job suite:
+
+```bash
+rtk bash ./mvnw -Dtest=RubricAssertionMapperTest,CriteriaScoreCalculatorTest,CliPromptfooExecutorTest,PromptfooConfigGeneratorTest,EvaluationJobHandlerTest test
+```
 
 Focused secret-store/connector/crypto suite:
 
 ```bash
-rtk bash mvnw -Dtest=ConnectorSecretServiceImplTest,AesGcmEncryptorTest,CliPromptfooExecutorTest,TargetApiConnectorServiceImplTest test
-```
-
-Focused promptfoo/job suite:
-
-```bash
-rtk bash mvnw -Dtest=CliPromptfooExecutorTest,MockPromptfooExecutorTest,EvaluationJobHandlerTest,JobWorkerTest test
-rtk bash mvnw -Dtest=PromptfooWorkerSmokeTest -Dvqc.promptfoo.smoke=true test
+rtk bash ./mvnw -Dtest=ConnectorSecretServiceImplTest,AesGcmEncryptorTest,CliPromptfooExecutorTest,TargetApiConnectorServiceImplTest test
 ```
 
 Previously passed focused suites:
 
 ```bash
-rtk bash mvnw -Dtest=ExportControllerTest,ExportServiceImplTest,ExportJobHandlerTest,LocalObjectStorageServiceTest,JobWorkerTest,JobServiceImplTest test
-rtk bash mvnw -Dtest=ReviewDecisionControllerTest,ReviewDecisionServiceImplTest test
-rtk bash mvnw -Dtest=EvaluationRunControllerTest,EvaluationRunServiceImplTest test
-rtk bash mvnw -Dtest=EvaluationRunControllerTest,EvaluationRunServiceImplTest,JobControllerTest,JobServiceImplTest,MockPromptfooExecutorTest,EvaluationJobHandlerTest,JobWorkerTest test
+rtk bash ./mvnw -Dtest=ExportControllerTest,ExportServiceImplTest,ExportJobHandlerTest,LocalObjectStorageServiceTest,JobWorkerTest,JobServiceImplTest test
+rtk bash ./mvnw -Dtest=ReviewDecisionControllerTest,ReviewDecisionServiceImplTest test
+rtk bash ./mvnw -Dtest=EvaluationRunControllerTest,EvaluationRunServiceImplTest test
+rtk bash ./mvnw -Dtest=PromptfooWorkerSmokeTest -Dvqc.promptfoo.smoke=true test
 ```
 
 ## Next Likely Backend Slice
 
-Promptfoo follow-up:
-- Map richer rubric criteria into Promptfoo judge assertions, or harden connector runtime timeout/retry.
+Possible directions:
+- Connector timeout/retry behavior.
+- Export storage provider beyond local filesystem.
+- Dashboard/analytics endpoints.
