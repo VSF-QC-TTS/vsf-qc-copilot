@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Import;
 @SpringBootTest(
     properties = {
       "JWT_SECRET_KEY=0123456789abcdef0123456789abcdef",
+      "VQC_SECRET_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       "SERVER_BASE_URL=http://localhost:8080",
       "WEB_BASE_URL=http://localhost:5173",
       "GOOGLE_CLIENT_ID=test-google-client-id",

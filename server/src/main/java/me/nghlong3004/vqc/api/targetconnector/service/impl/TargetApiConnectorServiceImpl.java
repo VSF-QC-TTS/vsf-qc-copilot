@@ -27,6 +27,7 @@ import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorPageRes
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetConnectorRequestPreview;
 import me.nghlong3004.vqc.api.targetconnector.response.TestTargetConnectorResponse;
+import me.nghlong3004.vqc.api.targetconnector.service.ConnectorSecretService;
 import me.nghlong3004.vqc.api.targetconnector.service.TargetApiConnectorService;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
@@ -48,6 +49,7 @@ public class TargetApiConnectorServiceImpl implements TargetApiConnectorService 
   private final UserRepository userRepository;
   private final TargetApiConnectorMapper targetApiConnectorMapper;
   private final TargetConnectorClient targetConnectorClient;
+  private final ConnectorSecretService connectorSecretService;
 
   @Override
   @Transactional
@@ -86,6 +88,7 @@ public class TargetApiConnectorServiceImpl implements TargetApiConnectorService 
             .createdBy(creator)
             .build();
     TargetApiConnector saved = targetApiConnectorRepository.save(connector);
+    connectorSecretService.saveSecrets(saved, request.secretValues());
     return targetApiConnectorMapper.toResponse(saved);
   }
 
@@ -194,6 +197,9 @@ public class TargetApiConnectorServiceImpl implements TargetApiConnectorService 
       connector.setActive(request.active());
     }
     TargetApiConnector saved = targetApiConnectorRepository.save(connector);
+    if (request.secretValues() != null) {
+      connectorSecretService.saveSecrets(saved, request.secretValues());
+    }
     return targetApiConnectorMapper.toResponse(saved);
   }
 
@@ -204,9 +210,13 @@ public class TargetApiConnectorServiceImpl implements TargetApiConnectorService 
     TargetApiConnector connector = findConnector(connectorPublicId, username);
     Object renderedBody = renderValue(connector.getBodyTemplate(), request);
     Map<String, Object> headers = connector.getHeaders() == null ? Map.of() : connector.getHeaders();
+    Map<String, String> decryptedSecrets = connectorSecretService.decryptSecrets(connector);
+    Map<String, Object> resolvedHeaders = resolveSecretPlaceholders(headers, decryptedSecrets);
+    Object resolvedBody = resolveSecretPlaceholders(renderedBody, decryptedSecrets);
+    String resolvedUrl = resolveSecretString(connector.getUrl(), decryptedSecrets);
     TargetConnectorClientRequest clientRequest =
         new TargetConnectorClientRequest(
-            connector.getMethod(), connector.getUrl(), headers, renderedBody);
+            connector.getMethod(), resolvedUrl, resolvedHeaders, resolvedBody);
     TargetConnectorClientResult clientResult =
         targetConnectorClient.execute(
             clientRequest, connector.getTimeoutSeconds(), connector.getRetryCount());
@@ -333,6 +343,44 @@ public class TargetApiConnectorServiceImpl implements TargetApiConnectorService 
       }
     }
     return safe;
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<String, Object> resolveSecretPlaceholders(
+      Map<String, Object> values, Map<String, String> decryptedSecrets) {
+    if (values == null || values.isEmpty() || decryptedSecrets.isEmpty()) {
+      return values == null ? Map.of() : values;
+    }
+    Map<String, Object> resolved = new LinkedHashMap<>();
+    values.forEach((key, item) -> resolved.put(key, resolveSecretPlaceholders(item, decryptedSecrets)));
+    return resolved;
+  }
+
+  @SuppressWarnings("unchecked")
+  private Object resolveSecretPlaceholders(Object value, Map<String, String> decryptedSecrets) {
+    if (value instanceof String text) {
+      return resolveSecretString(text, decryptedSecrets);
+    }
+    if (value instanceof Map<?, ?> map) {
+      Map<String, Object> resolved = new LinkedHashMap<>();
+      map.forEach((key, item) -> resolved.put(String.valueOf(key), resolveSecretPlaceholders(item, decryptedSecrets)));
+      return resolved;
+    }
+    if (value instanceof List<?> list) {
+      return list.stream().map(item -> resolveSecretPlaceholders(item, decryptedSecrets)).toList();
+    }
+    return value;
+  }
+
+  private String resolveSecretString(String value, Map<String, String> decryptedSecrets) {
+    if (value == null || decryptedSecrets.isEmpty()) {
+      return value;
+    }
+    String resolved = value;
+    for (Map.Entry<String, String> entry : decryptedSecrets.entrySet()) {
+      resolved = resolved.replace("{{secret:" + entry.getKey() + "}}", entry.getValue());
+    }
+    return resolved;
   }
 
   private <T> T defaultValue(T value, T defaultValue) {

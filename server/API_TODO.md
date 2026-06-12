@@ -27,7 +27,8 @@ Update rule:
 - Real Promptfoo CLI integration through Redis worker path.
 - QC Review: upsert/get review decision by evaluation result; patch by review decision.
 - Export: create export job under evaluation run; get export detail; download READY export file; local storage abstraction.
+- Promptfoo Secret-Store: `ConnectorSecretService` encrypts/persists connector secrets in `connector_secrets` table with AES-256-GCM; connector test-runs resolve `{{secret:KEY}}` to real values; `PromptfooConfigGenerator` maps secrets to `{{env.VQC_SECRET_*}}`; `CliPromptfooExecutor` passes decrypted secrets as process env vars. Raw secrets never touch config files on disk.
 
 ## Next
 
-- Choose the next backend slice: Promptfoo secret-store support, richer rubric judge mapping, connector timeout/retry behavior, or an export storage provider beyond local filesystem.
+- Choose the next backend slice: richer rubric judge mapping (Promptfoo assertions from rubric criteria), connector timeout/retry behavior, or an export storage provider beyond local filesystem.

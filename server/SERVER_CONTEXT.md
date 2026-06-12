@@ -2,7 +2,7 @@
 
 Date: 2026-06-12
 Repo area: `server/`
-Last full-suite pass: 226 tests, 0 failures (2026-06-11). Latest focused promptfoo/job suite pass: 17 tests, 0 failures (2026-06-12). Latest real promptfoo worker smoke pass: 1 test, 0 failures (2026-06-12).
+Last full-suite pass: 226 tests, 0 failures (2026-06-11). Latest focused promptfoo/job suite pass: 17 tests, 0 failures (2026-06-12). Latest focused secret-store/connector/crypto suite pass: 35 tests, 0 failures (2026-06-12). Latest real promptfoo worker smoke pass: 1 test, 0 failures (2026-06-12).
 
 Purpose: this is the server bootstrap handoff. If a user only says "read `server/SERVER_CONTEXT.md`", the agent must use this file to discover the next files to read without asking for more pointers. Current code is the source of truth when docs and implementation differ. The full product target lives in `docs/`; treat docs as roadmap/contract intent unless the user explicitly asks to migrate current code toward them.
 
@@ -109,7 +109,8 @@ Implemented API slices after auth:
   - Detail/update/test-run use `/api/v1/target-api-connectors/{connectorPublicId}` and `/test-runs`.
   - Connector access is owner-scoped by authenticated username/email.
   - `secretValues` are write-only. Create/update replace raw secret values in headers/body/auth config with placeholders like `{{secret:KEY}}`; responses return masked `secretRefs`, not raw secrets.
-  - Test-run renders `{{question}}`, `{{precondition}}`, and `{{metadata}}`, calls the configured API via `TargetConnectorClient`, and currently extracts `$.answer` only.
+  - `ConnectorSecretService` encrypts raw secret values with AES-256-GCM (`AesGcmEncryptor`) and persists them in `connector_secrets` table. Decryption is used at connector test-run time and evaluation time.
+  - Test-run renders `{{question}}`, `{{precondition}}`, and `{{metadata}}`, resolves `{{secret:KEY}}` placeholders to real decrypted values before calling the configured API, and returns masked preview headers. Test-runs now work for authed connectors.
   - `RestClient.Builder` is provided by `ApplicationConfig`; `timeoutSeconds` is accepted but not yet wired into a per-request HTTP timeout.
 - Requirements:
   - Create/list are nested under `/api/v1/projects/{projectPublicId}/requirements`.
@@ -157,7 +158,7 @@ Implemented API slices after auth:
   - CLI exit code `0` is success; exit code `100` is accepted as completed only when `results.json` exists. Validation failure, missing results, timeout, command start failure, malformed JSON, and other non-zero exits fail the job.
   - CLI output parser supports `results.results[]` from `promptfoo@0.121.15` and keeps compatibility with `results.outputs[]`, mapping rows into `PromptfooResult`.
   - CLI config supports response selectors `$.answer` and `$.data.answer` only; unsupported selectors fail fast.
-  - CLI config fails fast if connector config contains `{{secret:...}}`; no secret env mapping exists yet.
+  - CLI config resolves `{{secret:KEY}}` placeholders to `{{env.VQC_SECRET_KEY}}` in generated promptfoo config. `CliPromptfooExecutor` decrypts secrets from the `connector_secrets` table via `ConnectorSecretService` and passes them as `VQC_SECRET_*` environment variables to the promptfoo CLI process. Raw secrets never touch disk.
   - Promptfoo local runner metadata and lockfile exist under `tooling/promptfoo-runner` for `promptfoo@0.121.15`; install `node_modules` locally before real CLI/smoke runs.
   - `EvaluationJobHandler` loads active dataset test cases, runs the executor, writes one `EvaluationResult` per active case, updates run/job counters and statuses, and emits `RUNNING`, `CASE_COMPLETED`, `COMPLETED`, or `FAILED` job events.
 - QC review:
@@ -181,9 +182,7 @@ Implemented API slices after auth:
 
 Known current gaps:
 - Promptfoo CLI advanced rubric criteria scoring is future work; current CLI slice uses basic ground-truth assertions and parser mapping.
-- Promptfoo CLI secret resolution is future work; current CLI slice rejects persisted `{{secret:...}}` placeholders.
 - Promptfoo CLI selector support is limited to `$.answer` and `$.data.answer`.
-- Connector secrets are not persisted in a real encrypted secret store yet; placeholder resolution for real outbound auth secrets is future work.
 - OAuth persistence/linking remains incomplete.
 - Connector response extraction only supports the current simple selector path used by tests.
 - S3/R2/MinIO export storage providers are future work; the storage interface is in place and local is the only current provider.
@@ -191,7 +190,6 @@ Known current gaps:
 ## [FUTURE_SLICE] Next Implementation Steps
 
 Next likely backend slices:
-- Promptfoo secret-store support: persist encrypted connector secrets and map safe runtime values into Promptfoo without writing raw secrets into generated config.
 - Promptfoo rubric judge mapping: translate richer rubric criteria into Promptfoo assertions/judging instead of only ground-truth assertions.
 - Connector runtime hardening: align connector timeout/retry settings with real outbound calls and Promptfoo execution.
 - Export storage provider: add S3/R2/MinIO behind the existing `ObjectStorageService`.
@@ -249,6 +247,8 @@ Focused tests:
   `rtk bash mvnw -Dtest=EvaluationRunControllerTest,EvaluationRunServiceImplTest,JobControllerTest,JobServiceImplTest test`
 - Promptfoo/job focused suite:
   `rtk bash mvnw -Dtest=CliPromptfooExecutorTest,MockPromptfooExecutorTest,EvaluationJobHandlerTest,JobWorkerTest test`
+- Connector secret/crypto focused suite:
+  `rtk bash mvnw -Dtest=ConnectorSecretServiceImplTest,AesGcmEncryptorTest,CliPromptfooExecutorTest,TargetApiConnectorServiceImplTest test`
 - Real Promptfoo worker smoke test (requires local runner installed and local socket permission):
   `rtk bash mvnw -Dtest=PromptfooWorkerSmokeTest -Dvqc.promptfoo.smoke=true test`
 - Export/job focused suite:

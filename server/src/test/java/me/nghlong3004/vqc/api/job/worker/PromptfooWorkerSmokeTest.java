@@ -42,6 +42,7 @@ import me.nghlong3004.vqc.api.project.entity.Project;
 import me.nghlong3004.vqc.api.rubric.entity.RubricVersion;
 import me.nghlong3004.vqc.api.targetconnector.entity.TargetApiConnector;
 import me.nghlong3004.vqc.api.targetconnector.enums.HttpMethodType;
+import me.nghlong3004.vqc.api.targetconnector.service.ConnectorSecretService;
 import me.nghlong3004.vqc.api.testcase.entity.TestCase;
 import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
 import me.nghlong3004.vqc.api.testcase.repository.TestCaseRepository;
@@ -117,7 +118,13 @@ class PromptfooWorkerSmokeTest {
         new PromptfooRunDirectoryResolver(properties),
         new PromptfooConfigGenerator(objectMapper),
         new PromptfooCommandExecutor(properties),
-        new PromptfooResultParser(objectMapper));
+        new PromptfooResultParser(objectMapper),
+        new ConnectorSecretService() {
+          @Override
+          public void saveSecrets(TargetApiConnector c, java.util.Map<String, String> s) {}
+          @Override
+          public java.util.Map<String, String> decryptSecrets(TargetApiConnector c) { return Map.of(); }
+        });
   }
 
   private Fixture fixture(String targetUrl) {

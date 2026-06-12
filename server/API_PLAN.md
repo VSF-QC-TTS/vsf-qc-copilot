@@ -1,7 +1,7 @@
 # API Plan — Current Backend Slice Tracker
 
 Date: 2026-06-12
-Status: **Promptfoo CLI integration implemented; real worker smoke verified**
+Status: **Promptfoo Secret-Store implemented; 35 focused tests pass**
 
 Purpose: keep the immediate backend plan short. `API_TODO.md` and `API_TREE.md` remain the source for completed endpoint inventory and resource relationships.
 
@@ -54,7 +54,22 @@ Purpose: keep the immediate backend plan short. `API_TODO.md` and `API_TREE.md` 
      - `chore(promptfoo): lock local runner dependencies`
      - `fix(promptfoo): parse real cli result rows`
 
+6. Promptfoo Secret-Store.
+   - `ConnectorSecretService` interface + `ConnectorSecretServiceImpl` encrypts/persists secrets via `AesGcmEncryptor` into `connector_secrets` table.
+   - Connector create/update wired to `connectorSecretService.saveSecrets()`.
+   - Connector test-run resolves `{{secret:KEY}}` placeholders to decrypted values before HTTP calls.
+   - `PromptfooConfigGenerator.rejectSecrets()` replaced by `resolveSecretsToEnvRefs()` — maps `{{secret:KEY}}` to `{{env.VQC_SECRET_KEY}}`.
+   - `PromptfooCommandExecutor.eval()` accepts `secretEnvVars` map and merges into process environment.
+   - `CliPromptfooExecutor` decrypts secrets via `ConnectorSecretService` and passes `VQC_SECRET_*` env vars. Raw secrets never touch disk.
+   - Tests: 9 `ConnectorSecretServiceImplTest`, 10 `CliPromptfooExecutorTest`, 7 `TargetApiConnectorServiceImplTest`, 9 `AesGcmEncryptorTest` — 35 total, 0 failures.
+
 ## Current Verify Commands
+
+Focused secret-store/connector/crypto suite:
+
+```bash
+rtk bash mvnw -Dtest=ConnectorSecretServiceImplTest,AesGcmEncryptorTest,CliPromptfooExecutorTest,TargetApiConnectorServiceImplTest test
+```
 
 Focused promptfoo/job suite:
 
@@ -75,4 +90,4 @@ rtk bash mvnw -Dtest=EvaluationRunControllerTest,EvaluationRunServiceImplTest,Jo
 ## Next Likely Backend Slice
 
 Promptfoo follow-up:
-- Add encrypted secret storage or map richer rubric criteria into Promptfoo judge configuration.
+- Map richer rubric criteria into Promptfoo judge assertions, or harden connector runtime timeout/retry.

@@ -25,6 +25,7 @@ import me.nghlong3004.vqc.api.project.entity.Project;
 import me.nghlong3004.vqc.api.rubric.entity.RubricVersion;
 import me.nghlong3004.vqc.api.targetconnector.entity.TargetApiConnector;
 import me.nghlong3004.vqc.api.targetconnector.enums.HttpMethodType;
+import me.nghlong3004.vqc.api.targetconnector.service.ConnectorSecretService;
 import me.nghlong3004.vqc.api.testcase.entity.TestCase;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -96,16 +97,45 @@ class CliPromptfooExecutorTest {
   }
 
   @Test
-  void evaluateFailsFastForSecretPlaceholder(@TempDir Path tempDir) throws Exception {
+  void evaluateResolvesSecretPlaceholdersToEnvRefs(@TempDir Path tempDir) throws Exception {
+    UUID runPublicId = UUID.randomUUID();
+    ConnectorSecretService secretService = new ConnectorSecretService() {
+      @Override
+      public void saveSecrets(TargetApiConnector c, Map<String, String> s) {}
+      @Override
+      public Map<String, String> decryptSecrets(TargetApiConnector c) {
+        return Map.of("API_TOKEN", "sk-real-secret-value");
+      }
+    };
+    CliPromptfooExecutor executor =
+        executor(tempDir, fakePromptfoo(tempDir, FakeMode.SUCCESS), secretService);
+
+    List<PromptfooResult> results =
+        executor.evaluate(
+            run(runPublicId, "$.answer", Map.of("Authorization", "Bearer {{secret:API_TOKEN}}")),
+            testCases());
+
+    Path runDir = tempDir.resolve("runs").resolve(runPublicId.toString());
+    JsonNode config = objectMapper.readTree(runDir.resolve("promptfooconfig.json").toFile());
+    // Config file should contain env ref, not raw secret
+    String headersJson = config.path("providers").get(0).path("config").path("headers").toString();
+    assertThat(headersJson).contains("{{env.VQC_SECRET_API_TOKEN}}");
+    assertThat(headersJson).doesNotContain("sk-real-secret-value");
+    // Env log should contain the secret env var
+    assertThat(Files.readString(runDir.resolve("logs").resolve("env.log")))
+        .contains("VQC_SECRET_API_TOKEN=sk-real-secret-value");
+    assertThat(results).hasSize(1);
+  }
+
+  @Test
+  void evaluateWorksWithNoSecrets(@TempDir Path tempDir) throws Exception {
+    UUID runPublicId = UUID.randomUUID();
     CliPromptfooExecutor executor = executor(tempDir, fakePromptfoo(tempDir, FakeMode.SUCCESS));
 
-    assertThatThrownBy(
-            () ->
-                executor.evaluate(
-                    run(UUID.randomUUID(), "$.answer", Map.of("Authorization", "Bearer {{secret:API_TOKEN}}")),
-                    testCases()))
-        .isInstanceOf(PromptfooExecutionException.class)
-        .hasMessageContaining("secret placeholders");
+    List<PromptfooResult> results =
+        executor.evaluate(run(runPublicId, "$.answer", Map.of()), testCases());
+
+    assertThat(results).hasSize(1);
   }
 
   @Test
@@ -163,6 +193,16 @@ class CliPromptfooExecutorTest {
   }
 
   private CliPromptfooExecutor executor(Path tempDir, Path fakePromptfoo) {
+    return executor(tempDir, fakePromptfoo, new ConnectorSecretService() {
+      @Override
+      public void saveSecrets(TargetApiConnector c, Map<String, String> s) {}
+      @Override
+      public Map<String, String> decryptSecrets(TargetApiConnector c) { return Map.of(); }
+    });
+  }
+
+  private CliPromptfooExecutor executor(
+      Path tempDir, Path fakePromptfoo, ConnectorSecretService secretService) {
     PromptfooProperties properties = new PromptfooProperties();
     properties.setBinaryPath(fakePromptfoo.toString());
     properties.setWorkDir(tempDir.resolve("runs").toString());
@@ -173,7 +213,8 @@ class CliPromptfooExecutorTest {
         new PromptfooRunDirectoryResolver(properties),
         new PromptfooConfigGenerator(objectMapper),
         new PromptfooCommandExecutor(properties),
-        new PromptfooResultParser(objectMapper));
+        new PromptfooResultParser(objectMapper),
+        secretService);
   }
 
   private EvaluationRun run(UUID publicId, String responseSelector, Map<String, Object> headers) {
@@ -228,6 +269,7 @@ class CliPromptfooExecutorTest {
           echo "PROMPTFOO_LOG_DIR=$PROMPTFOO_LOG_DIR"
           echo "PROMPTFOO_MAX_EVAL_TIME_MS=$PROMPTFOO_MAX_EVAL_TIME_MS"
           echo "PROMPTFOO_EVAL_TIMEOUT_MS=$PROMPTFOO_EVAL_TIMEOUT_MS"
+          env | grep '^VQC_SECRET_' | sort || true
         } >> "$PROMPTFOO_LOG_DIR/env.log"
         if [ "$1" = "validate" ]; then
           if [ "__MODE__" = "VALIDATION_FAIL" ]; then

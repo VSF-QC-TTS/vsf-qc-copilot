@@ -54,7 +54,7 @@ public class PromptfooConfigGenerator {
     Map<String, Object> provider = new LinkedHashMap<>();
     provider.put("id", providerId(connector));
     Map<String, Object> config = new LinkedHashMap<>();
-    config.put("url", rejectSecrets(connector.getUrl()));
+    config.put("url", resolveSecretsToEnvRefs(connector.getUrl()));
     config.put("method", connector.getMethod().name());
     putIfNotEmpty(config, "headers", connector.getHeaders());
     putIfNotEmpty(config, "queryParams", connector.getQueryParams());
@@ -63,7 +63,7 @@ public class PromptfooConfigGenerator {
       body = connector.getBodyTemplateText();
     }
     if (body != null) {
-      config.put("body", rejectSecrets(body));
+      config.put("body", resolveSecretsToEnvRefs(body));
     }
     config.put("transformResponse", transformResponse(connector.getResponseSelector()));
     if (connector.getRetryCount() != null && connector.getRetryCount() > 0) {
@@ -75,7 +75,7 @@ public class PromptfooConfigGenerator {
 
   private void putIfNotEmpty(Map<String, Object> target, String key, Map<String, Object> value) {
     if (value != null && !value.isEmpty()) {
-      target.put(key, rejectSecrets(value));
+      target.put(key, resolveSecretsToEnvRefs(value));
     }
   }
 
@@ -115,21 +115,27 @@ public class PromptfooConfigGenerator {
   }
 
   @SuppressWarnings("unchecked")
-  private Object rejectSecrets(Object value) {
+  private Object resolveSecretsToEnvRefs(Object value) {
     if (value instanceof String text) {
-      if (text.contains(SECRET_PLACEHOLDER_PREFIX)) {
-        throw new PromptfooExecutionException("Promptfoo CLI cannot run with connector secret placeholders.");
-      }
-      return text;
+      return resolveSecretStringToEnvRef(text);
     }
     if (value instanceof Map<?, ?> map) {
       Map<String, Object> safe = new LinkedHashMap<>();
-      map.forEach((key, item) -> safe.put(String.valueOf(key), rejectSecrets(item)));
+      map.forEach((key, item) -> safe.put(String.valueOf(key), resolveSecretsToEnvRefs(item)));
       return safe;
     }
     if (value instanceof List<?> list) {
-      return list.stream().map(this::rejectSecrets).toList();
+      return list.stream().map(this::resolveSecretsToEnvRefs).toList();
     }
     return value;
+  }
+
+  private String resolveSecretStringToEnvRef(String text) {
+    if (text == null || !text.contains(SECRET_PLACEHOLDER_PREFIX)) {
+      return text;
+    }
+    return text.replaceAll(
+        "\\{\\{secret:([^}]+)}}",
+        "{{env.VQC_SECRET_$1}}");
   }
 }

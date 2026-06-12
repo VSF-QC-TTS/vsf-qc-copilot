@@ -28,6 +28,7 @@ import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorRespons
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorListItemResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorPageResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TestTargetConnectorResponse;
+import me.nghlong3004.vqc.api.targetconnector.service.ConnectorSecretService;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
 import org.springframework.data.domain.PageImpl;
@@ -60,7 +61,8 @@ class TargetApiConnectorServiceImplTest {
             projectRepository(Optional.of(project), projectLookup),
             userRepository(Optional.of(creator), lookedUpUsername),
             mapper(mappedResponse),
-            ignoredClient());
+            ignoredClient(),
+            noOpSecretService());
 
     var response =
         service.createConnector(
@@ -97,7 +99,8 @@ class TargetApiConnectorServiceImplTest {
             projectRepository(Optional.empty(), new AtomicReference<>()),
             userRepository(Optional.of(creator), new AtomicReference<>()),
             mapper(null),
-            ignoredClient());
+            ignoredClient(),
+            noOpSecretService());
 
     assertThatThrownBy(() -> service.createConnector(UUID.randomUUID(), request(), "qc.demo@example.com"))
         .isInstanceOf(ResourceException.class)
@@ -136,7 +139,8 @@ class TargetApiConnectorServiceImplTest {
             projectRepository(Optional.of(project), projectLookup),
             userRepository(Optional.of(creator), lookedUpUsername),
             mapper(null, itemResponse),
-            ignoredClient());
+            ignoredClient(),
+            noOpSecretService());
 
     TargetApiConnectorPageResponse response =
         service.listConnectors(project.getPublicId(), PageRequest.of(0, 20), " QC.Demo@Example.COM ");
@@ -172,7 +176,8 @@ class TargetApiConnectorServiceImplTest {
             projectRepository(Optional.empty(), new AtomicReference<>()),
             userRepository(Optional.of(creator), lookedUpUsername),
             mapper(mappedResponse),
-            ignoredClient());
+            ignoredClient(),
+            noOpSecretService());
 
     TargetApiConnectorResponse response =
         service.getConnector(connector.getPublicId(), " QC.Demo@Example.COM ");
@@ -193,7 +198,8 @@ class TargetApiConnectorServiceImplTest {
             projectRepository(Optional.empty(), new AtomicReference<>()),
             userRepository(Optional.of(creator), new AtomicReference<>()),
             mapper(null),
-            ignoredClient());
+            ignoredClient(),
+            noOpSecretService());
 
     assertThatThrownBy(() -> service.getConnector(UUID.randomUUID(), "qc.demo@example.com"))
         .isInstanceOf(ResourceException.class)
@@ -223,7 +229,8 @@ class TargetApiConnectorServiceImplTest {
             projectRepository(Optional.empty(), new AtomicReference<>()),
             userRepository(Optional.of(creator), new AtomicReference<>()),
             mapper(mappedResponse),
-            ignoredClient());
+            ignoredClient(),
+            noOpSecretService());
 
     TargetApiConnectorResponse response =
         service.updateConnector(
@@ -294,7 +301,8 @@ class TargetApiConnectorServiceImplTest {
             projectRepository(Optional.empty(), new AtomicReference<>()),
             userRepository(Optional.of(creator), new AtomicReference<>()),
             mapper(null),
-            client(clientRequest));
+            client(clientRequest),
+            secretServiceWithSecrets(Map.of("CHATBOT_API_TOKEN", "real-token-value")));
 
     TestTargetConnectorResponse response =
         service.testConnector(
@@ -322,6 +330,12 @@ class TargetApiConnectorServiceImplTest {
     assertThat(response.rawResponse()).containsEntry("answer", "Today you walked 8,200 steps.");
     assertThat(response.extractedAnswer()).isEqualTo("Today you walked 8,200 steps.");
     assertThat(response.latencyMs()).isEqualTo(120);
+    // Verify secret was resolved in actual HTTP call
+    assertThat(clientRequest.get().headers().get("Authorization").toString())
+        .isEqualTo("Bearer real-token-value");
+    // Verify preview still shows masked value
+    assertThat(response.requestPreview().headers())
+        .containsEntry("Authorization", "Bearer ********");
   }
 
   private CreateTargetApiConnectorRequest request() {
@@ -465,6 +479,24 @@ class TargetApiConnectorServiceImplTest {
       clientRequest.set(request);
       return new TargetConnectorClientResult(
           Map.of("answer", "Today you walked 8,200 steps."), 120);
+    };
+  }
+
+  private ConnectorSecretService noOpSecretService() {
+    return new ConnectorSecretService() {
+      @Override
+      public void saveSecrets(TargetApiConnector connector, Map<String, String> secretValues) {}
+      @Override
+      public Map<String, String> decryptSecrets(TargetApiConnector connector) { return Map.of(); }
+    };
+  }
+
+  private ConnectorSecretService secretServiceWithSecrets(Map<String, String> secrets) {
+    return new ConnectorSecretService() {
+      @Override
+      public void saveSecrets(TargetApiConnector connector, Map<String, String> secretValues) {}
+      @Override
+      public Map<String, String> decryptSecrets(TargetApiConnector connector) { return secrets; }
     };
   }
 

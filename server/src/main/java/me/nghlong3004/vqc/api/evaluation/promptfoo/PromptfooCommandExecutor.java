@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -40,13 +41,18 @@ public class PromptfooCommandExecutor {
   }
 
   public void eval(Path runDir) {
+    eval(runDir, Map.of());
+  }
+
+  public void eval(Path runDir, Map<String, String> secretEnvVars) {
     ProcessResult result =
         run(
             evalCommand(runDir),
             runDir,
             runDir.resolve("eval.stdout.log"),
             runDir.resolve("eval.stderr.log"),
-            true);
+            true,
+            secretEnvVars);
     Path resultsPath = runDir.resolve("results.json");
     if ((result.exitCode() == EXIT_SUCCESS || result.exitCode() == EXIT_ASSERTION_FAILURE)
         && Files.exists(resultsPath)) {
@@ -75,16 +81,31 @@ public class PromptfooCommandExecutor {
   }
 
   Map<String, String> environment(Path runDir) {
-    return Map.of(
-        "FORCE_COLOR", "0",
-        "PROMPTFOO_CONFIG_DIR", runDir.resolve(".promptfoo").toString(),
-        "PROMPTFOO_LOG_DIR", runDir.resolve("logs").toString(),
-        "PROMPTFOO_MAX_EVAL_TIME_MS", String.valueOf(promptfooProperties.getMaxEvalTimeMs()),
-        "PROMPTFOO_EVAL_TIMEOUT_MS", String.valueOf(promptfooProperties.getPerTestTimeoutMs()));
+    return environment(runDir, Map.of());
+  }
+
+  Map<String, String> environment(Path runDir, Map<String, String> secretEnvVars) {
+    Map<String, String> env = new HashMap<>();
+    env.put("FORCE_COLOR", "0");
+    env.put("PROMPTFOO_CONFIG_DIR", runDir.resolve(".promptfoo").toString());
+    env.put("PROMPTFOO_LOG_DIR", runDir.resolve("logs").toString());
+    env.put("PROMPTFOO_MAX_EVAL_TIME_MS", String.valueOf(promptfooProperties.getMaxEvalTimeMs()));
+    env.put("PROMPTFOO_EVAL_TIMEOUT_MS", String.valueOf(promptfooProperties.getPerTestTimeoutMs()));
+    if (secretEnvVars != null) {
+      env.putAll(secretEnvVars);
+    }
+    return env;
   }
 
   private ProcessResult run(
-      List<String> command, Path runDir, Path stdoutPath, Path stderrPath, boolean allowAssertionFailure) {
+      List<String> command, Path runDir, Path stdoutPath, Path stderrPath,
+      boolean allowAssertionFailure) {
+    return run(command, runDir, stdoutPath, stderrPath, allowAssertionFailure, Map.of());
+  }
+
+  private ProcessResult run(
+      List<String> command, Path runDir, Path stdoutPath, Path stderrPath,
+      boolean allowAssertionFailure, Map<String, String> secretEnvVars) {
     try {
       Files.createDirectories(runDir.resolve(".promptfoo"));
       Files.createDirectories(runDir.resolve("logs"));
@@ -93,7 +114,7 @@ public class PromptfooCommandExecutor {
               .directory(runDir.toFile())
               .redirectOutput(stdoutPath.toFile())
               .redirectError(stderrPath.toFile());
-      processBuilder.environment().putAll(environment(runDir));
+      processBuilder.environment().putAll(environment(runDir, secretEnvVars));
       Process process = processBuilder.start();
       boolean finished =
           process.waitFor(
