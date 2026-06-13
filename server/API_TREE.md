@@ -158,7 +158,7 @@ Auth
 |       |-- GET /
 |       |   `-- Chi tiết version kèm criteria
 |       |-- PATCH /
-|       |   `-- Publish/archive version; publish cần tổng criteria weight = 1.0000
+|       |   `-- Publish/archive version; publish cần ≥1 criterion
 |       `-- /criteria [auth]
 |           |-- POST /
 |           |   `-- Tạo criterion dưới draft version
@@ -242,7 +242,7 @@ User
             |-- status quyết định có được mutate không
             `-- has many RubricCriterion
                 |-- metricKey unique trong từng version
-                `-- tổng weight khi publish phải bằng 1.0000
+                `-- weight là relative integer (1–100), hệ thống normalize Σ(w×s)/Σ(w)
 
 User
 `-- owns EvaluationRun qua evaluation_runs.createdBy
@@ -276,7 +276,7 @@ User
 13. POST /api/v1/rubrics/{rubricPublicId}/versions
 14. POST /api/v1/rubric-versions/{rubricVersionPublicId}/criteria
 15. PATCH /api/v1/rubric-versions/{rubricVersionPublicId}
-    `-- publish khi có criteria và tổng weight = 1.0000
+     `-- publish khi có ≥1 criterion (weight là relative, không cần tổng = 1)
 16. POST /api/v1/projects/{projectPublicId}/evaluation-runs
     `-- tạo evaluation run + job, trả 202
 17. GET  /api/v1/jobs/{jobPublicId}
