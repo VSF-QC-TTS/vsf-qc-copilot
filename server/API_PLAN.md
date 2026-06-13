@@ -1,108 +1,477 @@
 # API Plan — Current Backend Slice Tracker
 
-Date: 2026-06-12
-Status: **Promptfoo Rubric Judge Mapping implemented; 40 focused rubric/promptfoo/job tests pass**
+Date: 2026-06-13
+Status: **QC Productivity Features — planning, not started**
 
 Purpose: keep the immediate backend plan short. `API_TODO.md` and `API_TREE.md` remain the source for completed endpoint inventory and resource relationships.
 
-## Completed In This Sequence
+## Completed In Previous Sequences
 
 1. Worker + Promptfoo mock executor.
-   - `JobWorker` consumes Redis queue messages.
-   - `EvaluationJobHandler` writes evaluation results and job events.
-   - Promptfoo executor uses Strategy: mock mode implemented.
-   - Commits:
-     - `feat(worker): process evaluation jobs with mock promptfoo`
-     - `docs(server): update handoff docs for evaluation worker`
-
 2. QC Review APIs.
-   - `PUT /api/v1/evaluation-results/{resultPublicId}/review-decision`
-   - `GET /api/v1/evaluation-results/{resultPublicId}/review-decision`
-   - `PATCH /api/v1/review-decisions/{reviewDecisionPublicId}`
-   - Commits:
-     - `feat(review): upsert result review decision`
-     - `feat(review): get result review decision`
-     - `feat(review): update review decision`
-
 3. Evaluation result QC fields.
-   - `GET /api/v1/evaluation-runs/{runPublicId}/results` includes `qcStatus`, `qcNote`, and `picBug`.
-   - Supports optional `qcStatus` filter, including derived `NOT_REVIEWED`.
-   - Commit:
-     - `feat(evaluation): include qc review fields in results`
-
 4. Export APIs and worker generation.
-   - `POST /api/v1/evaluation-runs/{runPublicId}/exports`
-   - `GET /api/v1/exports/{exportPublicId}`
-   - `GET /api/v1/exports/{exportPublicId}/file`
-   - Export job generation uses `ExportGenerator` Strategy for JSON and Excel.
-   - Excel uses Apache POI `poi-ooxml`; JSON uses Jackson.
-   - Export files are written through `ObjectStorageService`; local storage is the current implementation.
-   - Commits:
-     - `feat(export): create export jobs`
-     - `feat(export): get export detail`
-     - `feat(export): generate and download export files`
-     - `feat(export): abstract export file storage`
-
 5. Real Promptfoo CLI integration.
-   - Redis remains the server-to-worker queue boundary; promptfoo is invoked only after `JobWorker` consumes an evaluation job.
-   - `CliPromptfooExecutor` generates per-run files under `vqc.promptfoo.work-dir/{runPublicId}`.
-   - Config validation runs before eval and stores validation stdout/stderr logs.
-   - Eval uses local binary path `tooling/promptfoo-runner/node_modules/.bin/promptfoo`, `--no-cache`, per-run promptfoo config/log dirs, and `results.results[]` parsing with compatibility for `results.outputs[]`.
-   - Supported selectors: `$.answer`, `$.data.answer`; persisted secret placeholders fail fast.
-   - Commits:
-     - `feat(promptfoo): run evaluations with local promptfoo cli`
-     - `chore(promptfoo): lock local runner dependencies`
-     - `fix(promptfoo): parse real cli result rows`
-
 6. Promptfoo Secret-Store.
-   - `ConnectorSecretService` interface + `ConnectorSecretServiceImpl` encrypts/persists secrets via `AesGcmEncryptor` into `connector_secrets` table.
-   - Connector create/update wired to `connectorSecretService.saveSecrets()`.
-   - Connector test-run resolves `{{secret:KEY}}` placeholders to decrypted values before HTTP calls.
-   - `PromptfooConfigGenerator.rejectSecrets()` replaced by `resolveSecretsToEnvRefs()` — maps `{{secret:KEY}}` to `{{env.VQC_SECRET_KEY}}`.
-   - `PromptfooCommandExecutor.eval()` accepts `secretEnvVars` map and merges into process environment.
-   - `CliPromptfooExecutor` decrypts secrets via `ConnectorSecretService` and passes `VQC_SECRET_*` env vars. Raw secrets never touch disk.
-   - Tests: 9 `ConnectorSecretServiceImplTest`, 10 `CliPromptfooExecutorTest`, 7 `TargetApiConnectorServiceImplTest`, 9 `AesGcmEncryptorTest` — 35 total, 0 failures.
-
 7. Promptfoo Rubric Judge Mapping.
-   - `RubricAssertionMapper` (SRP) translates `RubricCriterion` entities into Promptfoo `llm-rubric` assertion maps; uses `judgeInstruction`, optional `passCondition`/`failCondition`, `weight`, and `metricKey`.
-   - `CriteriaScoreCalculator` (SRP) computes weighted `judgeScore` = Σ(weight × score) / Σ(weight) and applies `isCritical` override: any critical criterion failure → `JudgeStatus.FAIL`.
-   - `PromptfooConfigGenerator` delegates assertion building to `RubricAssertionMapper`; adds `defaultTest.options.provider` (`google:gemini-2.5-flash`) when criteria exist. Ground-truth `contains` assertions kept alongside rubric assertions.
-   - `PromptfooResultParser` extracts per-criterion results from `gradingResult.componentResults` into `criteriaResultsJson`.
-   - `EvaluationJobHandler` delegates score computation to `CriteriaScoreCalculator`; writes `criteriaResultsJson` to `EvaluationResult`.
-   - Config: `vqc.promptfoo.grading-provider` and `vqc.promptfoo.grading-api-key` in `PromptfooProperties`.
-   - Tests: 7 `RubricAssertionMapperTest`, 9 `CriteriaScoreCalculatorTest`, 11 `CliPromptfooExecutorTest`, 3 `EvaluationJobHandlerTest`, 4 `PromptfooConfigGeneratorTest` — 40 total, 0 failures.
-   - Commits:
-     - `feat(rubric): map criteria to promptfoo llm-rubric assertions`
-     - `feat(rubric): compute weighted score with critical override`
-     - `feat(promptfoo): generate rubric assertions in cli config`
-     - `feat(evaluation): parse criteria results and compute weighted scores`
 
-## Current Verify Commands
+See git log for full details on each sequence.
 
-Focused rubric/promptfoo/job suite:
+## Workflow
 
-```bash
-rtk bash ./mvnw -Dtest=RubricAssertionMapperTest,CriteriaScoreCalculatorTest,CliPromptfooExecutorTest,PromptfooConfigGeneratorTest,EvaluationJobHandlerTest test
+Every step below follows the same cycle:
+
+```text
+Code (implement feature / modify classes)
+  → Write tests
+    → Run tests
+      → FAIL → fix code → re-run
+      → PASS → git add + git commit → next step
 ```
 
-Focused secret-store/connector/crypto suite:
+Never move to the next step until current step's tests pass and changes are committed.
 
-```bash
-rtk bash ./mvnw -Dtest=ConnectorSecretServiceImplTest,AesGcmEncryptorTest,CliPromptfooExecutorTest,TargetApiConnectorServiceImplTest test
+## Current Slice: QC Productivity Features
+
+---
+
+### 8. Bulk Import Test Cases.
+
+#### Step 8.1 — Import service + response DTO
+
+Code:
+
+```text
+[NEW]  testcase/response/ImportTestCaseResponse.java          — record(totalRows, importedCount, skippedCount, errors)
+[NEW]  testcase/service/TestCaseImportService.java             — interface
+[NEW]  testcase/service/impl/TestCaseImportServiceImpl.java    — Excel/CSV parser, file validation, bulk save
+[MOD]  dataset/enums/DatasetSourceType.java                    — add IMPORTED_CSV
+[MOD]  exception/ErrorCode.java                                — add IMPORT_FILE_EMPTY, IMPORT_FILE_TOO_LARGE, IMPORT_FILE_INVALID_FORMAT, IMPORT_TOO_MANY_ROWS
+[MOD]  testcase/repository/TestCaseRepository.java             — add findMaxSortOrderByDatasetId(Long)
 ```
 
-Previously passed focused suites:
+Test:
+
+```text
+[NEW]  TestCaseImportServiceImplTest   — file validation, Excel parse, CSV parse, blank question skip, max rows, sort order
+```
+
+Run:
 
 ```bash
-rtk bash ./mvnw -Dtest=ExportControllerTest,ExportServiceImplTest,ExportJobHandlerTest,LocalObjectStorageServiceTest,JobWorkerTest,JobServiceImplTest test
-rtk bash ./mvnw -Dtest=ReviewDecisionControllerTest,ReviewDecisionServiceImplTest test
+rtk bash ./mvnw -Dtest=TestCaseImportServiceImplTest test
+```
+
+Commit:
+
+```text
+feat(testcase): bulk import test cases from excel and csv
+```
+
+#### Step 8.2 — Import controller endpoint
+
+Code:
+
+```text
+[MOD]  testcase/controller/TestCaseController.java   — add POST /api/v1/datasets/{datasetPublicId}/test-cases/import
+```
+
+Test:
+
+```text
+[MOD]  TestCaseControllerTest   — add import endpoint tests (200, 400 empty file, 400 bad format, 422 too many)
+```
+
+Run:
+
+```bash
+rtk bash ./mvnw -Dtest=TestCaseControllerTest,TestCaseImportServiceImplTest test
+```
+
+Commit:
+
+```text
+feat(testcase): add bulk import endpoint
+```
+
+---
+
+### 9. AI Generate Dataset.
+
+#### Step 9.1 — Schema + entity change
+
+Code:
+
+```text
+[MOD]  db/migration/V1__init_schema.sql   — add generation_prompt TEXT to datasets table
+[MOD]  dataset/entity/Dataset.java         — add generationPrompt field
+[MOD]  job/enums/ResourceType.java         — add DATASET
+```
+
+Test:
+
+```text
+existing DatasetServiceImplTest, DatasetMapperTest must still pass
+```
+
+Run:
+
+```bash
+rtk bash ./mvnw -Dtest=DatasetServiceImplTest,DatasetMapperTest test
+```
+
+Commit:
+
+```text
+feat(dataset): add generation_prompt column and dataset resource type
+```
+
+#### Step 9.2 — Generation service + job creation
+
+Code:
+
+```text
+[NEW]  dataset/request/GenerateDatasetRequest.java                — record(requirementPublicId, count, additionalPrompt)
+[NEW]  dataset/response/GenerateDatasetResponse.java              — record(datasetPublicId, jobPublicId, status, message)
+[NEW]  dataset/service/DatasetGenerationService.java               — interface
+[NEW]  dataset/service/impl/DatasetGenerationServiceImpl.java      — validate, create Job(DATASET_GENERATION), push Redis, return 202
+```
+
+Test:
+
+```text
+[NEW]  DatasetGenerationServiceImplTest   — validation (dataset DRAFT, requirement ACTIVE, count limits), job creation, Redis push
+```
+
+Run:
+
+```bash
+rtk bash ./mvnw -Dtest=DatasetGenerationServiceImplTest test
+```
+
+Commit:
+
+```text
+feat(dataset): create generation job and push to redis queue
+```
+
+#### Step 9.3 — Job handler (Gemini AI call)
+
+Code:
+
+```text
+[NEW]  dataset/handler/DatasetGenerationJobHandler.java   — load requirement, call ChatClient, parse JSON, bulk insert test_cases, emit events
+[MOD]  job/worker/JobWorker.java                          — add DATASET_GENERATION routing
+```
+
+Test:
+
+```text
+[NEW]  DatasetGenerationJobHandlerTest   — mock ChatClient, parse response, bulk insert, error handling
+[MOD]  JobWorkerTest                     — add DATASET_GENERATION routing case
+```
+
+Run:
+
+```bash
+rtk bash ./mvnw -Dtest=DatasetGenerationJobHandlerTest,JobWorkerTest test
+```
+
+Commit:
+
+```text
+feat(dataset): generate test cases with gemini ai in worker
+```
+
+#### Step 9.4 — Generate controller endpoint
+
+Code:
+
+```text
+[MOD]  dataset/controller/DatasetController.java   — add POST /api/v1/datasets/{datasetPublicId}/generate
+```
+
+Test:
+
+```text
+[MOD]  DatasetControllerTest   — add generate endpoint tests (202, 400, 404, 422)
+```
+
+Run:
+
+```bash
+rtk bash ./mvnw -Dtest=DatasetControllerTest,DatasetGenerationServiceImplTest test
+```
+
+Commit:
+
+```text
+feat(dataset): add ai generate endpoint
+```
+
+---
+
+### 10. Rubric Decoupling from Project.
+
+#### Step 10.1 — Schema + entity change
+
+Code:
+
+```text
+[MOD]  db/migration/V1__init_schema.sql   — rubrics: remove project_id + FK + index, add is_template + index
+[MOD]  rubric/entity/Rubric.java          — remove Project field, add isTemplate Boolean
+[MOD]  rubric/mapper/RubricMapper.java    — remove project mapping
+[MOD]  rubric/response/RubricResponse.java — remove projectPublicId, add isTemplate
+```
+
+Test:
+
+```text
+[MOD]  RubricMapperTest   — update for removed project field, added isTemplate
+```
+
+Run:
+
+```bash
+rtk bash ./mvnw -Dtest=RubricMapperTest test
+```
+
+Commit:
+
+```text
+refactor(rubric): remove project_id from rubrics schema and entity
+```
+
+#### Step 10.2 — Service + repository (user-scoped)
+
+Code:
+
+```text
+[MOD]  rubric/service/RubricService.java          — change method signatures (remove projectPublicId)
+[MOD]  rubric/service/impl/RubricServiceImpl.java — remove project scoping, query by createdBy
+[MOD]  rubric/repository/RubricRepository.java    — replace project queries with createdBy + isTemplate queries
+[MOD]  rubric/request/CreateRubricRequest.java    — add isTemplate (optional, default false)
+```
+
+Test:
+
+```text
+[MOD]  RubricServiceImplTest   — update all tests: remove project context, user-scoped
+```
+
+Run:
+
+```bash
+rtk bash ./mvnw -Dtest=RubricServiceImplTest test
+```
+
+Commit:
+
+```text
+feat(rubric): user-scoped rubric service without project dependency
+```
+
+#### Step 10.3 — Controller (new API paths)
+
+Code:
+
+```text
+[MOD]  rubric/controller/RubricController.java   — remove project-nested create/list, add user-scoped POST/GET /api/v1/rubrics
+```
+
+Test:
+
+```text
+[MOD]  RubricControllerTest   — update API paths, new create/list tests
+```
+
+Run:
+
+```bash
+rtk bash ./mvnw -Dtest=RubricControllerTest,RubricServiceImplTest test
+```
+
+Commit:
+
+```text
+feat(rubric): user-scoped rubric controller endpoints
+```
+
+#### Step 10.4 — Clone endpoint
+
+Code:
+
+```text
+[NEW]  rubric/request/CloneRubricRequest.java               — record(name?)
+[MOD]  rubric/service/RubricService.java                    — add cloneRubric method
+[MOD]  rubric/service/impl/RubricServiceImpl.java           — deep-copy rubric + published version + criteria
+[MOD]  rubric/controller/RubricController.java              — add POST /api/v1/rubrics/{rubricPublicId}/clone
+```
+
+Test:
+
+```text
+[MOD]  RubricServiceImplTest    — clone tests: deep copy, custom name, no published version
+[MOD]  RubricControllerTest     — clone endpoint test
+```
+
+Run:
+
+```bash
+rtk bash ./mvnw -Dtest=RubricControllerTest,RubricServiceImplTest test
+```
+
+Commit:
+
+```text
+feat(rubric): clone rubric with versions and criteria
+```
+
+#### Step 10.5 — System template seeder
+
+Code:
+
+```text
+[NEW]  config/RubricTemplateSeeder.java   — CommandLineRunner, seeds 4 default templates if none exist
+```
+
+Test:
+
+```text
+[NEW]  RubricTemplateSeederTest   — seeds on empty, skips when templates exist
+```
+
+Run:
+
+```bash
+rtk bash ./mvnw -Dtest=RubricTemplateSeederTest test
+```
+
+Commit:
+
+```text
+feat(rubric): seed system rubric templates on first boot
+```
+
+#### Step 10.6 — Update evaluation run (remove rubric project check)
+
+Code:
+
+```text
+[MOD]  evaluation/service/impl/EvaluationRunServiceImpl.java   — findRubricVersion no longer checks project, only createdBy
+```
+
+Test:
+
+```text
+[MOD]  EvaluationRunServiceImplTest   — update rubric version lookup tests
+[MOD]  EvaluationRunControllerTest    — must still pass
+```
+
+Run:
+
+```bash
 rtk bash ./mvnw -Dtest=EvaluationRunControllerTest,EvaluationRunServiceImplTest test
-rtk bash ./mvnw -Dtest=PromptfooWorkerSmokeTest -Dvqc.promptfoo.smoke=true test
 ```
 
-## Next Likely Backend Slice
+Commit:
 
-Possible directions:
-- Connector timeout/retry behavior.
-- Export storage provider beyond local filesystem.
-- Dashboard/analytics endpoints.
+```text
+refactor(evaluation): allow cross-project rubric versions in evaluation runs
+```
+
+#### Step 10.7 — Rubric sub-resource regression
+
+No code changes. Verify rubric version and criterion endpoints still work.
+
+Run:
+
+```bash
+rtk bash ./mvnw -Dtest=RubricVersionControllerTest,RubricVersionServiceImplTest,RubricCriterionControllerTest,RubricCriterionServiceImplTest test
+```
+
+If pass → proceed. If fail → fix and amend previous commit.
+
+---
+
+### 11. Quick Evaluate.
+
+#### Step 11.1 — Auto-resolve service logic
+
+Code:
+
+```text
+[NEW]  evaluation/request/QuickEvaluateRequest.java             — record(datasetPublicId?, connectorPublicId?, rubricVersionPublicId?, maxConcurrency?)
+[MOD]  evaluation/service/EvaluationRunService.java             — add quickEvaluate method
+[MOD]  evaluation/service/impl/EvaluationRunServiceImpl.java    — auto-resolve: find sole APPROVED dataset, active connector, latest PUBLISHED rubric version; delegate to createEvaluationRun
+[MOD]  exception/ErrorCode.java                                — add QUICK_EVALUATE_AMBIGUOUS (422)
+```
+
+Test:
+
+```text
+[MOD]  EvaluationRunServiceImplTest   — auto-resolve: 1 dataset/connector/rubric → success; 0 or >1 → 422
+```
+
+Run:
+
+```bash
+rtk bash ./mvnw -Dtest=EvaluationRunServiceImplTest test
+```
+
+Commit:
+
+```text
+feat(evaluation): quick evaluate auto-resolve logic
+```
+
+#### Step 11.2 — Quick evaluate controller endpoint
+
+Code:
+
+```text
+[MOD]  evaluation/controller/EvaluationRunController.java   — add POST /api/v1/projects/{projectPublicId}/quick-evaluate
+```
+
+Test:
+
+```text
+[MOD]  EvaluationRunControllerTest   — quick evaluate endpoint (202, 422 ambiguous)
+```
+
+Run:
+
+```bash
+rtk bash ./mvnw -Dtest=EvaluationRunControllerTest,EvaluationRunServiceImplTest test
+```
+
+Commit:
+
+```text
+feat(evaluation): add quick evaluate endpoint
+```
+
+---
+
+### 12. Doc updates + full regression.
+
+Update handoff docs:
+
+```text
+[MOD]  server/SERVER_CONTEXT.md   — update [CURRENT_STATE] Persistence, [API_CHANGE], [FUTURE_SLICE]
+[MOD]  server/API_TREE.md         — update resource tree, domain relationships, main workflow, known gaps
+[MOD]  server/API_TODO.md         — move new endpoints to Completed, update Next
+[MOD]  server/API_PLAN.md         — move features to Completed, clear Current Slice
+```
+
+Run full regression:
+
+```bash
+rtk bash ./mvnw test
+```
+
+Commit:
+
+```text
+docs(server): update handoff docs for qc productivity features
+```

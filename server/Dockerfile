@@ -15,13 +15,12 @@ COPY server/.mvn .mvn
 COPY server/mvnw mvnw
 COPY server/pom.xml pom.xml
 
-RUN chmod +x mvnw
+RUN chmod +x mvnw \
+    && ./mvnw dependency:go-offline -B -q
 
 COPY server/src src
 
-RUN ./mvnw package -DskipTests -B \
-    -Dmaven.wagon.http.retryHandler.count=5 \
-    -Dmaven.wagon.httpconnectionManager.ttlSeconds=120 \
+RUN ./mvnw package -DskipTests -B -q \
     && mv target/*.jar app.jar
 
 # -----------------------------------------------------------

@@ -184,16 +184,24 @@ Implemented API slices after auth:
 ## [FUTURE_SLICE] Known Current Gaps
 
 Known current gaps:
-- Promptfoo CLI advanced rubric criteria scoring is future work; current CLI slice uses basic ground-truth assertions and parser mapping.
 - Promptfoo CLI selector support is limited to `$.answer` and `$.data.answer`.
 - OAuth persistence/linking remains incomplete.
 - Connector response extraction only supports the current simple selector path used by tests.
 - S3/R2/MinIO export storage providers are future work; the storage interface is in place and local is the only current provider.
+- Rubrics are currently project-scoped; planned decoupling to user-scoped with template/clone support.
+- No bulk import for test cases; QC must create each test case individually via API.
+- No AI-assisted dataset generation; `DatasetSourceType.GENERATED` exists but no generation handler.
+- No convenience endpoint for quick evaluation with auto-resolution.
 
-## [FUTURE_SLICE] Next Implementation Steps
+## [FUTURE_SLICE] Next Implementation Steps — QC Productivity Features
 
-Next likely backend slices:
-- Promptfoo rubric judge mapping: translate richer rubric criteria into Promptfoo assertions/judging instead of only ground-truth assertions.
+Current plan (see `server/API_PLAN.md` for full details):
+- Step 8: Bulk import test cases from Excel (.xlsx) and CSV (.csv).
+- Step 9: AI-powered dataset generation using Gemini via Spring AI (async via Redis job).
+- Step 10: Decouple rubrics from project scope — user-scoped rubrics with `is_template` flag, clone endpoint, system template seeder.
+- Step 11: Quick evaluate endpoint with auto-resolve (sole APPROVED dataset, active connector, PUBLISHED rubric version).
+
+Following backend slices:
 - Connector runtime hardening: align connector timeout/retry settings with real outbound calls and Promptfoo execution.
 - Export storage provider: add S3/R2/MinIO behind the existing `ObjectStorageService`.
 
@@ -218,12 +226,32 @@ Mail:
 - Mail flow uses Strategy + Factory: `MailType`, `MailRequest`, `MailMessage`, `MailStrategy`, `MailStrategyFactory`.
 - Templates are HTML emails with table-friendly structure and inline CSS.
 
+## [CONVENTIONS] Workflow
+
+Development workflow:
+- Every step follows: Code → Write tests → Run tests → FAIL? fix and re-run : PASS? `git add . && git commit -m "type(scope): summary"` → next step.
+- Never move to the next step until current step's tests pass and changes are committed.
+- Commit messages follow conventional format: `feat(scope)`, `fix(scope)`, `refactor(scope)`, `docs(scope)`, `chore(scope)`.
+- After each backend slice, update `SERVER_CONTEXT.md`, `API_TODO.md`, `API_TREE.md`, and `API_PLAN.md` when their tracked facts change.
+
 ## [CONVENTIONS] API Conventions
 
-API conventions:
-- Errors use Problem Details shape: `type`, `title`, `status`, `detail`, `instance`, plus `code` and optional `errors`.
-- Request DTO validation annotations should include explicit messages.
+API design (Microsoft RESTful Guidelines):
+- Use plural nouns for collections: `/rubrics`, `/test-cases`, `/datasets`.
+- HTTP methods: GET (read), POST (create/action), PATCH (partial update), DELETE (remove/archive).
+- Actions on resources use verb sub-path: `POST /datasets/{id}/generate`, `POST /rubrics/{id}/clone`.
+- Collection responses: `{ items, page, size, totalItems, totalPages }`.
+- Async long-running operations return `202 Accepted` + `jobPublicId`; poll via `GET /jobs/{jobPublicId}`.
+- Errors use Problem Details shape (RFC 9457): `type`, `title`, `status`, `detail`, `instance`, plus `code` and optional `errors[]`.
+- Status codes: 200 success, 201 created, 202 accepted, 204 no content, 400 bad request, 404 not found, 409 conflict, 422 business validation.
+
+DTO validation convention:
+- Request DTO validation annotations must include explicit `message = "..."` on every constraint (`@NotNull`, `@NotBlank`, `@Size`, `@Min`, `@Max`, `@Pattern`, `@DecimalMin`, `@DecimalMax`).
+- Every request DTO field should have `@Schema(description = "...", example = "...")` for Swagger/OpenAPI docs. Mark optional fields with `nullable = true`.
+- Request DTOs should be `record` types.
 - Public controllers should expose Swagger/OpenAPI request, success response, and error response examples.
+
+Code conventions:
 - Public service/repository/mapper interfaces should have JavaDoc with `@param` and `@return` where useful, and link domain types with `{@link ...}`.
 - Prefer feature-first packages: `<feature>/controller`, `service`, `service/impl`, `repository`, `entity`, `mapper`, `request`, `response`.
 - Prefer Lombok `@Builder` for creating entities/responses/value objects that support it; use setters only for JPA/framework requirements, partial updates, or when an existing local pattern already uses setters.

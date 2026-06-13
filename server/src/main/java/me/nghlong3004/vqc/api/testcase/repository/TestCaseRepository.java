@@ -10,6 +10,7 @@ import me.nghlong3004.vqc.api.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 /**
  * @author nghlong3004 (Long Nguyen Hoang)
@@ -64,4 +65,13 @@ public interface TestCaseRepository extends JpaRepository<TestCase, Long> {
    * @return {@link Optional} containing the matching {@link TestCase} when present
    */
   Optional<TestCase> findByPublicIdAndDatasetCreatedBy(UUID publicId, User createdBy);
+
+  /**
+   * Finds the maximum sort order value among test cases in a dataset.
+   *
+   * @param datasetId internal dataset identifier
+   * @return {@link Optional} containing the max sort order, or empty if no test cases exist
+   */
+  @Query("SELECT MAX(tc.sortOrder) FROM TestCase tc WHERE tc.dataset.id = :datasetId")
+  Optional<Integer> findMaxSortOrderByDatasetId(Long datasetId);
 }

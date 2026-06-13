@@ -182,6 +182,24 @@ public enum ErrorCode {
       "EXPORT_FILE_NOT_READY",
       "Export file is not ready for download."),
 
+  // ── Import ──
+  IMPORT_FILE_EMPTY(
+      HttpStatus.BAD_REQUEST.value(),
+      "IMPORT_FILE_EMPTY",
+      "Import file is empty or contains no data rows."),
+  IMPORT_FILE_TOO_LARGE(
+      HttpStatus.BAD_REQUEST.value(),
+      "IMPORT_FILE_TOO_LARGE",
+      "Import file exceeds the maximum allowed size (5 MB)."),
+  IMPORT_FILE_INVALID_FORMAT(
+      HttpStatus.BAD_REQUEST.value(),
+      "IMPORT_FILE_INVALID_FORMAT",
+      "Import file format is not supported. Use .xlsx or .csv."),
+  IMPORT_TOO_MANY_ROWS(
+      422,
+      "IMPORT_TOO_MANY_ROWS",
+      "Import would exceed the maximum number of test cases (100) for this dataset."),
+
   // ── User Administration ──
   CANNOT_DELETE_SELF(
       HttpStatus.BAD_REQUEST.value(), "CANNOT_DELETE_SELF", "You cannot disable your own account."),

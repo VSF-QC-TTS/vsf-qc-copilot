@@ -7,6 +7,7 @@ package me.nghlong3004.vqc.api.dataset.enums;
 public enum DatasetSourceType {
   MANUAL,
   IMPORTED_EXCEL,
+  IMPORTED_CSV,
   SAMPLE_DEMO,
   GENERATED
 }
