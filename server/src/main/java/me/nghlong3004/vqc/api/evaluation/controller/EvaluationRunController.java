@@ -12,6 +12,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import me.nghlong3004.vqc.api.evaluation.enums.JudgeStatus;
 import me.nghlong3004.vqc.api.evaluation.request.CreateEvaluationRunRequest;
+import me.nghlong3004.vqc.api.evaluation.request.QuickEvaluateRequest;
 import me.nghlong3004.vqc.api.evaluation.response.CreateEvaluationRunResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationResultPageResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunDetailResponse;
@@ -226,5 +227,46 @@ public class EvaluationRunController {
   public java.util.List<me.nghlong3004.vqc.api.job.response.JobEventResponse> listEvaluationRunEvents(
       @PathVariable UUID runPublicId, Principal principal) {
     return evaluationRunService.listEvaluationRunEvents(runPublicId, principal.getName());
+  }
+
+  @Operation(
+      summary = "Quick evaluate",
+      description =
+          "Starts an evaluation run with auto-resolved defaults. Null fields are resolved to "
+              + "the sole candidate in the project; returns 422 if 0 or >1 candidates exist.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "202",
+        description = "Evaluation run queued",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = CreateEvaluationRunResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Project not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "422",
+        description = "Auto-resolve failed or business rule violation",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @PostMapping(
+      value = "/api/v1/projects/{projectPublicId}/quick-evaluate",
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  @ResponseStatus(HttpStatus.ACCEPTED)
+  public CreateEvaluationRunResponse quickEvaluate(
+      @PathVariable UUID projectPublicId,
+      @Valid @RequestBody QuickEvaluateRequest request,
+      Principal principal) {
+    return evaluationRunService.quickEvaluate(
+        projectPublicId, request, principal.getName());
   }
 }

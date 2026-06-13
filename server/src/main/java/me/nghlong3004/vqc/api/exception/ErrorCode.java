@@ -200,6 +200,12 @@ public enum ErrorCode {
       "IMPORT_TOO_MANY_ROWS",
       "Import would exceed the maximum number of test cases (100) for this dataset."),
 
+  // ── Quick Evaluate ──
+  QUICK_EVALUATE_AMBIGUOUS(
+      422,
+      "QUICK_EVALUATE_AMBIGUOUS",
+      "Cannot auto-resolve: expected exactly one candidate but found zero or multiple."),
+
   // ── User Administration ──
   CANNOT_DELETE_SELF(
       HttpStatus.BAD_REQUEST.value(), "CANNOT_DELETE_SELF", "You cannot disable your own account."),

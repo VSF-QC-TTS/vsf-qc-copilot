@@ -3,6 +3,7 @@ package me.nghlong3004.vqc.api.evaluation.service;
 import java.util.UUID;
 import me.nghlong3004.vqc.api.evaluation.enums.JudgeStatus;
 import me.nghlong3004.vqc.api.evaluation.request.CreateEvaluationRunRequest;
+import me.nghlong3004.vqc.api.evaluation.request.QuickEvaluateRequest;
 import me.nghlong3004.vqc.api.evaluation.response.CreateEvaluationRunResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationResultPageResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunDetailResponse;
@@ -60,4 +61,16 @@ public interface EvaluationRunService {
    */
   java.util.List<me.nghlong3004.vqc.api.job.response.JobEventResponse> listEvaluationRunEvents(
       UUID runPublicId, String username);
+
+  /**
+   * Quick evaluate with auto-resolve: null fields are resolved to the sole candidate in the
+   * project. Returns 422 if a field cannot be auto-resolved (0 or >1 candidates).
+   *
+   * @param projectPublicId project public identifier
+   * @param request quick evaluate request with optional fields
+   * @param username authenticated principal username/email
+   * @return async job tracking response (202-style)
+   */
+  CreateEvaluationRunResponse quickEvaluate(
+      UUID projectPublicId, QuickEvaluateRequest request, String username);
 }

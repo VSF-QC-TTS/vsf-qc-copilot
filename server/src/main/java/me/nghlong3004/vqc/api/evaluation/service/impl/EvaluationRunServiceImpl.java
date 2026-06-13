@@ -15,6 +15,7 @@ import me.nghlong3004.vqc.api.evaluation.mapper.EvaluationRunMapper;
 import me.nghlong3004.vqc.api.evaluation.repository.EvaluationResultRepository;
 import me.nghlong3004.vqc.api.evaluation.repository.EvaluationRunRepository;
 import me.nghlong3004.vqc.api.evaluation.request.CreateEvaluationRunRequest;
+import me.nghlong3004.vqc.api.evaluation.request.QuickEvaluateRequest;
 import me.nghlong3004.vqc.api.evaluation.response.CreateEvaluationRunResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationResultListItemResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationResultPageResponse;
@@ -43,6 +44,7 @@ import me.nghlong3004.vqc.api.testcase.repository.TestCaseRepository;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -312,5 +314,55 @@ public class EvaluationRunServiceImpl implements EvaluationRunService {
     return userRepository
         .findByUsername(username.trim().toLowerCase())
         .orElseThrow(() -> new ResourceException(ErrorCode.USER_NOT_FOUND));
+  }
+
+  @Override
+  @Transactional
+  public CreateEvaluationRunResponse quickEvaluate(
+      UUID projectPublicId, QuickEvaluateRequest request, String username) {
+
+    User creator = findCreator(username);
+    Project project = findProject(projectPublicId, creator);
+
+    UUID datasetId = request.datasetPublicId();
+    if (datasetId == null) {
+      Page<Dataset> approved =
+          datasetRepository.findByProjectAndStatus(
+              project, DatasetStatus.APPROVED, PageRequest.of(0, 2));
+      if (approved.getTotalElements() != 1) {
+        throw new ResourceException(ErrorCode.QUICK_EVALUATE_AMBIGUOUS);
+      }
+      datasetId = approved.getContent().getFirst().getPublicId();
+    }
+
+    UUID connectorId = request.connectorPublicId();
+    if (connectorId == null) {
+      Page<TargetApiConnector> connectors =
+          targetApiConnectorRepository.findByProject(project, PageRequest.of(0, 2));
+      if (connectors.getTotalElements() != 1) {
+        throw new ResourceException(ErrorCode.QUICK_EVALUATE_AMBIGUOUS);
+      }
+      connectorId = connectors.getContent().getFirst().getPublicId();
+    }
+
+    UUID rubricVersionId = request.rubricVersionPublicId();
+    if (rubricVersionId == null) {
+      Page<RubricVersion> versions =
+          rubricVersionRepository.findByRubricCreatedByAndStatus(
+              creator, RubricVersionStatus.PUBLISHED, PageRequest.of(0, 2));
+      if (versions.getTotalElements() != 1) {
+        throw new ResourceException(ErrorCode.QUICK_EVALUATE_AMBIGUOUS);
+      }
+      rubricVersionId = versions.getContent().getFirst().getPublicId();
+    }
+
+    CreateEvaluationRunRequest resolved =
+        new CreateEvaluationRunRequest(
+            datasetId,
+            rubricVersionId,
+            connectorId,
+            request.maxConcurrency());
+
+    return createEvaluationRun(projectPublicId, resolved, username);
   }
 }

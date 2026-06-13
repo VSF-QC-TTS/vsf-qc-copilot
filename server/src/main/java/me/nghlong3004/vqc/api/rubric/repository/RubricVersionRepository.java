@@ -27,4 +27,7 @@ public interface RubricVersionRepository extends JpaRepository<RubricVersion, Lo
       Rubric rubric, RubricVersionStatus status, UUID publicId);
 
   Optional<RubricVersion> findByPublicIdAndRubricCreatedBy(UUID publicId, User createdBy);
+
+  Page<RubricVersion> findByRubricCreatedByAndStatus(
+      User createdBy, RubricVersionStatus status, Pageable pageable);
 }

@@ -14,6 +14,7 @@ import java.util.UUID;
 import me.nghlong3004.vqc.api.evaluation.enums.EvaluationRunStatus;
 import me.nghlong3004.vqc.api.evaluation.enums.JudgeStatus;
 import me.nghlong3004.vqc.api.evaluation.request.CreateEvaluationRunRequest;
+import me.nghlong3004.vqc.api.evaluation.request.QuickEvaluateRequest;
 import me.nghlong3004.vqc.api.evaluation.response.CreateEvaluationRunResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationResultListItemResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationResultPageResponse;
@@ -317,6 +318,7 @@ class EvaluationRunControllerTest {
     static UUID projectPublicId;
     static UUID runPublicId;
     static CreateEvaluationRunRequest createRequest;
+    static QuickEvaluateRequest quickEvaluateRequest;
     static JudgeStatus judgeStatus;
     static QcStatus qcStatus;
     static Pageable pageable;
@@ -331,6 +333,7 @@ class EvaluationRunControllerTest {
       projectPublicId = null;
       runPublicId = null;
       createRequest = null;
+      quickEvaluateRequest = null;
       judgeStatus = null;
       qcStatus = null;
       pageable = null;
@@ -383,6 +386,15 @@ class EvaluationRunControllerTest {
       RecordingEvaluationRunService.runPublicId = runPublicId;
       RecordingEvaluationRunService.username = username;
       return eventsResponse;
+    }
+
+    @Override
+    public CreateEvaluationRunResponse quickEvaluate(
+        UUID projectPublicId, QuickEvaluateRequest request, String username) {
+      RecordingEvaluationRunService.projectPublicId = projectPublicId;
+      RecordingEvaluationRunService.quickEvaluateRequest = request;
+      RecordingEvaluationRunService.username = username;
+      return createResponse;
     }
   }
 }
