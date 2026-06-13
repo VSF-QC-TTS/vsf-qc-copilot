@@ -291,5 +291,28 @@ class RubricControllerTest {
       RecordingRubricService.rubricPublicId = rubricPublicId;
       RecordingRubricService.username = username;
     }
+
+    @Override
+    public RubricPageResponse listMyRubrics(
+        RubricStatus status, Pageable pageable, String username) {
+      RecordingRubricService.status = status;
+      RecordingRubricService.pageable = pageable;
+      RecordingRubricService.username = username;
+      return rubricPageResponse;
+    }
+
+    @Override
+    public RubricPageResponse listTemplates(Pageable pageable, String username) {
+      RecordingRubricService.pageable = pageable;
+      RecordingRubricService.username = username;
+      return rubricPageResponse;
+    }
+
+    @Override
+    public RubricResponse cloneRubric(UUID rubricPublicId, String username) {
+      RecordingRubricService.rubricPublicId = rubricPublicId;
+      RecordingRubricService.username = username;
+      return rubricResponse;
+    }
   }
 }

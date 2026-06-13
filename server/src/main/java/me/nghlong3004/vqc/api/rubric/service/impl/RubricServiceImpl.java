@@ -118,6 +118,72 @@ public class RubricServiceImpl implements RubricService {
     log.info("Archived rubric {} by user {}", rubric.getPublicId(), rubric.getCreatedBy().getPublicId());
   }
 
+  @Override
+  @Transactional(readOnly = true)
+  public RubricPageResponse listMyRubrics(
+      RubricStatus status, Pageable pageable, String username) {
+    User creator = findCreator(username);
+    Page<Rubric> rubrics =
+        status == null
+            ? rubricRepository.findByCreatedBy(creator, pageable)
+            : rubricRepository.findByCreatedByAndStatus(creator, status, pageable);
+    List<RubricListItemResponse> items =
+        rubrics.getContent().stream().map(rubricMapper::toListItemResponse).toList();
+    return new RubricPageResponse(
+        items,
+        rubrics.getNumber(),
+        rubrics.getSize(),
+        rubrics.getTotalElements(),
+        rubrics.getTotalPages());
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public RubricPageResponse listTemplates(Pageable pageable, String username) {
+    findCreator(username);
+    Page<Rubric> rubrics =
+        rubricRepository.findByIsTemplateTrueAndStatus(RubricStatus.ACTIVE, pageable);
+    List<RubricListItemResponse> items =
+        rubrics.getContent().stream().map(rubricMapper::toListItemResponse).toList();
+    return new RubricPageResponse(
+        items,
+        rubrics.getNumber(),
+        rubrics.getSize(),
+        rubrics.getTotalElements(),
+        rubrics.getTotalPages());
+  }
+
+  @Override
+  @Transactional
+  public RubricResponse cloneRubric(UUID rubricPublicId, String username) {
+    User creator = findCreator(username);
+    Rubric source =
+        rubricRepository
+            .findByPublicIdAndCreatedBy(rubricPublicId, creator)
+            .or(() -> rubricRepository.findAll().stream()
+                .filter(r -> r.getPublicId().equals(rubricPublicId)
+                    && Boolean.TRUE.equals(r.getIsTemplate()))
+                .findFirst())
+            .orElseThrow(() -> new ResourceException(ErrorCode.RUBRIC_NOT_FOUND));
+
+    Rubric cloned =
+        Rubric.builder()
+            .project(source.getProject())
+            .name(source.getName() + " (Copy)")
+            .description(source.getDescription())
+            .isTemplate(false)
+            .status(RubricStatus.ACTIVE)
+            .createdBy(creator)
+            .build();
+    Rubric saved = rubricRepository.save(cloned);
+    log.info(
+        "Cloned rubric {} from {} by user {}",
+        saved.getPublicId(),
+        source.getPublicId(),
+        creator.getPublicId());
+    return rubricMapper.toResponse(saved);
+  }
+
   private Rubric findRubric(UUID rubricPublicId, String username) {
     User creator = findCreator(username);
     return rubricRepository

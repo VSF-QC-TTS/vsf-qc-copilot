@@ -19,9 +19,15 @@ public interface RubricService {
   RubricPageResponse listRubrics(
       UUID projectPublicId, RubricStatus status, Pageable pageable, String username);
 
+  RubricPageResponse listMyRubrics(RubricStatus status, Pageable pageable, String username);
+
+  RubricPageResponse listTemplates(Pageable pageable, String username);
+
   RubricResponse getRubric(UUID rubricPublicId, String username);
 
   RubricResponse updateRubric(UUID rubricPublicId, UpdateRubricRequest request, String username);
 
   void archiveRubric(UUID rubricPublicId, String username);
+
+  RubricResponse cloneRubric(UUID rubricPublicId, String username);
 }

@@ -21,4 +21,10 @@ public interface RubricRepository extends JpaRepository<Rubric, Long> {
   Page<Rubric> findByProjectAndStatus(Project project, RubricStatus status, Pageable pageable);
 
   Optional<Rubric> findByPublicIdAndCreatedBy(UUID publicId, User createdBy);
+
+  Page<Rubric> findByCreatedBy(User createdBy, Pageable pageable);
+
+  Page<Rubric> findByCreatedByAndStatus(User createdBy, RubricStatus status, Pageable pageable);
+
+  Page<Rubric> findByIsTemplateTrueAndStatus(RubricStatus status, Pageable pageable);
 }
