@@ -1,11 +1,13 @@
 # ============================================================
 # VSF QC Copilot — Local Docker Compose
+# Frontend (Next.js dev) + Backend (Spring Boot) + DB + Redis
 # All ports bound to 127.0.0.1 only
 # ============================================================
 # Usage:
-#   docker compose up --build
-#   docker compose down -v
-#   docker compose logs -f api
+#   docker compose up --build          # Start all services
+#   docker compose up --build api db redis  # Backend only (FE runs natively)
+#   docker compose down -v             # Stop + remove volumes
+#   docker compose logs -f api         # Tail API logs
 # ============================================================
 
 services:
@@ -44,7 +46,7 @@ services:
       retries: 5
 
   # ---------------------------------------------------------
-  # Backend API
+  # Backend API (Spring Boot)
   # ---------------------------------------------------------
   api:
     build:
@@ -61,19 +63,40 @@ services:
         condition: service_healthy
     env_file: server/.env
     environment:
-      # Override to point to compose services instead of localhost/cloud
+      # Override to point to compose services
       SPRING_PROFILES_ACTIVE: prod
       DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-vqc_dev}
       DB_USERNAME: ${POSTGRES_USER:-vqc}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-vqc}
       REDIS_HOST: redis
+      # CORS: allow client dev server
+      WEB_BASE_URL: http://localhost:3000
+      SERVER_BASE_URL: http://localhost:8080
     volumes:
       - app-runs:/app/runs
       - app-exports:/app/exports
       - app-logs:/app/logs
+
+  # ---------------------------------------------------------
+  # Frontend (Next.js dev server)
+  # ---------------------------------------------------------
+  client:
+    image: node:22-alpine
+    working_dir: /app
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - api
+    volumes:
+      - ./client:/app
+      - client-node-modules:/app/node_modules
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm dev --hostname 0.0.0.0"
 
 volumes:
   pgdata:
   app-runs:
   app-exports:
   app-logs:
+  client-node-modules:
