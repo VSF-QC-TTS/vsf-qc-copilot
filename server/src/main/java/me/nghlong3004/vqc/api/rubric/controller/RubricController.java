@@ -174,4 +174,72 @@ public class RubricController {
   public void archiveRubric(@PathVariable UUID rubricPublicId, Principal principal) {
     rubricService.archiveRubric(rubricPublicId, principal.getName());
   }
+
+  @Operation(
+      summary = "List my rubrics",
+      description = "Lists all rubrics owned by the authenticated user (user-scoped, not project-scoped).")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Rubric page",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = RubricPageResponse.class)))
+  })
+  @GetMapping(value = "/api/v1/rubrics", produces = MediaType.APPLICATION_JSON_VALUE)
+  public RubricPageResponse listMyRubrics(
+      @RequestParam(required = false) RubricStatus status,
+      @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+          Pageable pageable,
+      Principal principal) {
+    return rubricService.listMyRubrics(status, pageable, principal.getName());
+  }
+
+  @Operation(
+      summary = "List rubric templates",
+      description = "Lists system-provided rubric templates available for cloning.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Template page",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = RubricPageResponse.class)))
+  })
+  @GetMapping(value = "/api/v1/rubrics/templates", produces = MediaType.APPLICATION_JSON_VALUE)
+  public RubricPageResponse listTemplates(
+      @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+          Pageable pageable,
+      Principal principal) {
+    return rubricService.listTemplates(pageable, principal.getName());
+  }
+
+  @Operation(
+      summary = "Clone rubric",
+      description = "Creates a copy of a rubric (own or template) for the authenticated user.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "201",
+        description = "Rubric cloned",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = RubricResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Source rubric not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @PostMapping(
+      value = "/api/v1/rubrics/{rubricPublicId}/clone",
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  @ResponseStatus(HttpStatus.CREATED)
+  public RubricResponse cloneRubric(@PathVariable UUID rubricPublicId, Principal principal) {
+    return rubricService.cloneRubric(rubricPublicId, principal.getName());
+  }
 }
