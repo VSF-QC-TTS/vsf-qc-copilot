@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { SignOut, User, GearSix, List } from '@phosphor-icons/react';
+import { SignOut, GearSix, List } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/lib/store/auth-store';
@@ -62,7 +62,7 @@ export function Header() {
         size="icon"
         className="ml-2 lg:hidden"
         onClick={() => useSidebarStore.getState().setMobileOpen(true)}
-        aria-label="Menu"
+        aria-label={t('menu')}
       >
         <List size={24} />
       </Button>

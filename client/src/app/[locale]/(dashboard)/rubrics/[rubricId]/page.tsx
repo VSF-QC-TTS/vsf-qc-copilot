@@ -13,7 +13,6 @@ import {
   Archive,
 } from '@phosphor-icons/react';
 
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { PageShell } from '@/components/layout/page-shell';
 import { DataTable } from '@/components/data-table/data-table';
@@ -369,7 +368,7 @@ export default function RubricDetailPage({
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-muted-foreground">
-                {rubric?.projectName ?? '—'}
+                {rubric?.projectName ?? tCommon('notAvailable')}
               </p>
             </div>
             <Button variant="outline" size="sm" onClick={startEdit}>

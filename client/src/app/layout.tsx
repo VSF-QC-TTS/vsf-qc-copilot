@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { QueryProvider } from "@/providers/query-provider";
 import { AuthBootstrap } from "@/providers/auth-bootstrap";
+import { APP_NAME } from "@/lib/branding";
 import "@/styles/globals.css";
 
 const geistSans = Geist({
@@ -19,8 +20,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "VQC Copilot",
-    template: "%s | VQC Copilot",
+    default: APP_NAME,
+    template: `%s | ${APP_NAME}`,
   },
   description: "Internal QC dashboard for chatbot evaluation workflows.",
 };

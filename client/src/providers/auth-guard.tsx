@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { refreshToken, getMe } from '@/lib/api/auth';
 import { setTokenGetter, setClearAuth, setOnRefreshed } from '@/lib/api/client';
@@ -12,8 +12,8 @@ type AuthGuardProps = {
 };
 
 export function AuthGuard({ children }: AuthGuardProps) {
+  const t = useTranslations('common');
   const router = useRouter();
-  const locale = useLocale();
   const { isAuthenticated, login, logout, setToken } = useAuthStore();
   const [status, setStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>(
     isAuthenticated ? 'authenticated' : 'loading'
@@ -29,7 +29,6 @@ export function AuthGuard({ children }: AuthGuardProps) {
   // Bootstrap auth on mount
   useEffect(() => {
     if (isAuthenticated) {
-      setStatus('authenticated');
       return;
     }
 
@@ -65,16 +64,16 @@ export function AuthGuard({ children }: AuthGuardProps) {
   // Redirect when unauthenticated
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.replace(`/${locale}/login`);
+      router.replace('/login');
     }
-  }, [status, router, locale]);
+  }, [status, router]);
 
   if (status === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-muted border-t-primary" />
-          <p className="text-sm text-muted-foreground">Loading...</p>
+          <p className="text-sm text-muted-foreground">{t('loading')}</p>
         </div>
       </div>
     );

@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useTranslations } from "next-intl";
 
 import { cn } from "@/lib/utils";
 
@@ -82,6 +83,7 @@ export function StatusBadge({
   size = "md",
   className,
 }: StatusBadgeProps) {
+  const t = useTranslations("status");
   const normalized = status.toUpperCase().trim();
   const category = STATUS_MAP[normalized] ?? "neutral";
   const isRunning = normalized === "RUNNING";
@@ -98,7 +100,7 @@ export function StatusBadge({
         className,
       )}
     >
-      {formatLabel(status)}
+      {t.has(normalized) ? t(normalized) : formatLabel(status)}
     </span>
   );
 }

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useParams } from 'next/navigation';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -123,13 +123,15 @@ function ReadOnlyField({
   value: React.ReactNode;
   mono?: boolean;
 }) {
+  const tCommon = useTranslations('common');
+
   return (
     <div className="space-y-1">
       <span className="text-sm font-medium text-muted-foreground">
         {label}
       </span>
       <p className={cn('text-sm', mono && 'font-mono')}>
-        {value || '—'}
+        {value || tCommon('notAvailable')}
       </p>
     </div>
   );
@@ -206,12 +208,20 @@ export default function ConnectorDetailPage() {
 
   // Populate KV editors when connector loads
   React.useEffect(() => {
-    if (connector) {
+    if (!connector) return;
+
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
       setHeaders(connector.headers ?? {});
       setQueryParamsKv(connector.queryParams ?? {});
       setPathParamsKv(connector.pathParams ?? {});
       setAuthConfigKv(connector.authConfig ?? {});
-    }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [connector]);
 
   // ---------------------------------------------------------------------------
@@ -221,7 +231,6 @@ export default function ConnectorDetailPage() {
     register,
     handleSubmit,
     reset,
-    watch,
     control,
     formState: { errors, isSubmitting },
   } = useForm<CreateConnectorFormValues>({
@@ -250,8 +259,8 @@ export default function ConnectorDetailPage() {
       : undefined,
   });
 
-  const authType = watch('authType');
-  const bodyType = watch('bodyType');
+  const authType = useWatch({ control, name: 'authType' });
+  const bodyType = useWatch({ control, name: 'bodyType' });
 
   const handleCancelEdit = () => {
     reset();

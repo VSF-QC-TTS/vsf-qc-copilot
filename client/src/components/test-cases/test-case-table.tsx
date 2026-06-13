@@ -46,9 +46,9 @@ interface TestCaseTableProps {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function truncate(text: string | null, max: number): string {
-  if (!text) return '—';
-  return text.length > max ? text.slice(0, max) + '…' : text;
+function truncate(text: string | null, max: number): string | null {
+  if (!text) return null;
+  return text.length > max ? text.slice(0, max) + '...' : text;
 }
 
 // ---------------------------------------------------------------------------
@@ -202,10 +202,10 @@ export function TestCaseTable({
                   )}
                 >
                   <td className={cn(tdClassName, 'max-w-xs')}>
-                    {truncate(tc.question, 80)}
+                    {truncate(tc.question, 80) ?? tCommon('notAvailable')}
                   </td>
                   <td className={cn(tdClassName, 'max-w-xs')}>
-                    {truncate(tc.groundTruth, 80)}
+                    {truncate(tc.groundTruth, 80) ?? tCommon('notAvailable')}
                   </td>
                   <td className={tdClassName}>
                     <StatusBadge status={tc.status} size="sm" />

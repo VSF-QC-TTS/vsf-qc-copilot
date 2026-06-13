@@ -61,8 +61,8 @@ function formatDateTime(iso: string): string {
   });
 }
 
-function safePercent(count: number | null, total: number | null): string {
-  if (total === null || total === 0 || count === null) return '—';
+function safePercent(count: number | null, total: number | null): string | null {
+  if (total === null || total === 0 || count === null) return null;
   return `${Math.round((count / total) * 100)}%`;
 }
 
@@ -211,7 +211,7 @@ export default function RunDetailPage() {
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
-            No events recorded.
+            {t('noEvents')}
           </p>
         )}
       </div>

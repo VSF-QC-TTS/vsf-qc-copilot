@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import {
   CaretDoubleLeft,
   CaretDoubleRight,
@@ -28,6 +29,7 @@ export function DataTablePagination({
   onPageChange,
   onPageSizeChange,
 }: DataTablePaginationProps) {
+  const t = useTranslations('table');
   const rangeStart = totalItems === 0 ? 0 : pageIndex * pageSize + 1;
   const rangeEnd = Math.min((pageIndex + 1) * pageSize, totalItems);
 
@@ -41,12 +43,7 @@ export function DataTablePagination({
   return (
     <div className="flex flex-col items-center justify-between gap-4 px-2 py-4 sm:flex-row">
       <p className="text-sm text-muted-foreground">
-        Showing{' '}
-        <span className="font-medium text-foreground">{rangeStart}</span>
-        {' - '}
-        <span className="font-medium text-foreground">{rangeEnd}</span>
-        {' of '}
-        <span className="font-medium text-foreground">{totalItems}</span>
+        {t('showing', { from: rangeStart, to: rangeEnd, total: totalItems })}
       </p>
 
       <div className="flex items-center gap-4">
@@ -55,7 +52,7 @@ export function DataTablePagination({
             htmlFor="page-size-select"
             className="text-sm text-muted-foreground"
           >
-            Rows per page
+            {t('rowsPerPage')}
           </label>
           <select
             id="page-size-select"
@@ -78,7 +75,7 @@ export function DataTablePagination({
             className="size-8"
             onClick={() => onPageChange(0)}
             disabled={isFirstPage}
-            aria-label="Go to first page"
+            aria-label={t('firstPage')}
           >
             <CaretDoubleLeft className="size-4" />
           </Button>
@@ -88,7 +85,7 @@ export function DataTablePagination({
             className="size-8"
             onClick={() => onPageChange(pageIndex - 1)}
             disabled={isFirstPage}
-            aria-label="Go to previous page"
+            aria-label={t('previousPage')}
           >
             <CaretLeft className="size-4" />
           </Button>
@@ -96,7 +93,7 @@ export function DataTablePagination({
           <span className="min-w-[5ch] text-center text-sm text-muted-foreground">
             {totalPages === 0
               ? '0 / 0'
-              : `${pageIndex + 1} / ${totalPages}`}
+              : t('page', { current: pageIndex + 1, total: totalPages })}
           </span>
 
           <Button
@@ -105,7 +102,7 @@ export function DataTablePagination({
             className="size-8"
             onClick={() => onPageChange(pageIndex + 1)}
             disabled={isLastPage}
-            aria-label="Go to next page"
+            aria-label={t('nextPage')}
           >
             <CaretRight className="size-4" />
           </Button>
@@ -115,7 +112,7 @@ export function DataTablePagination({
             className="size-8"
             onClick={() => onPageChange(totalPages - 1)}
             disabled={isLastPage}
-            aria-label="Go to last page"
+            aria-label={t('lastPage')}
           >
             <CaretDoubleRight className="size-4" />
           </Button>

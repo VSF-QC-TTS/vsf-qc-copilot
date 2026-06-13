@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
 import { Check, X } from '@phosphor-icons/react';
@@ -29,7 +29,7 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -41,7 +41,11 @@ export default function RegisterPage() {
     },
   });
 
-  const password = watch('password', '');
+  const password = useWatch({
+    control,
+    name: 'password',
+    defaultValue: '',
+  });
 
   const requirements = [
     { met: password.length >= 8, label: t('passwordMinLength') },

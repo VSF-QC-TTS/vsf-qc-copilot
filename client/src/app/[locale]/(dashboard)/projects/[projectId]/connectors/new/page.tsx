@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useParams } from 'next/navigation';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
 import { useQueryClient } from '@tanstack/react-query';
@@ -85,7 +85,6 @@ export default function CreateConnectorPage() {
   const {
     register,
     handleSubmit,
-    watch,
     control,
     formState: { errors, isSubmitting },
   } = useForm<CreateConnectorFormValues>({
@@ -110,8 +109,8 @@ export default function CreateConnectorPage() {
     },
   });
 
-  const authType = watch('authType');
-  const bodyType = watch('bodyType');
+  const authType = useWatch({ control, name: 'authType' });
+  const bodyType = useWatch({ control, name: 'bodyType' });
 
   // Submit
   async function onSubmit(values: CreateConnectorFormValues) {

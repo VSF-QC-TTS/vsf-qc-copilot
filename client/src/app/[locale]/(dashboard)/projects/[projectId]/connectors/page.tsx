@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
-import { Plus, Plugs } from '@phosphor-icons/react';
+import { Plus } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -56,7 +56,7 @@ function formatDate(iso: string): string {
 }
 
 function truncateUrl(url: string, max = 50): string {
-  return url.length > max ? url.slice(0, max) + '…' : url;
+  return url.length > max ? url.slice(0, max) + '...' : url;
 }
 
 // ---------------------------------------------------------------------------

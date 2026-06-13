@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useTranslations } from "next-intl";
 
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/feedback/loading-skeleton";
@@ -28,6 +29,7 @@ export function MetricCard({
   trend,
   className,
 }: MetricCardProps) {
+  const tCommon = useTranslations("common");
   const isPositive = trend && trend.value >= 0;
 
   return (
@@ -54,7 +56,7 @@ export function MetricCard({
           <Skeleton className="h-8 w-24" />
         ) : (
           <p className="text-2xl font-bold tracking-tight text-card-foreground">
-            {value ?? "–"}
+            {value ?? tCommon("notAvailable")}
           </p>
         )}
       </div>

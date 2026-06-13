@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
-import { Plus, Database } from '@phosphor-icons/react';
+import { Plus } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -57,6 +57,7 @@ function formatDate(iso: string): string {
 
 export default function DatasetsPage() {
   const t = useTranslations('datasets');
+  const tCommon = useTranslations('common');
   const router = useRouter();
   const params = useParams();
   const projectId = params.projectId as string;
@@ -113,7 +114,7 @@ export default function DatasetsPage() {
         size: 200,
         cell: ({ row }) => (
           <span className="text-muted-foreground truncate max-w-[180px] inline-block">
-            {row.original.requirementTitle ?? '—'}
+            {row.original.requirementTitle ?? tCommon('notAvailable')}
           </span>
         ),
       },
@@ -128,7 +129,7 @@ export default function DatasetsPage() {
         ),
       },
     ],
-    [t],
+    [t, tCommon],
   );
 
   // Handlers

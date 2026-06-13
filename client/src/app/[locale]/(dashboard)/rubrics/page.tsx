@@ -53,6 +53,7 @@ function formatDate(iso: string): string {
 
 export default function RubricsPage() {
   const t = useTranslations('rubrics');
+  const tCommon = useTranslations('common');
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -122,7 +123,7 @@ export default function RubricsPage() {
         size: 160,
         cell: ({ row }) => (
           <span className="text-muted-foreground">
-            {row.original.projectName ?? '—'}
+            {row.original.projectName ?? tCommon('notAvailable')}
           </span>
         ),
       },
@@ -137,7 +138,7 @@ export default function RubricsPage() {
         ),
       },
     ],
-    [t],
+    [t, tCommon],
   );
 
   // Table columns — Templates (with clone button)

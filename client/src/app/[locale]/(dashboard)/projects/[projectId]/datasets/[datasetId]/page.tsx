@@ -6,7 +6,6 @@ import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle, Archive } from '@phosphor-icons/react';
 
-import { cn } from '@/lib/utils';
 import { apiClient } from '@/lib/api/client';
 import type { DatasetStatus } from '@/lib/api/types';
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,6 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { PageShell } from '@/components/layout/page-shell';
 import { TestCaseTable } from '@/components/test-cases/test-case-table';
 import { Skeleton, SkeletonText } from '@/components/feedback/loading-skeleton';
-import { useRouter } from '@/i18n/navigation';
 
 // ---------------------------------------------------------------------------
 // Dataset detail response type
@@ -85,8 +83,8 @@ function DatasetDetailSkeleton() {
 
 export default function DatasetDetailPage() {
   const t = useTranslations('datasets');
+  const tCommon = useTranslations('common');
   const params = useParams();
-  const router = useRouter();
   const queryClient = useQueryClient();
   const projectId = params.projectId as string;
   const datasetId = params.datasetId as string;
@@ -191,7 +189,7 @@ export default function DatasetDetailPage() {
             <span className="font-medium text-foreground">
               {t('columns.requirement')}:
             </span>{' '}
-            {dataset.requirementTitle ?? '—'}
+            {dataset.requirementTitle ?? tCommon('notAvailable')}
           </div>
           <div>
             <span className="font-medium text-foreground">

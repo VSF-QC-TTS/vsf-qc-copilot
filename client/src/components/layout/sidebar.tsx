@@ -16,6 +16,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useSidebarStore } from '@/lib/store/sidebar-store';
 import { Button } from '@/components/ui/button';
+import { APP_MONOGRAM, APP_NAME } from '@/lib/branding';
 
 const items = [
   { key: 'dashboard', href: '/dashboard', icon: House },
@@ -35,11 +36,13 @@ export function Sidebar() {
       {/* Logo */}
       <div className="flex h-16 items-center gap-3 border-b px-4">
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
-          <span className="text-sm font-bold text-primary-foreground">V</span>
+          <span className="text-xs font-bold text-primary-foreground">
+            {APP_MONOGRAM}
+          </span>
         </div>
         {!isCollapsed && (
-          <span className="text-base font-semibold tracking-tight">
-            VQC Copilot
+          <span className="text-sm font-semibold leading-tight tracking-tight">
+            {APP_NAME}
           </span>
         )}
       </div>
@@ -90,7 +93,7 @@ export function Sidebar() {
       <aside
         className={cn(
           'hidden lg:flex lg:flex-col',
-          'fixed left-0 top-0 z-40 h-screen border-r bg-card transition-[width] duration-200',
+          'min-h-[100dvh] shrink-0 border-r bg-card transition-[width] duration-200',
           isCollapsed ? 'w-16' : 'w-60',
         )}
       >
@@ -108,7 +111,7 @@ export function Sidebar() {
           />
 
           {/* Slide-in panel */}
-          <aside className="fixed left-0 top-0 z-50 flex h-screen w-60 flex-col border-r bg-card shadow-lg animate-in slide-in-from-left duration-200">
+          <aside className="fixed left-0 top-0 z-50 flex min-h-[100dvh] w-60 flex-col border-r bg-card shadow-lg animate-in slide-in-from-left duration-200">
             {/* Close button */}
             <div className="absolute right-2 top-4">
               <Button

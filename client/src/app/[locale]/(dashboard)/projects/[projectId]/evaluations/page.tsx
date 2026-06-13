@@ -49,6 +49,7 @@ function formatDate(iso: string): string {
 
 export default function EvaluationsPage() {
   const t = useTranslations('evaluations');
+  const tCommon = useTranslations('common');
   const router = useRouter();
   const params = useParams();
   const projectId = params.projectId as string;
@@ -95,7 +96,7 @@ export default function EvaluationsPage() {
         header: t('columns.dataset'),
         cell: ({ row }) => (
           <span className="text-muted-foreground">
-            {row.original.datasetName ?? '—'}
+            {row.original.datasetName ?? tCommon('notAvailable')}
           </span>
         ),
       },
@@ -104,7 +105,7 @@ export default function EvaluationsPage() {
         header: t('columns.rubric'),
         cell: ({ row }) => (
           <span className="text-muted-foreground">
-            {row.original.rubricName ?? '—'}
+            {row.original.rubricName ?? tCommon('notAvailable')}
           </span>
         ),
       },
@@ -118,7 +119,7 @@ export default function EvaluationsPage() {
             <span className="text-muted-foreground">
               {progress !== null && progress !== undefined
                 ? `${progress}%`
-                : '—'}
+                : tCommon('notAvailable')}
             </span>
           );
         },
@@ -134,7 +135,7 @@ export default function EvaluationsPage() {
         ),
       },
     ],
-    [t],
+    [t, tCommon],
   );
 
   const handleRowClick = (row: EvaluationRunRow) => {

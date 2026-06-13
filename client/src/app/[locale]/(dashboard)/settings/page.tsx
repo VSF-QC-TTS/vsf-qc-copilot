@@ -80,12 +80,16 @@ const themeOptions: {
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
+  const tCommon = useTranslations('common');
   const user = useAuthStore((s) => s.user);
 
   // Theme
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   // Locale
   const locale = useLocale() as Locale;
@@ -158,7 +162,9 @@ export default function SettingsPage() {
               <div>
                 <p className="text-sm text-muted-foreground">{t('lastLogin')}</p>
                 <p className="font-medium">
-                  {user.lastLoginAt ? formatDateTime(user.lastLoginAt) : '—'}
+                  {user.lastLoginAt
+                    ? formatDateTime(user.lastLoginAt)
+                    : tCommon('notAvailable')}
                 </p>
               </div>
             </div>

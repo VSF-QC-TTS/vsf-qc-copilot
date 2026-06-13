@@ -39,7 +39,7 @@ const QC_STATUS_OPTIONS = [
 // ---------------------------------------------------------------------------
 
 function truncate(str: string, max = 80): string {
-  return str.length > max ? str.slice(0, max) + '…' : str;
+  return str.length > max ? str.slice(0, max) + '...' : str;
 }
 
 // ---------------------------------------------------------------------------
@@ -49,6 +49,7 @@ function truncate(str: string, max = 80): string {
 export default function ResultsPage() {
   const t = useTranslations('evaluations');
   const tDetail = useTranslations('resultDetail');
+  const tCommon = useTranslations('common');
   const router = useRouter();
   const params = useParams();
   const projectId = params.projectId as string;
@@ -115,7 +116,7 @@ export default function ResultsPage() {
           row.original.judgeStatus ? (
             <StatusBadge status={row.original.judgeStatus} size="sm" />
           ) : (
-            <span className="text-muted-foreground">—</span>
+            <span className="text-muted-foreground">{tCommon('notAvailable')}</span>
           ),
       },
       {
@@ -124,20 +125,22 @@ export default function ResultsPage() {
         size: 90,
         cell: ({ row }) => (
           <span className="text-muted-foreground">
-            {row.original.judgeScore !== null ? row.original.judgeScore : '—'}
+            {row.original.judgeScore !== null
+              ? row.original.judgeScore
+              : tCommon('notAvailable')}
           </span>
         ),
       },
       {
         accessorKey: 'qcStatus',
-        header: 'QC Status',
+        header: tDetail('qcStatus'),
         size: 130,
         cell: ({ row }) => (
           <StatusBadge status={row.original.qcStatus} size="sm" />
         ),
       },
     ],
-    [tDetail],
+    [tDetail, tCommon],
   );
 
   const handleRowClick = (row: EvaluationResultRow) => {
@@ -182,7 +185,7 @@ export default function ResultsPage() {
           >
             {JUDGE_STATUS_OPTIONS.map((opt) => (
               <option key={opt} value={opt}>
-                {opt || 'All'}
+                {opt || tCommon('all')}
               </option>
             ))}
           </select>
@@ -193,7 +196,7 @@ export default function ResultsPage() {
             htmlFor="qc-filter"
             className="text-sm text-muted-foreground"
           >
-            QC Status
+            {tDetail('qcStatus')}
           </label>
           <select
             id="qc-filter"
@@ -206,7 +209,7 @@ export default function ResultsPage() {
           >
             {QC_STATUS_OPTIONS.map((opt) => (
               <option key={opt} value={opt}>
-                {opt || 'All'}
+                {opt || tCommon('all')}
               </option>
             ))}
           </select>

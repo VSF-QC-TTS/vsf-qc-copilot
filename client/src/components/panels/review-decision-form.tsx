@@ -194,7 +194,7 @@ export function ReviewDecisionForm({ resultPublicId }: ReviewDecisionFormProps) 
   if (isLoading) {
     return (
       <div className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground animate-pulse">
-        {t('title')}…
+        {t('title')}...
       </div>
     );
   }

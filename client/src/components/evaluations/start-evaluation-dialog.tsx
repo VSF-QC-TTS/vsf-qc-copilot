@@ -145,13 +145,22 @@ export function StartEvaluationDialog({
 
   // Reset on close
   React.useEffect(() => {
-    if (!open) {
+    if (open) return;
+
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+
       reset();
       setJobPublicId(null);
       setRunPublicId(null);
       setSubmitError(null);
       setIsSubmitting(false);
-    }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [open, reset]);
 
   // Focus cancel on open
@@ -267,7 +276,7 @@ export function StartEvaluationDialog({
         {jobPublicId ? (
           <div className="mt-4 space-y-2">
             <p className="text-sm text-muted-foreground animate-pulse">
-              {t('progress')}…
+              {t('progress')}...
             </p>
           </div>
         ) : (

@@ -56,8 +56,8 @@ function parseCriteriaJson(raw: string | null): CriterionResult[] {
             ? (item as Record<string, unknown>)
             : {};
         return {
-          name: typeof obj['name'] === 'string' ? obj['name'] : '—',
-          status: typeof obj['status'] === 'string' ? obj['status'] : '—',
+          name: typeof obj['name'] === 'string' ? obj['name'] : '',
+          status: typeof obj['status'] === 'string' ? obj['status'] : '',
           score: typeof obj['score'] === 'number' ? obj['score'] : null,
           reason: typeof obj['reason'] === 'string' ? obj['reason'] : null,
         };
@@ -82,6 +82,7 @@ export function ResultDetailPanel({
 }: ResultDetailPanelProps) {
   const t = useTranslations('resultDetail');
   const tQc = useTranslations('qcReview');
+  const tCommon = useTranslations('common');
   const panelRef = React.useRef<HTMLDivElement>(null);
 
   // Escape key
@@ -184,21 +185,21 @@ export function ResultDetailPanel({
           {/* Precondition */}
           <Section label={t('precondition')}>
             <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-              {result.precondition ?? '—'}
+              {result.precondition ?? tCommon('notAvailable')}
             </p>
           </Section>
 
           {/* Ground Truth */}
           <Section label={t('groundTruth')}>
             <p className="text-sm whitespace-pre-wrap">
-              {result.groundTruth ?? '—'}
+              {result.groundTruth ?? tCommon('notAvailable')}
             </p>
           </Section>
 
           {/* Actual Answer */}
           <Section label={t('actualAnswer')}>
             <p className="text-sm whitespace-pre-wrap">
-              {result.actualAnswer ?? '—'}
+              {result.actualAnswer ?? tCommon('notAvailable')}
             </p>
           </Section>
 
@@ -208,7 +209,9 @@ export function ResultDetailPanel({
               {result.judgeStatus ? (
                 <StatusBadge status={result.judgeStatus} size="sm" />
               ) : (
-                <span className="text-sm text-muted-foreground">—</span>
+                <span className="text-sm text-muted-foreground">
+                  {tCommon('notAvailable')}
+                </span>
               )}
               {result.judgeScore !== null && (
                 <span className="text-sm font-medium">
@@ -228,12 +231,20 @@ export function ResultDetailPanel({
                     className="rounded-md border bg-muted/30 p-3 text-sm space-y-1"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-medium">{c.name}</span>
-                      <StatusBadge status={c.status} size="sm" />
+                      <span className="font-medium">
+                        {c.name || tCommon('notAvailable')}
+                      </span>
+                      {c.status ? (
+                        <StatusBadge status={c.status} size="sm" />
+                      ) : (
+                        <span className="text-muted-foreground">
+                          {tCommon('notAvailable')}
+                        </span>
+                      )}
                     </div>
                     {c.score !== null && (
                       <p className="text-muted-foreground">
-                        Score: {c.score}
+                        {t('judgeScore')}: {c.score}
                       </p>
                     )}
                     {c.reason && (

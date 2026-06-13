@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useState, useMemo, useCallback } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -80,7 +80,6 @@ export default function VersionDetailPage({
   const { rubricId, versionId } = React.use(params);
   const t = useTranslations('rubrics');
   const tCommon = useTranslations('common');
-  const tErrors = useTranslations('errors');
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -162,7 +161,7 @@ export default function VersionDetailPage({
     <PageShell
       title={
         version
-          ? `v${version.versionNumber} — ${version.rubricName}`
+          ? `v${version.versionNumber} - ${version.rubricName}`
           : t('title')
       }
       actions={
@@ -334,7 +333,6 @@ function CriteriaEditorPanel({
     register,
     handleSubmit,
     control,
-    watch,
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<CreateCriterionFormValues>({
@@ -352,7 +350,7 @@ function CriteriaEditorPanel({
     },
   });
 
-  const weightValue = watch('weight');
+  const weightValue = useWatch({ control, name: 'weight' });
 
   async function onSubmit(values: CreateCriterionFormValues) {
     setServerError(null);

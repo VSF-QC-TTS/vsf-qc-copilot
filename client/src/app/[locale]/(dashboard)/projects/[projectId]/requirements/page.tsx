@@ -43,7 +43,7 @@ function formatDate(iso: string): string {
 
 function truncate(text: string, maxLength = 200): string {
   if (text.length <= maxLength) return text;
-  return text.slice(0, maxLength) + '…';
+  return text.slice(0, maxLength) + '...';
 }
 
 // ---------------------------------------------------------------------------
