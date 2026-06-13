@@ -5,6 +5,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.nghlong3004.vqc.api.config.WorkerProperties;
+import me.nghlong3004.vqc.api.dataset.handler.DatasetGenerationJobHandler;
 import me.nghlong3004.vqc.api.evaluation.handler.EvaluationJobHandler;
 import me.nghlong3004.vqc.api.export.handler.ExportJobHandler;
 import me.nghlong3004.vqc.api.job.enums.JobType;
@@ -31,6 +32,7 @@ public class JobWorker implements SmartLifecycle {
   private final JobRepository jobRepository;
   private final EvaluationJobHandler evaluationJobHandler;
   private final ExportJobHandler exportJobHandler;
+  private final DatasetGenerationJobHandler datasetGenerationJobHandler;
 
   private volatile boolean running;
   private Thread workerThread;
@@ -78,6 +80,8 @@ public class JobWorker implements SmartLifecycle {
         evaluationJobHandler.handle(jobPublicId);
       } else if (jobType == JobType.EXPORT_EXCEL || jobType == JobType.EXPORT_JSON) {
         exportJobHandler.handle(jobPublicId);
+      } else if (jobType == JobType.DATASET_GENERATION) {
+        datasetGenerationJobHandler.handle(jobPublicId);
       } else {
         log.warn("Discarding unsupported job queue message {} with type {}", message, jobType);
       }

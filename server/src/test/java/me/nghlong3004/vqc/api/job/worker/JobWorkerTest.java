@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import me.nghlong3004.vqc.api.config.WorkerProperties;
+import me.nghlong3004.vqc.api.dataset.handler.DatasetGenerationJobHandler;
 import me.nghlong3004.vqc.api.evaluation.handler.EvaluationJobHandler;
 import me.nghlong3004.vqc.api.export.handler.ExportJobHandler;
 import me.nghlong3004.vqc.api.job.entity.Job;
@@ -30,7 +31,8 @@ class JobWorkerTest {
             new WorkerProperties(),
             jobRepository(Optional.of(job(jobPublicId, JobType.EVALUATION_RUN))),
             evaluationHandler(handled, false),
-            exportHandler(new AtomicReference<>(), false));
+            exportHandler(new AtomicReference<>(), false),
+            generationHandler(new AtomicReference<>(), false));
 
     worker.processMessage(jobPublicId.toString());
 
@@ -47,7 +49,8 @@ class JobWorkerTest {
             new WorkerProperties(),
             jobRepository(Optional.of(job(jobPublicId, JobType.EXPORT_JSON))),
             evaluationHandler(new AtomicReference<>(), false),
-            exportHandler(handled, false));
+            exportHandler(handled, false),
+            generationHandler(new AtomicReference<>(), false));
 
     worker.processMessage(jobPublicId.toString());
 
@@ -63,7 +66,8 @@ class JobWorkerTest {
             new WorkerProperties(),
             jobRepository(Optional.empty()),
             evaluationHandler(handled, false),
-            exportHandler(new AtomicReference<>(), false));
+            exportHandler(new AtomicReference<>(), false),
+            generationHandler(new AtomicReference<>(), false));
 
     worker.processMessage("not-a-uuid");
 
@@ -80,7 +84,8 @@ class JobWorkerTest {
             new WorkerProperties(),
             jobRepository(Optional.of(job(jobPublicId, JobType.EVALUATION_RUN))),
             evaluationHandler(handled, true),
-            exportHandler(new AtomicReference<>(), false));
+            exportHandler(new AtomicReference<>(), false),
+            generationHandler(new AtomicReference<>(), false));
 
     worker.processMessage(jobPublicId.toString());
 
@@ -101,6 +106,37 @@ class JobWorkerTest {
 
   private ExportJobHandler exportHandler(AtomicReference<UUID> handled, boolean fail) {
     return new ExportJobHandler(null, null, null, null, null) {
+      @Override
+      public void handle(UUID jobPublicId) {
+        handled.set(jobPublicId);
+        if (fail) {
+          throw new IllegalStateException("boom");
+        }
+      }
+    };
+  }
+
+  @Test
+  void processMessageDelegatesDatasetGenerationJobToGenerationHandler() {
+    AtomicReference<UUID> handled = new AtomicReference<>();
+    UUID jobPublicId = UUID.randomUUID();
+    JobWorker worker =
+        new JobWorker(
+            null,
+            new WorkerProperties(),
+            jobRepository(Optional.of(job(jobPublicId, JobType.DATASET_GENERATION))),
+            evaluationHandler(new AtomicReference<>(), false),
+            exportHandler(new AtomicReference<>(), false),
+            generationHandler(handled, false));
+
+    worker.processMessage(jobPublicId.toString());
+
+    assertThat(handled.get()).isEqualTo(jobPublicId);
+  }
+
+  private DatasetGenerationJobHandler generationHandler(
+      AtomicReference<UUID> handled, boolean fail) {
+    return new DatasetGenerationJobHandler(null, null, null, null, null, null) {
       @Override
       public void handle(UUID jobPublicId) {
         handled.set(jobPublicId);

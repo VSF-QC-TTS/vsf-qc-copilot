@@ -33,6 +33,7 @@ import me.nghlong3004.vqc.api.evaluation.promptfoo.RubricAssertionMapper;
 import me.nghlong3004.vqc.api.rubric.repository.RubricCriterionRepository;
 import me.nghlong3004.vqc.api.evaluation.repository.EvaluationResultRepository;
 import me.nghlong3004.vqc.api.evaluation.repository.EvaluationRunRepository;
+import me.nghlong3004.vqc.api.dataset.handler.DatasetGenerationJobHandler;
 import me.nghlong3004.vqc.api.export.handler.ExportJobHandler;
 import me.nghlong3004.vqc.api.job.entity.Job;
 import me.nghlong3004.vqc.api.job.entity.JobEvent;
@@ -75,7 +76,8 @@ class PromptfooWorkerSmokeTest {
               new WorkerProperties(),
               jobRepository(fixture.job),
               fixture.handler(promptfooExecutor(smokeRoot)),
-              new ExportJobHandler(null, null, null, null, null));
+              new ExportJobHandler(null, null, null, null, null),
+              new DatasetGenerationJobHandler(null, null, null, null, null, null));
 
       worker.processMessage(fixture.job.getPublicId().toString());
 
