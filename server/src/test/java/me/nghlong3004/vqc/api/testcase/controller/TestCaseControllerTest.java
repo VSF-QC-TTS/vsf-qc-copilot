@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -18,8 +19,11 @@ import me.nghlong3004.vqc.api.exception.GlobalException;
 import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
 import me.nghlong3004.vqc.api.testcase.request.CreateTestCaseRequest;
 import me.nghlong3004.vqc.api.testcase.request.UpdateTestCaseRequest;
+import me.nghlong3004.vqc.api.testcase.response.ImportTestCaseResponse;
+import me.nghlong3004.vqc.api.testcase.response.ImportTestCaseResponse.ImportError;
 import me.nghlong3004.vqc.api.testcase.response.TestCasePageResponse;
 import me.nghlong3004.vqc.api.testcase.response.TestCaseResponse;
+import me.nghlong3004.vqc.api.testcase.service.TestCaseImportService;
 import me.nghlong3004.vqc.api.testcase.service.TestCaseService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,8 +37,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * @author nghlong3004 (Long Nguyen Hoang)
@@ -55,6 +61,7 @@ class TestCaseControllerTest {
   @BeforeEach
   void resetTestDoubles() {
     RecordingTestCaseService.reset();
+    RecordingTestCaseImportService.reset();
   }
 
   @Test
@@ -324,12 +331,61 @@ class TestCaseControllerTest {
     assertThat(RecordingTestCaseService.testCasePublicId).isNull();
   }
 
+  @Test
+  void importTestCasesReturnsImportResult() throws Exception {
+    RecordingTestCaseImportService.importResponse =
+        new ImportTestCaseResponse(3, 2, 1, List.of(new ImportError(2, "question", "Question is required.")));
+
+    MockMultipartFile file =
+        new MockMultipartFile("file", "test.csv", "text/csv", "question\nQ1\n\nQ3\n".getBytes());
+
+    mockMvc
+        .perform(
+            multipart("/api/v1/datasets/0f6d90c2-7410-4db2-86be-8adfd3140f63/test-cases/import")
+                .file(file)
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalRows").value(3))
+        .andExpect(jsonPath("$.importedCount").value(2))
+        .andExpect(jsonPath("$.skippedCount").value(1))
+        .andExpect(jsonPath("$.errors[0].row").value(2))
+        .andExpect(jsonPath("$.errors[0].column").value("question"))
+        .andExpect(jsonPath("$.errors[0].message").value("Question is required."));
+
+    assertThat(RecordingTestCaseImportService.datasetPublicId)
+        .isEqualTo(UUID.fromString("0f6d90c2-7410-4db2-86be-8adfd3140f63"));
+    assertThat(RecordingTestCaseImportService.username).isEqualTo("qc.demo@example.com");
+    assertThat(RecordingTestCaseImportService.file).isNotNull();
+  }
+
+  @Test
+  void importTestCasesReturnsValidationProblemDetailsForInvalidDatasetPublicId() throws Exception {
+    MockMultipartFile file =
+        new MockMultipartFile("file", "test.csv", "text/csv", "question\nQ1\n".getBytes());
+
+    mockMvc
+        .perform(
+            multipart("/api/v1/datasets/not-a-uuid/test-cases/import")
+                .file(file)
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null)))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+
+    assertThat(RecordingTestCaseImportService.file).isNull();
+  }
+
   @TestConfiguration
   static class MockBeans {
 
     @Bean
     TestCaseService testCaseService() {
       return new RecordingTestCaseService();
+    }
+
+    @Bean
+    TestCaseImportService testCaseImportService() {
+      return new RecordingTestCaseImportService();
     }
   }
 
@@ -389,6 +445,30 @@ class TestCaseControllerTest {
     public void deleteTestCase(UUID testCasePublicId, String username) {
       RecordingTestCaseService.testCasePublicId = testCasePublicId;
       RecordingTestCaseService.username = username;
+    }
+  }
+
+  static class RecordingTestCaseImportService implements TestCaseImportService {
+
+    static UUID datasetPublicId;
+    static MultipartFile file;
+    static String username;
+    static ImportTestCaseResponse importResponse;
+
+    static void reset() {
+      datasetPublicId = null;
+      file = null;
+      username = null;
+      importResponse = null;
+    }
+
+    @Override
+    public ImportTestCaseResponse importTestCases(
+        UUID datasetPublicId, MultipartFile file, String username) {
+      RecordingTestCaseImportService.datasetPublicId = datasetPublicId;
+      RecordingTestCaseImportService.file = file;
+      RecordingTestCaseImportService.username = username;
+      return importResponse;
     }
   }
 }

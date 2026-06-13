@@ -14,8 +14,10 @@ import me.nghlong3004.vqc.api.exception.ErrorResponse;
 import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
 import me.nghlong3004.vqc.api.testcase.request.CreateTestCaseRequest;
 import me.nghlong3004.vqc.api.testcase.request.UpdateTestCaseRequest;
+import me.nghlong3004.vqc.api.testcase.response.ImportTestCaseResponse;
 import me.nghlong3004.vqc.api.testcase.response.TestCasePageResponse;
 import me.nghlong3004.vqc.api.testcase.response.TestCaseResponse;
+import me.nghlong3004.vqc.api.testcase.service.TestCaseImportService;
 import me.nghlong3004.vqc.api.testcase.service.TestCaseService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -31,6 +33,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * @author nghlong3004 (Long Nguyen Hoang)
@@ -42,6 +45,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class TestCaseController {
 
   private final TestCaseService testCaseService;
+  private final TestCaseImportService testCaseImportService;
 
   @Operation(summary = "Create test case", description = "Creates a test case under a dataset.")
   @ApiResponses({
@@ -84,6 +88,57 @@ public class TestCaseController {
       @Valid @RequestBody CreateTestCaseRequest request,
       Principal principal) {
     return testCaseService.createTestCase(datasetPublicId, request, principal.getName());
+  }
+
+  @Operation(
+      summary = "Import test cases",
+      description = "Bulk imports test cases from an Excel (.xlsx) or CSV (.csv) file.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Import completed",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ImportTestCaseResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "File is empty, too large, or has unsupported format",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Authentication is required",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Dataset not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "422",
+        description = "Import would exceed maximum test case limit",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @PostMapping(
+      value = "/api/v1/datasets/{datasetPublicId}/test-cases/import",
+      consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  public ImportTestCaseResponse importTestCases(
+      @PathVariable UUID datasetPublicId,
+      @RequestParam("file") MultipartFile file,
+      Principal principal) {
+    return testCaseImportService.importTestCases(datasetPublicId, file, principal.getName());
   }
 
   @Operation(summary = "List test cases", description = "Lists test cases under a dataset.")
