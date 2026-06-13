@@ -80,7 +80,7 @@ public class CriteriaScoreCalculator {
             .collect(
                 Collectors.toMap(
                     RubricCriterion::getMetricKey,
-                    c -> c.getWeight() != null ? c.getWeight() : BigDecimal.ONE));
+                    c -> c.getWeight() != null ? BigDecimal.valueOf(c.getWeight()) : BigDecimal.ONE));
 
     BigDecimal weightedSum = BigDecimal.ZERO;
     BigDecimal totalWeight = BigDecimal.ZERO;

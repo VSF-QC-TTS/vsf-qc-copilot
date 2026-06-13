@@ -54,7 +54,7 @@ public class RubricCriterionServiceImpl implements RubricCriterionService {
             .rubricVersion(rubricVersion)
             .name(request.name().trim())
             .description(trimToNull(request.description()))
-            .weight(request.weight())
+            .weight(request.weight() != null ? request.weight() : 1)
             .passCondition(trimToNull(request.passCondition()))
             .failCondition(trimToNull(request.failCondition()))
             .judgeInstruction(request.judgeInstruction().trim())

@@ -13,7 +13,6 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -64,8 +63,9 @@ public class RubricCriterion {
   @Column(columnDefinition = "TEXT")
   private String description;
 
-  @Column(nullable = false, precision = 5, scale = 4)
-  private BigDecimal weight;
+  @Column(nullable = false)
+  @Builder.Default
+  private Integer weight = 1;
 
   @Column(name = "pass_condition", columnDefinition = "TEXT")
   private String passCondition;

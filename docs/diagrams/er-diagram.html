@@ -1,0 +1,1862 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VSF-QC-Copilot — Entity Relationship Diagram</title>
+  <style>
+    /* ====== Reset & Base ====== */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #181b24;
+      --surface-hover: #1e2230;
+      --border: #2a2e3a;
+      --border-accent: #3b4050;
+      --text: #e4e6eb;
+      --text-muted: #8b8fa3;
+      --text-dim: #5c6070;
+      --accent-blue: #4a9eff;
+      --accent-green: #34d399;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --accent-violet: #8b5cf6;
+      --accent-cyan: #22d3ee;
+      --pk: #f59e0b;
+      --fk: #4a9eff;
+      --uk: #8b5cf6;
+      --not-null: #34d399;
+      --radius: 10px;
+      --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+    }
+
+    html {
+      font-size: 14px;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* ====== Page Header ====== */
+    .page-header {
+      padding: 2.5rem 2rem 1.5rem;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .page-header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.35rem;
+    }
+
+    .page-header p {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      max-width: 68ch;
+    }
+
+    /* ====== Legend ====== */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      padding: 1rem 2rem;
+      max-width: 1600px;
+      margin: 0 auto 1rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+    }
+
+    .legend-dot.pk { background: var(--pk); }
+    .legend-dot.fk { background: var(--fk); }
+    .legend-dot.uk { background: var(--uk); }
+    .legend-dot.nn { background: var(--not-null); }
+
+    /* ====== Migration Groups ====== */
+    .migration-group {
+      max-width: 1600px;
+      margin: 0 auto 2rem;
+      padding: 0 2rem;
+    }
+
+    .migration-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent-blue);
+      margin-bottom: 1rem;
+      padding: 0.35rem 0.75rem;
+      background: rgba(74, 158, 255, 0.08);
+      border-radius: 6px;
+      border: 1px solid rgba(74, 158, 255, 0.15);
+    }
+
+    .migration-label span {
+      color: var(--text-muted);
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    /* ====== Entity Grid ====== */
+    .entity-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 1.25rem;
+    }
+
+    /* ====== Entity Card ====== */
+    .entity {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .entity:hover {
+      border-color: var(--border-accent);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+    }
+
+    .entity-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .entity-name {
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .entity-badge {
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .entity-badge.core {
+      background: rgba(52, 211, 153, 0.12);
+      color: var(--accent-green);
+      border: 1px solid rgba(52, 211, 153, 0.2);
+    }
+
+    .entity-badge.auth {
+      background: rgba(245, 158, 11, 0.12);
+      color: var(--accent-amber);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
+    .entity-badge.eval {
+      background: rgba(139, 92, 246, 0.12);
+      color: var(--accent-violet);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+    }
+
+    .entity-badge.job {
+      background: rgba(34, 211, 238, 0.12);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(34, 211, 238, 0.2);
+    }
+
+    .entity-badge.review {
+      background: rgba(244, 63, 94, 0.12);
+      color: var(--accent-rose);
+      border: 1px solid rgba(244, 63, 94, 0.2);
+    }
+
+    .entity-badge.export {
+      background: rgba(74, 158, 255, 0.12);
+      color: var(--accent-blue);
+      border: 1px solid rgba(74, 158, 255, 0.2);
+    }
+
+    .entity-badge.secret {
+      background: rgba(245, 158, 11, 0.12);
+      color: var(--accent-amber);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
+    /* ====== Column List ====== */
+    .column-list {
+      list-style: none;
+    }
+
+    .column-item {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      font-size: 0.82rem;
+      transition: background 0.15s;
+    }
+
+    .column-item:last-child {
+      border-bottom: none;
+    }
+
+    .column-item:hover {
+      background: var(--surface-hover);
+    }
+
+    .col-name {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text);
+    }
+
+    .col-type {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      text-align: right;
+    }
+
+    .col-constraints {
+      display: flex;
+      gap: 0.25rem;
+      justify-content: flex-end;
+    }
+
+    .constraint-tag {
+      font-size: 0.58rem;
+      font-weight: 700;
+      padding: 0.08rem 0.35rem;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .constraint-tag.pk {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--pk);
+    }
+
+    .constraint-tag.fk {
+      background: rgba(74, 158, 255, 0.15);
+      color: var(--fk);
+    }
+
+    .constraint-tag.uk {
+      background: rgba(139, 92, 246, 0.15);
+      color: var(--uk);
+    }
+
+    .constraint-tag.nn {
+      background: rgba(52, 211, 153, 0.1);
+      color: var(--not-null);
+    }
+
+    /* ====== Relationship Section ====== */
+    .relationship-section {
+      max-width: 1600px;
+      margin: 2rem auto 3rem;
+      padding: 0 2rem;
+    }
+
+    .relationship-section h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      letter-spacing: -0.01em;
+    }
+
+    .rel-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+
+    .rel-table thead {
+      position: sticky;
+      top: 0;
+    }
+
+    .rel-table th {
+      text-align: left;
+      padding: 0.65rem 1rem;
+      background: var(--surface);
+      border-bottom: 2px solid var(--border);
+      font-weight: 600;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+
+    .rel-table td {
+      padding: 0.55rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      vertical-align: top;
+    }
+
+    .rel-table tbody tr:hover td {
+      background: var(--surface-hover);
+    }
+
+    .rel-from,
+    .rel-to {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+    }
+
+    .rel-from { color: var(--accent-amber); }
+    .rel-to { color: var(--accent-blue); }
+
+    .rel-cardinality {
+      font-weight: 600;
+      color: var(--accent-green);
+    }
+
+    .rel-desc {
+      color: var(--text-muted);
+      font-size: 0.78rem;
+    }
+
+    .cascade-tag {
+      font-size: 0.62rem;
+      font-weight: 600;
+      padding: 0.1rem 0.4rem;
+      border-radius: 3px;
+      background: rgba(244, 63, 94, 0.12);
+      color: var(--accent-rose);
+    }
+
+    /* ====== Footer ====== */
+    .page-footer {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.72rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ====== Responsive ====== */
+    @media (max-width: 768px) {
+      .entity-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .page-header,
+      .migration-group,
+      .relationship-section,
+      .legend {
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+
+      .rel-table {
+        display: block;
+        overflow-x: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============ Header ============ -->
+  <header class="page-header">
+    <h1>VSF-QC-Copilot — Mô hình thực thể liên kết (ER Diagram)</h1>
+    <p>
+      Tổng hợp toàn bộ schema từ 5 Flyway migrations (V1 → V5).
+      Mỗi bảng hiển thị cột, kiểu dữ liệu và ràng buộc. Bảng quan hệ ở cuối trang mô tả FK và cardinality.
+    </p>
+  </header>
+
+  <!-- ============ Legend ============ -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot pk"></div> Primary Key</div>
+    <div class="legend-item"><div class="legend-dot fk"></div> Foreign Key</div>
+    <div class="legend-item"><div class="legend-dot uk"></div> Unique</div>
+    <div class="legend-item"><div class="legend-dot nn"></div> Not Null</div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- V1 — Init Schema                                              -->
+  <!-- ============================================================ -->
+  <section class="migration-group">
+    <div class="migration-label">
+      V1__init_schema
+      <span>Auth, Project, Connector, Requirement, Dataset, TestCase, Rubric</span>
+    </div>
+
+    <div class="entity-grid">
+
+      <!-- ─── users ─── -->
+      <article class="entity">
+        <div class="entity-header">
+          <span class="entity-name">users</span>
+          <span class="entity-badge auth">Auth</span>
+        </div>
+        <ul class="column-list">
+          <li class="column-item">
+            <span class="col-name">id</span>
+            <span class="col-type">BIGINT IDENTITY</span>
+            <span class="col-constraints"><span class="constraint-tag pk">PK</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">public_id</span>
+            <span class="col-type">UUID</span>
+            <span class="col-constraints"><span class="constraint-tag uk">UK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">username</span>
+            <span class="col-type">VARCHAR(100)</span>
+            <span class="col-constraints"><span class="constraint-tag uk">UK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">password_hash</span>
+            <span class="col-type">VARCHAR(255)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">display_name</span>
+            <span class="col-type">VARCHAR(255)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">role</span>
+            <span class="col-type">VARCHAR(50)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">status</span>
+            <span class="col-type">VARCHAR(50)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">last_login_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">created_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">updated_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+        </ul>
+      </article>
+
+      <!-- ─── email_verification_tokens ─── -->
+      <article class="entity">
+        <div class="entity-header">
+          <span class="entity-name">email_verification_tokens</span>
+          <span class="entity-badge auth">Auth</span>
+        </div>
+        <ul class="column-list">
+          <li class="column-item">
+            <span class="col-name">id</span>
+            <span class="col-type">BIGINT IDENTITY</span>
+            <span class="col-constraints"><span class="constraint-tag pk">PK</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">public_id</span>
+            <span class="col-type">UUID</span>
+            <span class="col-constraints"><span class="constraint-tag uk">UK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">user_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">token_hash</span>
+            <span class="col-type">VARCHAR(64)</span>
+            <span class="col-constraints"><span class="constraint-tag uk">UK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">expires_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">used_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">created_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+        </ul>
+      </article>
+
+      <!-- ─── password_reset_tokens ─── -->
+      <article class="entity">
+        <div class="entity-header">
+          <span class="entity-name">password_reset_tokens</span>
+          <span class="entity-badge auth">Auth</span>
+        </div>
+        <ul class="column-list">
+          <li class="column-item">
+            <span class="col-name">id</span>
+            <span class="col-type">BIGINT IDENTITY</span>
+            <span class="col-constraints"><span class="constraint-tag pk">PK</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">public_id</span>
+            <span class="col-type">UUID</span>
+            <span class="col-constraints"><span class="constraint-tag uk">UK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">user_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">token_hash</span>
+            <span class="col-type">VARCHAR(64)</span>
+            <span class="col-constraints"><span class="constraint-tag uk">UK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">expires_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">used_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">created_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+        </ul>
+      </article>
+
+      <!-- ─── projects ─── -->
+      <article class="entity">
+        <div class="entity-header">
+          <span class="entity-name">projects</span>
+          <span class="entity-badge core">Core</span>
+        </div>
+        <ul class="column-list">
+          <li class="column-item">
+            <span class="col-name">id</span>
+            <span class="col-type">BIGINT IDENTITY</span>
+            <span class="col-constraints"><span class="constraint-tag pk">PK</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">public_id</span>
+            <span class="col-type">UUID</span>
+            <span class="col-constraints"><span class="constraint-tag uk">UK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">name</span>
+            <span class="col-type">VARCHAR(255)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">description</span>
+            <span class="col-type">TEXT</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">evaluation_scope</span>
+            <span class="col-type">TEXT</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">retention_days</span>
+            <span class="col-type">INTEGER</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">status</span>
+            <span class="col-type">VARCHAR(50)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">created_by</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">archived_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">created_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">updated_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+        </ul>
+      </article>
+
+      <!-- ─── target_api_connectors ─── -->
+      <article class="entity">
+        <div class="entity-header">
+          <span class="entity-name">target_api_connectors</span>
+          <span class="entity-badge core">Core</span>
+        </div>
+        <ul class="column-list">
+          <li class="column-item">
+            <span class="col-name">id</span>
+            <span class="col-type">BIGINT IDENTITY</span>
+            <span class="col-constraints"><span class="constraint-tag pk">PK</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">public_id</span>
+            <span class="col-type">UUID</span>
+            <span class="col-constraints"><span class="constraint-tag uk">UK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">project_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">name</span>
+            <span class="col-type">VARCHAR(255)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">description</span>
+            <span class="col-type">TEXT</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">method</span>
+            <span class="col-type">VARCHAR(20)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">url</span>
+            <span class="col-type">TEXT</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">headers_json</span>
+            <span class="col-type">JSONB</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">body_template_json</span>
+            <span class="col-type">JSONB</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">auth_type</span>
+            <span class="col-type">VARCHAR(50)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">response_selector</span>
+            <span class="col-type">VARCHAR(255)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">timeout_seconds</span>
+            <span class="col-type">INTEGER</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">active</span>
+            <span class="col-type">BOOLEAN</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">created_by</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">created_at / updated_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+        </ul>
+      </article>
+
+      <!-- ─── business_requirements ─── -->
+      <article class="entity">
+        <div class="entity-header">
+          <span class="entity-name">business_requirements</span>
+          <span class="entity-badge core">Core</span>
+        </div>
+        <ul class="column-list">
+          <li class="column-item">
+            <span class="col-name">id</span>
+            <span class="col-type">BIGINT IDENTITY</span>
+            <span class="col-constraints"><span class="constraint-tag pk">PK</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">public_id</span>
+            <span class="col-type">UUID</span>
+            <span class="col-constraints"><span class="constraint-tag uk">UK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">project_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">content</span>
+            <span class="col-type">TEXT</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">version</span>
+            <span class="col-type">INTEGER</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">status</span>
+            <span class="col-type">VARCHAR(50)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">created_by</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">created_at / updated_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+        </ul>
+      </article>
+
+      <!-- ─── datasets ─── -->
+      <article class="entity">
+        <div class="entity-header">
+          <span class="entity-name">datasets</span>
+          <span class="entity-badge core">Core</span>
+        </div>
+        <ul class="column-list">
+          <li class="column-item">
+            <span class="col-name">id</span>
+            <span class="col-type">BIGINT IDENTITY</span>
+            <span class="col-constraints"><span class="constraint-tag pk">PK</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">public_id</span>
+            <span class="col-type">UUID</span>
+            <span class="col-constraints"><span class="constraint-tag uk">UK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">project_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">requirement_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">name</span>
+            <span class="col-type">VARCHAR(255)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">source_type</span>
+            <span class="col-type">VARCHAR(50)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">status</span>
+            <span class="col-type">VARCHAR(50)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">created_by</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">approved_by</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">created_at / updated_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+        </ul>
+      </article>
+
+      <!-- ─── test_cases ─── -->
+      <article class="entity">
+        <div class="entity-header">
+          <span class="entity-name">test_cases</span>
+          <span class="entity-badge core">Core</span>
+        </div>
+        <ul class="column-list">
+          <li class="column-item">
+            <span class="col-name">id</span>
+            <span class="col-type">BIGINT IDENTITY</span>
+            <span class="col-constraints"><span class="constraint-tag pk">PK</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">public_id</span>
+            <span class="col-type">UUID</span>
+            <span class="col-constraints"><span class="constraint-tag uk">UK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">dataset_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">question</span>
+            <span class="col-type">TEXT</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">precondition</span>
+            <span class="col-type">JSONB</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">ground_truth</span>
+            <span class="col-type">TEXT</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">metadata_json</span>
+            <span class="col-type">JSONB</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">status</span>
+            <span class="col-type">VARCHAR(50)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">sort_order</span>
+            <span class="col-type">INTEGER</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">created_at / updated_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+        </ul>
+      </article>
+
+      <!-- ─── rubrics ─── -->
+      <article class="entity">
+        <div class="entity-header">
+          <span class="entity-name">rubrics</span>
+          <span class="entity-badge core">Core</span>
+        </div>
+        <ul class="column-list">
+          <li class="column-item">
+            <span class="col-name">id</span>
+            <span class="col-type">BIGINT IDENTITY</span>
+            <span class="col-constraints"><span class="constraint-tag pk">PK</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">public_id</span>
+            <span class="col-type">UUID</span>
+            <span class="col-constraints"><span class="constraint-tag uk">UK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">project_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">name</span>
+            <span class="col-type">VARCHAR(255)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">current_version</span>
+            <span class="col-type">INTEGER</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">status</span>
+            <span class="col-type">VARCHAR(50)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">created_by</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">created_at / updated_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+        </ul>
+      </article>
+
+      <!-- ─── rubric_versions ─── -->
+      <article class="entity">
+        <div class="entity-header">
+          <span class="entity-name">rubric_versions</span>
+          <span class="entity-badge core">Core</span>
+        </div>
+        <ul class="column-list">
+          <li class="column-item">
+            <span class="col-name">id</span>
+            <span class="col-type">BIGINT IDENTITY</span>
+            <span class="col-constraints"><span class="constraint-tag pk">PK</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">public_id</span>
+            <span class="col-type">UUID</span>
+            <span class="col-constraints"><span class="constraint-tag uk">UK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">rubric_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">version</span>
+            <span class="col-type">INTEGER</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">status</span>
+            <span class="col-type">VARCHAR(50)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">created_by</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">published_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">created_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+        </ul>
+      </article>
+
+      <!-- ─── rubric_criteria ─── -->
+      <article class="entity">
+        <div class="entity-header">
+          <span class="entity-name">rubric_criteria</span>
+          <span class="entity-badge core">Core</span>
+        </div>
+        <ul class="column-list">
+          <li class="column-item">
+            <span class="col-name">id</span>
+            <span class="col-type">BIGINT IDENTITY</span>
+            <span class="col-constraints"><span class="constraint-tag pk">PK</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">public_id</span>
+            <span class="col-type">UUID</span>
+            <span class="col-constraints"><span class="constraint-tag uk">UK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">rubric_version_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">name</span>
+            <span class="col-type">VARCHAR(255)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">weight</span>
+            <span class="col-type">NUMERIC(5,4)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">judge_instruction</span>
+            <span class="col-type">TEXT</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">metric_key</span>
+            <span class="col-type">VARCHAR(100)</span>
+            <span class="col-constraints"><span class="constraint-tag uk">UK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">is_critical</span>
+            <span class="col-type">BOOLEAN</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">sort_order</span>
+            <span class="col-type">INTEGER</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">created_at / updated_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+        </ul>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- V2 — Jobs & Evaluation                                        -->
+  <!-- ============================================================ -->
+  <section class="migration-group">
+    <div class="migration-label">
+      V2__create_jobs_evaluation
+      <span>Jobs, Job Events, Evaluation Runs, Evaluation Results</span>
+    </div>
+
+    <div class="entity-grid">
+
+      <!-- ─── jobs ─── -->
+      <article class="entity">
+        <div class="entity-header">
+          <span class="entity-name">jobs</span>
+          <span class="entity-badge job">Job</span>
+        </div>
+        <ul class="column-list">
+          <li class="column-item">
+            <span class="col-name">id</span>
+            <span class="col-type">BIGINT IDENTITY</span>
+            <span class="col-constraints"><span class="constraint-tag pk">PK</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">public_id</span>
+            <span class="col-type">UUID</span>
+            <span class="col-constraints"><span class="constraint-tag uk">UK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">job_type</span>
+            <span class="col-type">VARCHAR(50)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">status</span>
+            <span class="col-type">VARCHAR(50)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">resource_type</span>
+            <span class="col-type">VARCHAR(50)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">resource_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">project_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">created_by</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">progress_current / progress_total</span>
+            <span class="col-type">INTEGER</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">error_message</span>
+            <span class="col-type">TEXT</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">started_at / completed_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"></span>
+          </li>
+        </ul>
+      </article>
+
+      <!-- ─── job_events ─── -->
+      <article class="entity">
+        <div class="entity-header">
+          <span class="entity-name">job_events</span>
+          <span class="entity-badge job">Job</span>
+        </div>
+        <ul class="column-list">
+          <li class="column-item">
+            <span class="col-name">id</span>
+            <span class="col-type">BIGINT IDENTITY</span>
+            <span class="col-constraints"><span class="constraint-tag pk">PK</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">public_id</span>
+            <span class="col-type">UUID</span>
+            <span class="col-constraints"><span class="constraint-tag uk">UK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">job_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">event_type</span>
+            <span class="col-type">VARCHAR(100)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">payload_json</span>
+            <span class="col-type">JSONB</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">created_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+        </ul>
+      </article>
+
+      <!-- ─── evaluation_runs ─── -->
+      <article class="entity">
+        <div class="entity-header">
+          <span class="entity-name">evaluation_runs</span>
+          <span class="entity-badge eval">Eval</span>
+        </div>
+        <ul class="column-list">
+          <li class="column-item">
+            <span class="col-name">id</span>
+            <span class="col-type">BIGINT IDENTITY</span>
+            <span class="col-constraints"><span class="constraint-tag pk">PK</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">public_id</span>
+            <span class="col-type">UUID</span>
+            <span class="col-constraints"><span class="constraint-tag uk">UK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">project_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">dataset_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">rubric_version_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">target_api_connector_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">job_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">status</span>
+            <span class="col-type">VARCHAR(50)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">total / passed / failed / warning / error</span>
+            <span class="col-type">INTEGER</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">pass_rate</span>
+            <span class="col-type">NUMERIC(6,4)</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">created_by</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+        </ul>
+      </article>
+
+      <!-- ─── evaluation_results ─── -->
+      <article class="entity">
+        <div class="entity-header">
+          <span class="entity-name">evaluation_results</span>
+          <span class="entity-badge eval">Eval</span>
+        </div>
+        <ul class="column-list">
+          <li class="column-item">
+            <span class="col-name">id</span>
+            <span class="col-type">BIGINT IDENTITY</span>
+            <span class="col-constraints"><span class="constraint-tag pk">PK</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">public_id</span>
+            <span class="col-type">UUID</span>
+            <span class="col-constraints"><span class="constraint-tag uk">UK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">evaluation_run_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">test_case_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">actual_answer</span>
+            <span class="col-type">TEXT</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">judge_score</span>
+            <span class="col-type">NUMERIC(6,4)</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">judge_status</span>
+            <span class="col-type">VARCHAR(50)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">judge_reason</span>
+            <span class="col-type">TEXT</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">criteria_results_json</span>
+            <span class="col-type">JSONB</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">latency_ms</span>
+            <span class="col-type">INTEGER</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">created_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+        </ul>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- V3 — Review Decisions                                          -->
+  <!-- ============================================================ -->
+  <section class="migration-group">
+    <div class="migration-label">
+      V3__create_review_decisions
+      <span>QC Review</span>
+    </div>
+
+    <div class="entity-grid">
+      <article class="entity">
+        <div class="entity-header">
+          <span class="entity-name">review_decisions</span>
+          <span class="entity-badge review">Review</span>
+        </div>
+        <ul class="column-list">
+          <li class="column-item">
+            <span class="col-name">id</span>
+            <span class="col-type">BIGINT IDENTITY</span>
+            <span class="col-constraints"><span class="constraint-tag pk">PK</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">public_id</span>
+            <span class="col-type">UUID</span>
+            <span class="col-constraints"><span class="constraint-tag uk">UK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">evaluation_result_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag uk">UK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">qc_status</span>
+            <span class="col-type">VARCHAR(50)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">qc_note</span>
+            <span class="col-type">TEXT</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">pic_bug_user_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">reviewed_by</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">reviewed_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">updated_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- V4 — Export Files                                              -->
+  <!-- ============================================================ -->
+  <section class="migration-group">
+    <div class="migration-label">
+      V4__create_export_files
+      <span>Export</span>
+    </div>
+
+    <div class="entity-grid">
+      <article class="entity">
+        <div class="entity-header">
+          <span class="entity-name">export_files</span>
+          <span class="entity-badge export">Export</span>
+        </div>
+        <ul class="column-list">
+          <li class="column-item">
+            <span class="col-name">id</span>
+            <span class="col-type">BIGINT IDENTITY</span>
+            <span class="col-constraints"><span class="constraint-tag pk">PK</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">public_id</span>
+            <span class="col-type">UUID</span>
+            <span class="col-constraints"><span class="constraint-tag uk">UK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">project_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">evaluation_run_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">job_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">file_type</span>
+            <span class="col-type">VARCHAR(50)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">status</span>
+            <span class="col-type">VARCHAR(50)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">file_name</span>
+            <span class="col-type">VARCHAR(255)</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">storage_provider</span>
+            <span class="col-type">VARCHAR(50)</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">storage_key</span>
+            <span class="col-type">TEXT</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">content_type</span>
+            <span class="col-type">VARCHAR(255)</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">size_bytes</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">created_by</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">created_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">ready_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"></span>
+          </li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- V5 — Connector Secrets                                        -->
+  <!-- ============================================================ -->
+  <section class="migration-group">
+    <div class="migration-label">
+      V5__create_connector_secrets
+      <span>Secret Store</span>
+    </div>
+
+    <div class="entity-grid">
+      <article class="entity">
+        <div class="entity-header">
+          <span class="entity-name">connector_secrets</span>
+          <span class="entity-badge secret">Secret</span>
+        </div>
+        <ul class="column-list">
+          <li class="column-item">
+            <span class="col-name">id</span>
+            <span class="col-type">BIGINT IDENTITY</span>
+            <span class="col-constraints"><span class="constraint-tag pk">PK</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">connector_id</span>
+            <span class="col-type">BIGINT</span>
+            <span class="col-constraints"><span class="constraint-tag fk">FK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">secret_key</span>
+            <span class="col-type">VARCHAR(255)</span>
+            <span class="col-constraints"><span class="constraint-tag uk">UK</span><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">encrypted_value</span>
+            <span class="col-type">TEXT</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">masked_value</span>
+            <span class="col-type">VARCHAR(50)</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+          <li class="column-item">
+            <span class="col-name">created_at / updated_at</span>
+            <span class="col-type">TIMESTAMPTZ</span>
+            <span class="col-constraints"><span class="constraint-tag nn">NN</span></span>
+          </li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- Relationship Table                                            -->
+  <!-- ============================================================ -->
+  <section class="relationship-section">
+    <h2>Bảng quan hệ (Foreign Key Relationships)</h2>
+    <table class="rel-table">
+      <thead>
+        <tr>
+          <th>Bảng nguồn (FK)</th>
+          <th>Cột FK</th>
+          <th>Tham chiếu đến</th>
+          <th>Cardinality</th>
+          <th>Mô tả</th>
+          <th>Hành vi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Auth domain -->
+        <tr>
+          <td class="rel-from">email_verification_tokens</td>
+          <td>user_id</td>
+          <td class="rel-to">users.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Mỗi token xác thực email thuộc về 1 user</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="rel-from">password_reset_tokens</td>
+          <td>user_id</td>
+          <td class="rel-to">users.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Mỗi token reset password thuộc về 1 user</td>
+          <td></td>
+        </tr>
+
+        <!-- Project domain -->
+        <tr>
+          <td class="rel-from">projects</td>
+          <td>created_by</td>
+          <td class="rel-to">users.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Project được tạo bởi 1 user (owner-scoped)</td>
+          <td></td>
+        </tr>
+
+        <!-- Connector domain -->
+        <tr>
+          <td class="rel-from">target_api_connectors</td>
+          <td>project_id</td>
+          <td class="rel-to">projects.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Connector nằm trong 1 project</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="rel-from">target_api_connectors</td>
+          <td>created_by</td>
+          <td class="rel-to">users.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Connector được tạo bởi 1 user</td>
+          <td></td>
+        </tr>
+
+        <!-- Requirement domain -->
+        <tr>
+          <td class="rel-from">business_requirements</td>
+          <td>project_id</td>
+          <td class="rel-to">projects.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Requirement thuộc 1 project</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="rel-from">business_requirements</td>
+          <td>created_by</td>
+          <td class="rel-to">users.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Requirement được tạo bởi 1 user</td>
+          <td></td>
+        </tr>
+
+        <!-- Dataset domain -->
+        <tr>
+          <td class="rel-from">datasets</td>
+          <td>project_id</td>
+          <td class="rel-to">projects.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Dataset thuộc 1 project</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="rel-from">datasets</td>
+          <td>requirement_id</td>
+          <td class="rel-to">business_requirements.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Dataset có thể liên kết với 1 requirement (nullable)</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="rel-from">datasets</td>
+          <td>created_by</td>
+          <td class="rel-to">users.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Dataset được tạo bởi 1 user</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="rel-from">datasets</td>
+          <td>approved_by</td>
+          <td class="rel-to">users.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Dataset được approve bởi 1 user (nullable)</td>
+          <td></td>
+        </tr>
+
+        <!-- Test Case domain -->
+        <tr>
+          <td class="rel-from">test_cases</td>
+          <td>dataset_id</td>
+          <td class="rel-to">datasets.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Test case thuộc 1 dataset</td>
+          <td></td>
+        </tr>
+
+        <!-- Rubric domain -->
+        <tr>
+          <td class="rel-from">rubrics</td>
+          <td>project_id</td>
+          <td class="rel-to">projects.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Rubric thuộc 1 project</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="rel-from">rubrics</td>
+          <td>created_by</td>
+          <td class="rel-to">users.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Rubric được tạo bởi 1 user</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="rel-from">rubric_versions</td>
+          <td>rubric_id</td>
+          <td class="rel-to">rubrics.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Version thuộc 1 rubric</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="rel-from">rubric_versions</td>
+          <td>created_by</td>
+          <td class="rel-to">users.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Version được tạo bởi 1 user</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="rel-from">rubric_criteria</td>
+          <td>rubric_version_id</td>
+          <td class="rel-to">rubric_versions.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Criterion thuộc 1 rubric version</td>
+          <td></td>
+        </tr>
+
+        <!-- Job domain -->
+        <tr>
+          <td class="rel-from">jobs</td>
+          <td>project_id</td>
+          <td class="rel-to">projects.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Job thuộc 1 project (nullable)</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="rel-from">jobs</td>
+          <td>created_by</td>
+          <td class="rel-to">users.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Job được tạo bởi 1 user</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="rel-from">job_events</td>
+          <td>job_id</td>
+          <td class="rel-to">jobs.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Event thuộc 1 job</td>
+          <td></td>
+        </tr>
+
+        <!-- Evaluation domain -->
+        <tr>
+          <td class="rel-from">evaluation_runs</td>
+          <td>project_id</td>
+          <td class="rel-to">projects.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Run thuộc 1 project</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="rel-from">evaluation_runs</td>
+          <td>dataset_id</td>
+          <td class="rel-to">datasets.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Run sử dụng 1 dataset (APPROVED)</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="rel-from">evaluation_runs</td>
+          <td>rubric_version_id</td>
+          <td class="rel-to">rubric_versions.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Run sử dụng 1 rubric version (PUBLISHED)</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="rel-from">evaluation_runs</td>
+          <td>target_api_connector_id</td>
+          <td class="rel-to">target_api_connectors.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Run test qua 1 connector</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="rel-from">evaluation_runs</td>
+          <td>job_id</td>
+          <td class="rel-to">jobs.id</td>
+          <td class="rel-cardinality">1 : 1</td>
+          <td class="rel-desc">Mỗi run có 1 async job (nullable)</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="rel-from">evaluation_runs</td>
+          <td>created_by</td>
+          <td class="rel-to">users.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Run được tạo bởi 1 user</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="rel-from">evaluation_results</td>
+          <td>evaluation_run_id</td>
+          <td class="rel-to">evaluation_runs.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Result thuộc 1 run</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="rel-from">evaluation_results</td>
+          <td>test_case_id</td>
+          <td class="rel-to">test_cases.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Result ánh xạ 1 test case (unique per run)</td>
+          <td></td>
+        </tr>
+
+        <!-- Review domain -->
+        <tr>
+          <td class="rel-from">review_decisions</td>
+          <td>evaluation_result_id</td>
+          <td class="rel-to">evaluation_results.id</td>
+          <td class="rel-cardinality">1 : 1</td>
+          <td class="rel-desc">Mỗi result chỉ có tối đa 1 review decision</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="rel-from">review_decisions</td>
+          <td>reviewed_by</td>
+          <td class="rel-to">users.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Decision được review bởi 1 user</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="rel-from">review_decisions</td>
+          <td>pic_bug_user_id</td>
+          <td class="rel-to">users.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Người chịu trách nhiệm bug (nullable)</td>
+          <td></td>
+        </tr>
+
+        <!-- Export domain -->
+        <tr>
+          <td class="rel-from">export_files</td>
+          <td>project_id</td>
+          <td class="rel-to">projects.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Export thuộc 1 project</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="rel-from">export_files</td>
+          <td>evaluation_run_id</td>
+          <td class="rel-to">evaluation_runs.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Export xuất từ 1 evaluation run</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="rel-from">export_files</td>
+          <td>job_id</td>
+          <td class="rel-to">jobs.id</td>
+          <td class="rel-cardinality">1 : 1</td>
+          <td class="rel-desc">Export có 1 async job (nullable)</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="rel-from">export_files</td>
+          <td>created_by</td>
+          <td class="rel-to">users.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Export được tạo bởi 1 user</td>
+          <td></td>
+        </tr>
+
+        <!-- Secret domain -->
+        <tr>
+          <td class="rel-from">connector_secrets</td>
+          <td>connector_id</td>
+          <td class="rel-to">target_api_connectors.id</td>
+          <td class="rel-cardinality">N : 1</td>
+          <td class="rel-desc">Secret thuộc 1 connector</td>
+          <td><span class="cascade-tag">ON DELETE CASCADE</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer class="page-footer">
+    VSF-QC-Copilot Database Schema &mdash; Generated from Flyway Migrations V1&ndash;V5 &mdash; 17 tables, 37 foreign key relationships
+  </footer>
+
+</body>
+</html>

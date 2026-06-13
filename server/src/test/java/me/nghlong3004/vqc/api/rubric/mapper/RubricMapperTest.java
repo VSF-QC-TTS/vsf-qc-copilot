@@ -2,7 +2,6 @@ package me.nghlong3004.vqc.api.rubric.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -95,7 +94,7 @@ class RubricMapperTest {
     assertThat(response.publicId()).isEqualTo(criterion.getPublicId());
     assertThat(response.rubricVersionPublicId()).isEqualTo(version.getPublicId());
     assertThat(response.name()).isEqualTo("Correctness");
-    assertThat(response.weight()).isEqualByComparingTo("0.4000");
+    assertThat(response.weight()).isEqualTo(4);
     assertThat(response.passCondition()).isEqualTo("Facts match.");
     assertThat(response.failCondition()).isEqualTo("Facts are wrong.");
     assertThat(response.judgeInstruction()).isEqualTo("Compare with ground truth.");
@@ -136,7 +135,7 @@ class RubricMapperTest {
     criterion.setRubricVersion(version);
     criterion.setName("Correctness");
     criterion.setDescription("Checks factual match.");
-    criterion.setWeight(new BigDecimal("0.4000"));
+    criterion.setWeight(4);
     criterion.setPassCondition("Facts match.");
     criterion.setFailCondition("Facts are wrong.");
     criterion.setJudgeInstruction("Compare with ground truth.");

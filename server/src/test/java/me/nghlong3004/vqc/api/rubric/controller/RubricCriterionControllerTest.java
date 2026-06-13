@@ -10,7 +10,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -70,7 +69,7 @@ class RubricCriterionControllerTest {
                     {
                       "name": "Correctness",
                       "description": "Checks factual match.",
-                      "weight": 0.4000,
+                      "weight": 4,
                       "passCondition": "Facts match.",
                       "failCondition": "Facts are wrong.",
                       "judgeInstruction": "Compare with ground truth.",
@@ -83,7 +82,7 @@ class RubricCriterionControllerTest {
         .andExpect(jsonPath("$.publicId").value("d10d218f-0e3c-4771-bf80-9815751f6460"))
         .andExpect(jsonPath("$.rubricVersionPublicId").value("5cfb4c51-3ac4-44bd-93b4-8eb4e3f46f3a"))
         .andExpect(jsonPath("$.name").value("Correctness"))
-        .andExpect(jsonPath("$.weight").value(0.4000))
+        .andExpect(jsonPath("$.weight").value(4))
         .andExpect(jsonPath("$.metricKey").value("correctness"))
         .andExpect(jsonPath("$.isCritical").value(true))
         .andExpect(jsonPath("$.sortOrder").value(1));
@@ -104,7 +103,7 @@ class RubricCriterionControllerTest {
                     """
                     {
                       "name": " ",
-                      "weight": 1.5000,
+                      "weight": 150,
                       "judgeInstruction": " ",
                       "metricKey": "Invalid-Key"
                     }
@@ -150,7 +149,7 @@ class RubricCriterionControllerTest {
                 .content(
                     """
                     {
-                      "weight": 0.5000,
+                      "weight": 5,
                       "sortOrder": 2
                     }
                     """))
@@ -158,7 +157,7 @@ class RubricCriterionControllerTest {
         .andExpect(jsonPath("$.publicId").value("d10d218f-0e3c-4771-bf80-9815751f6460"));
 
     assertThat(RecordingRubricCriterionService.updateRequest.weight())
-        .isEqualByComparingTo("0.5000");
+        .isEqualTo(5);
   }
 
   @Test
@@ -179,7 +178,7 @@ class RubricCriterionControllerTest {
         UUID.fromString("5cfb4c51-3ac4-44bd-93b4-8eb4e3f46f3a"),
         "Correctness",
         "Checks factual match.",
-        new BigDecimal("0.4000"),
+        4,
         "Facts match.",
         "Facts are wrong.",
         "Compare with ground truth.",

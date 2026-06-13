@@ -1,6 +1,5 @@
 package me.nghlong3004.vqc.api.rubric.service.impl;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -38,7 +37,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class RubricVersionServiceImpl implements RubricVersionService {
 
-  private static final BigDecimal REQUIRED_WEIGHT_TOTAL = new BigDecimal("1.0000");
 
   private final RubricVersionRepository rubricVersionRepository;
   private final RubricRepository rubricRepository;
@@ -141,11 +139,7 @@ public class RubricVersionServiceImpl implements RubricVersionService {
     }
     List<RubricCriterion> criteria =
         rubricCriterionRepository.findByRubricVersionOrderBySortOrderAscIdAsc(rubricVersion);
-    BigDecimal totalWeight =
-        criteria.stream()
-            .map(RubricCriterion::getWeight)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-    if (criteria.isEmpty() || totalWeight.compareTo(REQUIRED_WEIGHT_TOTAL) != 0) {
+    if (criteria.isEmpty()) {
       throw new ResourceException(ErrorCode.RUBRIC_VERSION_PUBLISH_INVALID);
     }
     rubricVersion.setStatus(RubricVersionStatus.PUBLISHED);

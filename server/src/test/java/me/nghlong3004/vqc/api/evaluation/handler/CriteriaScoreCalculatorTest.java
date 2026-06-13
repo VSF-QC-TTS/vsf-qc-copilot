@@ -3,7 +3,6 @@ package me.nghlong3004.vqc.api.evaluation.handler;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import java.math.BigDecimal;
 import java.util.List;
 import me.nghlong3004.vqc.api.evaluation.enums.JudgeStatus;
 import me.nghlong3004.vqc.api.rubric.entity.RubricCriterion;
@@ -29,7 +28,7 @@ class CriteriaScoreCalculatorTest {
   @Test
   void returnsNullScoreAndFallbackWhenBlankJson() {
     ScoringResult result =
-        calculator.computeScore("  ", List.of(criterion("a", "0.5", false)), JudgeStatus.WARNING);
+        calculator.computeScore("  ", List.of(criterion("a", 5, false)), JudgeStatus.WARNING);
 
     assertThat(result.judgeScore()).isNull();
     assertThat(result.judgeStatus()).isEqualTo(JudgeStatus.WARNING);
@@ -39,7 +38,7 @@ class CriteriaScoreCalculatorTest {
   void returnsNullScoreAndFallbackWhenMalformedJson() {
     ScoringResult result =
         calculator.computeScore(
-            "not json", List.of(criterion("a", "0.5", false)), JudgeStatus.PASS);
+            "not json", List.of(criterion("a", 5, false)), JudgeStatus.PASS);
 
     assertThat(result.judgeScore()).isNull();
     assertThat(result.judgeStatus()).isEqualTo(JudgeStatus.PASS);
@@ -51,7 +50,7 @@ class CriteriaScoreCalculatorTest {
         """
         [{"metricKey":"accuracy","pass":true,"score":0.8,"reason":"Good"}]
         """;
-    List<RubricCriterion> criteria = List.of(criterion("accuracy", "1.0000", false));
+    List<RubricCriterion> criteria = List.of(criterion("accuracy", 10, false));
 
     ScoringResult result = calculator.computeScore(json, criteria, JudgeStatus.PASS);
 
@@ -69,7 +68,7 @@ class CriteriaScoreCalculatorTest {
         ]
         """;
     List<RubricCriterion> criteria =
-        List.of(criterion("accuracy", "0.6000", false), criterion("tone", "0.4000", false));
+        List.of(criterion("accuracy", 6, false), criterion("tone", 4, false));
 
     ScoringResult result = calculator.computeScore(json, criteria, JudgeStatus.PASS);
 
@@ -89,8 +88,8 @@ class CriteriaScoreCalculatorTest {
         """;
     List<RubricCriterion> criteria =
         List.of(
-            criterion("accuracy", "0.7000", false),
-            criterion("safety", "0.3000", true));
+            criterion("accuracy", 7, false),
+            criterion("safety", 3, true));
 
     ScoringResult result = calculator.computeScore(json, criteria, JudgeStatus.PASS);
 
@@ -111,8 +110,8 @@ class CriteriaScoreCalculatorTest {
         """;
     List<RubricCriterion> criteria =
         List.of(
-            criterion("accuracy", "0.6000", false),
-            criterion("tone", "0.4000", false));
+            criterion("accuracy", 6, false),
+            criterion("tone", 4, false));
 
     ScoringResult result = calculator.computeScore(json, criteria, JudgeStatus.PASS);
 
@@ -129,7 +128,7 @@ class CriteriaScoreCalculatorTest {
         [{"metricKey":"unknown_metric","pass":true,"score":0.9,"reason":"Fine"}]
         """;
     // No matching criterion for "unknown_metric"
-    List<RubricCriterion> criteria = List.of(criterion("other", "0.5000", false));
+    List<RubricCriterion> criteria = List.of(criterion("other", 5, false));
 
     ScoringResult result = calculator.computeScore(json, criteria, JudgeStatus.PASS);
 
@@ -148,8 +147,8 @@ class CriteriaScoreCalculatorTest {
         """;
     List<RubricCriterion> criteria =
         List.of(
-            criterion("safety", "0.5000", true),
-            criterion("compliance", "0.5000", true));
+            criterion("safety", 5, true),
+            criterion("compliance", 5, true));
 
     ScoringResult result = calculator.computeScore(json, criteria, JudgeStatus.PASS);
 
@@ -157,11 +156,11 @@ class CriteriaScoreCalculatorTest {
     assertThat(result.judgeStatus()).isEqualTo(JudgeStatus.PASS);
   }
 
-  private RubricCriterion criterion(String metricKey, String weight, boolean critical) {
+  private RubricCriterion criterion(String metricKey, int weight, boolean critical) {
     return RubricCriterion.builder()
         .metricKey(metricKey)
         .judgeInstruction("Judge " + metricKey)
-        .weight(new BigDecimal(weight))
+        .weight(weight)
         .critical(critical)
         .build();
   }

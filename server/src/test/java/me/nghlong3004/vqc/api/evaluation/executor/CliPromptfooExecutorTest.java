@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import java.io.IOException;
 import java.lang.reflect.Proxy;
-import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -417,13 +416,13 @@ class CliPromptfooExecutorTest {
             RubricCriterion.builder()
                 .metricKey("accuracy")
                 .judgeInstruction("Check accuracy")
-                .weight(new BigDecimal("0.6000"))
+                .weight(6)
                 .rubricVersion(version)
                 .build(),
             RubricCriterion.builder()
                 .metricKey("tone")
                 .judgeInstruction("Check tone")
-                .weight(new BigDecimal("0.4000"))
+                .weight(4)
                 .rubricVersion(version)
                 .build());
 

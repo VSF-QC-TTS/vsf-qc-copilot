@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.lang.reflect.Proxy;
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -57,7 +56,7 @@ class RubricCriterionServiceImplTest {
             new CreateRubricCriterionRequest(
                 "  Correctness  ",
                 "  Checks factual match.  ",
-                new BigDecimal("0.4000"),
+                4,
                 "  Facts match.  ",
                 "  Facts are wrong.  ",
                 "  Compare with ground truth.  ",
@@ -69,7 +68,7 @@ class RubricCriterionServiceImplTest {
     assertThat(savedCriterion.get().getRubricVersion()).isSameAs(version);
     assertThat(savedCriterion.get().getName()).isEqualTo("Correctness");
     assertThat(savedCriterion.get().getDescription()).isEqualTo("Checks factual match.");
-    assertThat(savedCriterion.get().getWeight()).isEqualByComparingTo("0.4000");
+    assertThat(savedCriterion.get().getWeight()).isEqualTo(4);
     assertThat(savedCriterion.get().getPassCondition()).isEqualTo("Facts match.");
     assertThat(savedCriterion.get().getFailCondition()).isEqualTo("Facts are wrong.");
     assertThat(savedCriterion.get().getJudgeInstruction()).isEqualTo("Compare with ground truth.");
@@ -102,7 +101,7 @@ class RubricCriterionServiceImplTest {
                     new CreateRubricCriterionRequest(
                         "Correctness",
                         null,
-                        new BigDecimal("0.4000"),
+                        4,
                         null,
                         null,
                         "Judge correctness.",
@@ -132,7 +131,7 @@ class RubricCriterionServiceImplTest {
                     new CreateRubricCriterionRequest(
                         "Correctness",
                         null,
-                        new BigDecimal("0.4000"),
+                        4,
                         null,
                         null,
                         "Judge correctness.",
@@ -168,7 +167,7 @@ class RubricCriterionServiceImplTest {
         new UpdateRubricCriterionRequest(
             "  Safety  ",
             "Updated",
-            new BigDecimal("0.6000"),
+            6,
             null,
             null,
             "  Judge safety.  ",
@@ -180,7 +179,7 @@ class RubricCriterionServiceImplTest {
     assertThat(savedCriterion.get()).isSameAs(criterion);
     assertThat(criterion.getName()).isEqualTo("Safety");
     assertThat(criterion.getDescription()).isEqualTo("Updated");
-    assertThat(criterion.getWeight()).isEqualByComparingTo("0.6000");
+    assertThat(criterion.getWeight()).isEqualTo(6);
     assertThat(criterion.getJudgeInstruction()).isEqualTo("Judge safety.");
     assertThat(criterion.getMetricKey()).isEqualTo("safety");
     assertThat(criterion.getCritical()).isFalse();
@@ -362,7 +361,7 @@ class RubricCriterionServiceImplTest {
     criterion.setPublicId(UUID.fromString("d10d218f-0e3c-4771-bf80-9815751f6460"));
     criterion.setRubricVersion(version);
     criterion.setName("Correctness");
-    criterion.setWeight(new BigDecimal("0.4000"));
+    criterion.setWeight(4);
     criterion.setJudgeInstruction("Compare with ground truth.");
     criterion.setMetricKey("correctness");
     criterion.setCritical(true);

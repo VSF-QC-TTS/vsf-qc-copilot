@@ -1,7 +1,6 @@
 package me.nghlong3004.vqc.api.rubric.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -15,7 +14,7 @@ public record RubricCriterionResponse(
     @Schema(description = "Public rubric version identifier.") UUID rubricVersionPublicId,
     @Schema(description = "Criterion name.") String name,
     @Schema(description = "Criterion description.", nullable = true) String description,
-    @Schema(description = "Criterion score weight.") BigDecimal weight,
+    @Schema(description = "Relative importance weight.") int weight,
     @Schema(description = "Pass condition.", nullable = true) String passCondition,
     @Schema(description = "Fail condition.", nullable = true) String failCondition,
     @Schema(description = "Judge instruction.") String judgeInstruction,

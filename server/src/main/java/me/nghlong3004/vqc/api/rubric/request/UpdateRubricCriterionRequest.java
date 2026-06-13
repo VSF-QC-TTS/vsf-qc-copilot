@@ -1,12 +1,10 @@
 package me.nghlong3004.vqc.api.rubric.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.DecimalMax;
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import java.math.BigDecimal;
 
 /**
  * @author nghlong3004 (Long Nguyen Hoang)
@@ -21,11 +19,10 @@ public record UpdateRubricCriterionRequest(
     @Schema(description = "Optional criterion description.", nullable = true)
         @Size(max = 2000, message = "Criterion description must be at most 2000 characters.")
         String description,
-    @Schema(description = "Criterion score weight.", example = "0.4000", nullable = true)
-        @DecimalMin(value = "0.0000", message = "Criterion weight must be at least 0.")
-        @DecimalMax(value = "1.0000", message = "Criterion weight must be at most 1.")
-        @Digits(integer = 1, fraction = 4, message = "Criterion weight must have at most 4 decimal places.")
-        BigDecimal weight,
+    @Schema(description = "Relative importance weight. Higher value = more important.", example = "3", nullable = true)
+        @Min(value = 1, message = "Criterion weight must be at least 1.")
+        @Max(value = 100, message = "Criterion weight must be at most 100.")
+        Integer weight,
     @Schema(description = "Pass condition.", nullable = true)
         @Size(max = 4000, message = "Pass condition must be at most 4000 characters.")
         String passCondition,

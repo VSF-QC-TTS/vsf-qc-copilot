@@ -2,7 +2,6 @@ package me.nghlong3004.vqc.api.evaluation.promptfoo;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import me.nghlong3004.vqc.api.rubric.entity.RubricCriterion;
@@ -32,7 +31,7 @@ class RubricAssertionMapperTest {
         RubricCriterion.builder()
             .metricKey("accuracy")
             .judgeInstruction("Check if the answer is accurate.")
-            .weight(new BigDecimal("0.6000"))
+            .weight(6)
             .build();
 
     List<Map<String, Object>> assertions = mapper.toAssertions(List.of(criterion));
@@ -42,7 +41,7 @@ class RubricAssertionMapperTest {
     assertThat(assertion.get("type")).isEqualTo("llm-rubric");
     assertThat(assertion.get("value")).isEqualTo("Check if the answer is accurate.");
     assertThat(assertion.get("metric")).isEqualTo("accuracy");
-    assertThat((double) assertion.get("weight")).isEqualTo(0.6);
+    assertThat((int) assertion.get("weight")).isEqualTo(6);
   }
 
   @Test
@@ -53,7 +52,7 @@ class RubricAssertionMapperTest {
             .judgeInstruction("Evaluate the tone of the response.")
             .passCondition("Response is professional and empathetic.")
             .failCondition("Response is rude or dismissive.")
-            .weight(new BigDecimal("0.4000"))
+            .weight(4)
             .build();
 
     List<Map<String, Object>> assertions = mapper.toAssertions(List.of(criterion));
@@ -72,7 +71,7 @@ class RubricAssertionMapperTest {
             .judgeInstruction("Is the response relevant?")
             .passCondition("   ")
             .failCondition(null)
-            .weight(new BigDecimal("1.0000"))
+            .weight(10)
             .build();
 
     String value = (String) mapper.toAssertions(List.of(criterion)).getFirst().get("value");
@@ -100,19 +99,19 @@ class RubricAssertionMapperTest {
         RubricCriterion.builder()
             .metricKey("accuracy")
             .judgeInstruction("Accurate?")
-            .weight(new BigDecimal("0.5000"))
+            .weight(5)
             .build();
     RubricCriterion c2 =
         RubricCriterion.builder()
             .metricKey("completeness")
             .judgeInstruction("Complete?")
-            .weight(new BigDecimal("0.3000"))
+            .weight(3)
             .build();
     RubricCriterion c3 =
         RubricCriterion.builder()
             .metricKey("tone")
             .judgeInstruction("Good tone?")
-            .weight(new BigDecimal("0.2000"))
+            .weight(2)
             .build();
 
     List<Map<String, Object>> assertions = mapper.toAssertions(List.of(c1, c2, c3));

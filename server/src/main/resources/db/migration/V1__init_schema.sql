@@ -240,7 +240,7 @@ CREATE TABLE rubric_criteria (
     rubric_version_id BIGINT NOT NULL,
     name VARCHAR(255) NOT NULL,
     description TEXT,
-    weight NUMERIC(5,4) NOT NULL,
+    weight INTEGER NOT NULL DEFAULT 1,
     pass_condition TEXT,
     fail_condition TEXT,
     judge_instruction TEXT NOT NULL,

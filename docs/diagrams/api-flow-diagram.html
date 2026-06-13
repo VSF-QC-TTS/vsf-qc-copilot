@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VSF-QC-Copilot — API Flow Diagram</title>
+  <style>
+    /* ====== Reset & Base ====== */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #181b24;
+      --surface-alt: #1a1e2a;
+      --surface-hover: #1e2230;
+      --border: #2a2e3a;
+      --border-accent: #3b4050;
+      --text: #e4e6eb;
+      --text-muted: #8b8fa3;
+      --text-dim: #5c6070;
+
+      --get: #34d399;
+      --post: #4a9eff;
+      --patch: #f59e0b;
+      --put: #a78bfa;
+      --delete: #f43f5e;
+
+      --domain-auth: #f59e0b;
+      --domain-user: #22d3ee;
+      --domain-project: #34d399;
+      --domain-connector: #60a5fa;
+      --domain-requirement: #a78bfa;
+      --domain-dataset: #f472b6;
+      --domain-testcase: #fb923c;
+      --domain-rubric: #818cf8;
+      --domain-eval: #14b8a6;
+      --domain-job: #e879f9;
+      --domain-review: #f43f5e;
+      --domain-export: #38bdf8;
+      --domain-mock: #94a3b8;
+
+      --radius: 10px;
+      --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+    }
+
+    html {
+      font-size: 14px;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* ====== Page Header ====== */
+    .page-header {
+      padding: 2.5rem 2rem 1rem;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .page-header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.35rem;
+    }
+
+    .page-header p {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      max-width: 80ch;
+      line-height: 1.6;
+    }
+
+    /* ====== Legends ====== */
+    .legend-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding: 1rem 2rem;
+      max-width: 1600px;
+      margin: 0 auto 0.5rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .method-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.62rem;
+      font-weight: 800;
+      padding: 0.12rem 0.45rem;
+      border-radius: 3px;
+      letter-spacing: 0.04em;
+      line-height: 1;
+      min-width: 38px;
+      text-align: center;
+    }
+
+    .method-pill.get {
+      background: rgba(52, 211, 153, 0.15);
+      color: var(--get);
+    }
+
+    .method-pill.post {
+      background: rgba(74, 158, 255, 0.15);
+      color: var(--post);
+    }
+
+    .method-pill.patch {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--patch);
+    }
+
+    .method-pill.put {
+      background: rgba(167, 139, 250, 0.15);
+      color: var(--put);
+    }
+
+    .method-pill.delete {
+      background: rgba(244, 63, 94, 0.15);
+      color: var(--delete);
+    }
+
+    /* ====== Main Flow Section ====== */
+    .flow-section {
+      max-width: 1600px;
+      margin: 1.5rem auto 2rem;
+      padding: 0 2rem;
+    }
+
+    .flow-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+
+    /* ====== Flow Timeline ====== */
+    .flow-timeline {
+      position: relative;
+      padding-left: 2rem;
+    }
+
+    .flow-timeline::before {
+      content: "";
+      position: absolute;
+      left: 7px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(
+        to bottom,
+        var(--domain-auth),
+        var(--domain-project),
+        var(--domain-connector),
+        var(--domain-eval),
+        var(--domain-review),
+        var(--domain-export)
+      );
+      border-radius: 1px;
+      opacity: 0.3;
+    }
+
+    /* ====== Domain Block ====== */
+    .domain-block {
+      position: relative;
+      margin-bottom: 2rem;
+    }
+
+    .domain-dot {
+      position: absolute;
+      left: -2rem;
+      top: 0.3rem;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 3px solid var(--bg);
+      z-index: 1;
+    }
+
+    .domain-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .domain-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .domain-tag {
+      font-size: 0.62rem;
+      font-weight: 600;
+      padding: 0.15rem 0.55rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .domain-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+      max-width: 72ch;
+    }
+
+    /* ====== Endpoint List ====== */
+    .endpoint-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .endpoint {
+      display: grid;
+      grid-template-columns: 52px 1fr auto;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.55rem 0.9rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      transition: border-color 0.15s, background 0.15s;
+      cursor: default;
+    }
+
+    .endpoint:hover {
+      border-color: var(--border-accent);
+      background: var(--surface-hover);
+    }
+
+    .endpoint-path {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--text);
+      word-break: break-all;
+    }
+
+    .endpoint-path .param {
+      color: var(--patch);
+    }
+
+    .endpoint-summary {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .status-code {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.08rem 0.35rem;
+      border-radius: 3px;
+      margin-left: 0.35rem;
+    }
+
+    .status-code.s200 {
+      background: rgba(52, 211, 153, 0.12);
+      color: var(--get);
+    }
+
+    .status-code.s201 {
+      background: rgba(74, 158, 255, 0.12);
+      color: var(--post);
+    }
+
+    .status-code.s202 {
+      background: rgba(167, 139, 250, 0.12);
+      color: var(--put);
+    }
+
+    .status-code.s204 {
+      background: rgba(148, 163, 184, 0.12);
+      color: var(--text-muted);
+    }
+
+    /* ====== MVP Flow Section ====== */
+    .mvp-flow {
+      max-width: 1600px;
+      margin: 3rem auto 2rem;
+      padding: 0 2rem;
+    }
+
+    .mvp-flow h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      letter-spacing: -0.01em;
+    }
+
+    .flow-steps {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0;
+      align-items: stretch;
+    }
+
+    .flow-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem 1.25rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      min-width: 140px;
+      flex: 1;
+      text-align: center;
+      position: relative;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .flow-step:hover {
+      border-color: var(--border-accent);
+      box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .flow-step-number {
+      font-size: 0.6rem;
+      font-weight: 800;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.4rem;
+    }
+
+    .flow-step-name {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.25rem;
+    }
+
+    .flow-step-detail {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .flow-arrow {
+      display: flex;
+      align-items: center;
+      padding: 0 0.25rem;
+      color: var(--text-dim);
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    /* ====== Async Flow Section ====== */
+    .async-flow {
+      max-width: 1600px;
+      margin: 2rem auto 2rem;
+      padding: 0 2rem;
+    }
+
+    .async-flow h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+
+    .async-diagram {
+      display: grid;
+      grid-template-columns: 1fr 80px 1fr 80px 1fr;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .async-box {
+      padding: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      text-align: center;
+    }
+
+    .async-box-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+
+    .async-box-desc {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .async-arrow {
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.72rem;
+    }
+
+    .async-arrow-line {
+      font-size: 1.2rem;
+    }
+
+    /* ====== Auth Detail ====== */
+    .auth-detail {
+      max-width: 1600px;
+      margin: 2rem auto;
+      padding: 0 2rem;
+    }
+
+    .auth-detail h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+
+    .auth-flow-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1rem;
+    }
+
+    .auth-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+
+    .auth-card-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .auth-card-step {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .auth-card-step ol {
+      padding-left: 1.2rem;
+    }
+
+    .auth-card-step li {
+      margin-bottom: 0.25rem;
+    }
+
+    .auth-card-step code {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 0.1rem 0.3rem;
+      border-radius: 3px;
+      color: var(--accent-blue, #4a9eff);
+    }
+
+    /* ====== Footer ====== */
+    .page-footer {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.72rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ====== Responsive ====== */
+    @media (max-width: 768px) {
+      .page-header,
+      .flow-section,
+      .mvp-flow,
+      .async-flow,
+      .auth-detail,
+      .legend-bar {
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+
+      .flow-steps {
+        flex-direction: column;
+      }
+
+      .flow-arrow {
+        transform: rotate(90deg);
+        padding: 0.25rem 0;
+      }
+
+      .async-diagram {
+        grid-template-columns: 1fr;
+      }
+
+      .async-arrow {
+        transform: rotate(90deg);
+      }
+
+      .endpoint {
+        grid-template-columns: 48px 1fr;
+      }
+
+      .endpoint-summary {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============ Header ============ -->
+  <header class="page-header">
+    <h1>VSF-QC-Copilot — API Flow Diagram</h1>
+    <p>
+      Luồng hoạt động của hệ thống được mô tả qua 15 Controller, bao gồm 50+ endpoint.
+      Trang này giúp hình dung cách các API kết nối với nhau, luồng xác thực, luồng MVP chính,
+      và cơ chế xử lý async qua Redis/Job/Worker.
+    </p>
+  </header>
+
+  <!-- ============ Legend ============ -->
+  <div class="legend-bar">
+    <div class="legend-item"><span class="method-pill get">GET</span> Đọc dữ liệu</div>
+    <div class="legend-item"><span class="method-pill post">POST</span> Tạo mới</div>
+    <div class="legend-item"><span class="method-pill patch">PATCH</span> Cập nhật</div>
+    <div class="legend-item"><span class="method-pill put">PUT</span> Thay thế / Upsert</div>
+    <div class="legend-item"><span class="method-pill delete">DEL</span> Xóa / Archive</div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MVP Flow Overview                                             -->
+  <!-- ============================================================ -->
+  <section class="mvp-flow">
+    <h2>Luồng MVP chính (Main Flow)</h2>
+    <div class="flow-steps">
+      <div class="flow-step" style="border-color: rgba(245, 158, 11, 0.3);">
+        <div class="flow-step-number">Bước 1</div>
+        <div class="flow-step-name" style="color: var(--domain-auth);">Login</div>
+        <div class="flow-step-detail">Register → Verify Email → Login → nhận Access Token</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="border-color: rgba(52, 211, 153, 0.3);">
+        <div class="flow-step-number">Bước 2</div>
+        <div class="flow-step-name" style="color: var(--domain-project);">Project</div>
+        <div class="flow-step-detail">Tạo project chứa scope đánh giá</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="border-color: rgba(96, 165, 250, 0.3);">
+        <div class="flow-step-number">Bước 3</div>
+        <div class="flow-step-name" style="color: var(--domain-connector);">Connector</div>
+        <div class="flow-step-detail">Cấu hình API chatbot target, test-run để kiểm tra</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="border-color: rgba(167, 139, 250, 0.3);">
+        <div class="flow-step-number">Bước 4</div>
+        <div class="flow-step-name" style="color: var(--domain-requirement);">Requirement</div>
+        <div class="flow-step-detail">Tạo business requirement cho project</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="border-color: rgba(244, 114, 182, 0.3);">
+        <div class="flow-step-number">Bước 5</div>
+        <div class="flow-step-name" style="color: var(--domain-dataset);">Dataset</div>
+        <div class="flow-step-detail">Tạo dataset + test cases, approve khi đủ 1–100 cases</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="border-color: rgba(129, 140, 248, 0.3);">
+        <div class="flow-step-number">Bước 6</div>
+        <div class="flow-step-name" style="color: var(--domain-rubric);">Rubric</div>
+        <div class="flow-step-detail">Tạo rubric → version → criteria (weight=1.0) → publish</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="border-color: rgba(20, 184, 166, 0.3);">
+        <div class="flow-step-number">Bước 7</div>
+        <div class="flow-step-name" style="color: var(--domain-eval);">Evaluation</div>
+        <div class="flow-step-detail">Tạo run → async job → Promptfoo CLI → kết quả</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="border-color: rgba(244, 63, 94, 0.3);">
+        <div class="flow-step-number">Bước 8</div>
+        <div class="flow-step-name" style="color: var(--domain-review);">QC Review</div>
+        <div class="flow-step-detail">Review từng result: PASS / FAIL / NEED_FIX / IGNORED</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="border-color: rgba(56, 189, 248, 0.3);">
+        <div class="flow-step-number">Bước 9</div>
+        <div class="flow-step-name" style="color: var(--domain-export);">Export</div>
+        <div class="flow-step-detail">Xuất Excel / JSON → async job → download file</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- Async Job Flow                                                -->
+  <!-- ============================================================ -->
+  <section class="async-flow">
+    <h2>Luồng xử lý bất đồng bộ (Async Job Flow)</h2>
+    <div class="async-diagram">
+      <div class="async-box" style="border-color: rgba(74, 158, 255, 0.3);">
+        <div class="async-box-title" style="color: var(--post);">HTTP Request</div>
+        <div class="async-box-desc">
+          Client gửi POST tạo evaluation run hoặc export.
+          Server tạo Job (PENDING), trả về <code>202 Accepted</code> ngay lập tức.
+        </div>
+      </div>
+      <div class="async-arrow">
+        <div class="async-arrow-line">→</div>
+        <div>LPUSH<br/>Redis Queue</div>
+      </div>
+      <div class="async-box" style="border-color: rgba(244, 63, 94, 0.3);">
+        <div class="async-box-title" style="color: var(--delete);">Redis Queue</div>
+        <div class="async-box-desc">
+          <code>vqc:jobs:queue</code> — danh sách LIFO.
+          JobQueuePublisher push job public ID vào queue.
+          JobWorker consume bằng BRPOP khi <code>vqc.worker.enabled=true</code>.
+        </div>
+      </div>
+      <div class="async-arrow">
+        <div class="async-arrow-line">→</div>
+        <div>BRPOP<br/>Consume</div>
+      </div>
+      <div class="async-box" style="border-color: rgba(52, 211, 153, 0.3);">
+        <div class="async-box-title" style="color: var(--get);">Worker</div>
+        <div class="async-box-desc">
+          JobWorker route đến handler phù hợp:
+          <code>EVALUATE</code> → EvaluationJobHandler → Promptfoo CLI.
+          <code>EXPORT_EXCEL/JSON</code> → ExportJobHandler → file generation.
+          Cập nhật job status, emit events.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- Auth Flow Detail                                              -->
+  <!-- ============================================================ -->
+  <section class="auth-detail">
+    <h2>Luồng xác thực (Authentication Flow)</h2>
+    <div class="auth-flow-grid">
+      <div class="auth-card">
+        <div class="auth-card-title">
+          <span class="method-pill post">POST</span>
+          Register
+        </div>
+        <div class="auth-card-step">
+          <ol>
+            <li>Client POST <code>/api/v1/auth/register</code> với email, password, displayName</li>
+            <li>Server tạo user <code>PENDING_EMAIL_VERIFICATION</code></li>
+            <li>Gửi email verification link: <code>WEB_BASE_URL/verify-email?token=...</code></li>
+            <li>Token SHA-256 hash lưu vào <code>email_verification_tokens</code></li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="auth-card">
+        <div class="auth-card-title">
+          <span class="method-pill post">POST</span>
+          Verify Email → Login
+        </div>
+        <div class="auth-card-step">
+          <ol>
+            <li>Client POST <code>/api/v1/auth/verify-email</code> với raw token</li>
+            <li>User status chuyển sang <code>ACTIVE</code></li>
+            <li>Client POST <code>/api/v1/auth/login</code> với email + password</li>
+            <li>Response: access token (body) + refresh token (HttpOnly cookie)</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="auth-card">
+        <div class="auth-card-title">
+          <span class="method-pill post">POST</span>
+          Refresh & Logout
+        </div>
+        <div class="auth-card-step">
+          <ol>
+            <li><code>/api/v1/auth/refresh-token</code>: đọc cookie <code>refresh_token</code>, trả access token mới, rotate cookie</li>
+            <li>JWT <code>token_type=access</code> cho protected APIs, <code>token_type=refresh</code> cho refresh flow</li>
+            <li><code>/api/v1/auth/logout</code>: xóa cookie <code>refresh_token</code> với <code>Max-Age=0</code></li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="auth-card">
+        <div class="auth-card-title">
+          <span class="method-pill post">POST</span>
+          Forgot / Reset Password
+        </div>
+        <div class="auth-card-step">
+          <ol>
+            <li><code>/api/v1/auth/forgot-password</code>: luôn trả 204 (không reveal account existence)</li>
+            <li>Nếu email tồn tại → gửi link reset: <code>WEB_BASE_URL/reset-password?token=...</code></li>
+            <li><code>/api/v1/auth/reset-password</code>: nhận raw token + newPassword, đặt lại mật khẩu</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- Full API Endpoint List                                        -->
+  <!-- ============================================================ -->
+  <section class="flow-section">
+    <h2 class="flow-title">Danh sách toàn bộ API Endpoints (theo domain)</h2>
+
+    <div class="flow-timeline">
+
+      <!-- ─── Auth ─── -->
+      <div class="domain-block">
+        <div class="domain-dot" style="background: var(--domain-auth);"></div>
+        <div class="domain-header">
+          <span class="domain-name">Auth</span>
+          <span class="domain-tag" style="background: rgba(245, 158, 11, 0.12); color: var(--domain-auth); border: 1px solid rgba(245, 158, 11, 0.2);">Public</span>
+        </div>
+        <div class="domain-desc">Xác thực local: đăng ký, đăng nhập, refresh token, đổi mật khẩu. Tất cả endpoint đều public (không cần JWT).</div>
+        <div class="endpoint-list">
+          <div class="endpoint">
+            <span class="method-pill post">POST</span>
+            <span class="endpoint-path">/api/v1/auth/register</span>
+            <span class="endpoint-summary">Đăng ký tài khoản<span class="status-code s201">201</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill post">POST</span>
+            <span class="endpoint-path">/api/v1/auth/login</span>
+            <span class="endpoint-summary">Đăng nhập<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill post">POST</span>
+            <span class="endpoint-path">/api/v1/auth/refresh-token</span>
+            <span class="endpoint-summary">Làm mới access token<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill post">POST</span>
+            <span class="endpoint-path">/api/v1/auth/logout</span>
+            <span class="endpoint-summary">Đăng xuất<span class="status-code s204">204</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill post">POST</span>
+            <span class="endpoint-path">/api/v1/auth/verify-email</span>
+            <span class="endpoint-summary">Xác thực email<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill post">POST</span>
+            <span class="endpoint-path">/api/v1/auth/forgot-password</span>
+            <span class="endpoint-summary">Yêu cầu reset password<span class="status-code s204">204</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill post">POST</span>
+            <span class="endpoint-path">/api/v1/auth/reset-password</span>
+            <span class="endpoint-summary">Đặt lại mật khẩu<span class="status-code s204">204</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Users ─── -->
+      <div class="domain-block">
+        <div class="domain-dot" style="background: var(--domain-user);"></div>
+        <div class="domain-header">
+          <span class="domain-name">Users</span>
+          <span class="domain-tag" style="background: rgba(34, 211, 238, 0.12); color: var(--domain-user); border: 1px solid rgba(34, 211, 238, 0.2);">Protected</span>
+        </div>
+        <div class="domain-desc">API user profile cho người đăng nhập hiện tại.</div>
+        <div class="endpoint-list">
+          <div class="endpoint">
+            <span class="method-pill get">GET</span>
+            <span class="endpoint-path">/api/v1/users/me</span>
+            <span class="endpoint-summary">Thông tin user hiện tại<span class="status-code s200">200</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Projects ─── -->
+      <div class="domain-block">
+        <div class="domain-dot" style="background: var(--domain-project);"></div>
+        <div class="domain-header">
+          <span class="domain-name">Projects</span>
+          <span class="domain-tag" style="background: rgba(52, 211, 153, 0.12); color: var(--domain-project); border: 1px solid rgba(52, 211, 153, 0.2);">Protected</span>
+        </div>
+        <div class="domain-desc">Project là đơn vị tổ chức chính. Mọi tài nguyên (connector, requirement, dataset, rubric, evaluation run) đều nằm dưới project. Access scope theo <code>createdBy</code>.</div>
+        <div class="endpoint-list">
+          <div class="endpoint">
+            <span class="method-pill post">POST</span>
+            <span class="endpoint-path">/api/v1/projects</span>
+            <span class="endpoint-summary">Tạo project<span class="status-code s201">201</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill get">GET</span>
+            <span class="endpoint-path">/api/v1/projects<span class="param">?status=&page=&sort=</span></span>
+            <span class="endpoint-summary">Danh sách project<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill get">GET</span>
+            <span class="endpoint-path">/api/v1/projects/<span class="param">{projectPublicId}</span></span>
+            <span class="endpoint-summary">Chi tiết project<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill patch">PATCH</span>
+            <span class="endpoint-path">/api/v1/projects/<span class="param">{projectPublicId}</span></span>
+            <span class="endpoint-summary">Cập nhật project<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill delete">DEL</span>
+            <span class="endpoint-path">/api/v1/projects/<span class="param">{projectPublicId}</span></span>
+            <span class="endpoint-summary">Archive project<span class="status-code s204">204</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Target API Connectors ─── -->
+      <div class="domain-block">
+        <div class="domain-dot" style="background: var(--domain-connector);"></div>
+        <div class="domain-header">
+          <span class="domain-name">Target API Connectors</span>
+          <span class="domain-tag" style="background: rgba(96, 165, 250, 0.12); color: var(--domain-connector); border: 1px solid rgba(96, 165, 250, 0.2);">Protected</span>
+        </div>
+        <div class="domain-desc">Cấu hình kết nối tới chatbot/API cần đánh giá. Hỗ trợ secret placeholders (<code>{{secret:KEY}}</code>), mã hóa AES-256-GCM. Test-run thực hiện gọi thử connector.</div>
+        <div class="endpoint-list">
+          <div class="endpoint">
+            <span class="method-pill post">POST</span>
+            <span class="endpoint-path">/api/v1/projects/<span class="param">{projectPublicId}</span>/target-api-connectors</span>
+            <span class="endpoint-summary">Tạo connector<span class="status-code s201">201</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill get">GET</span>
+            <span class="endpoint-path">/api/v1/projects/<span class="param">{projectPublicId}</span>/target-api-connectors</span>
+            <span class="endpoint-summary">Danh sách connector<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill get">GET</span>
+            <span class="endpoint-path">/api/v1/target-api-connectors/<span class="param">{connectorPublicId}</span></span>
+            <span class="endpoint-summary">Chi tiết connector<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill patch">PATCH</span>
+            <span class="endpoint-path">/api/v1/target-api-connectors/<span class="param">{connectorPublicId}</span></span>
+            <span class="endpoint-summary">Cập nhật connector<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill post">POST</span>
+            <span class="endpoint-path">/api/v1/target-api-connectors/<span class="param">{connectorPublicId}</span>/test-runs</span>
+            <span class="endpoint-summary">Test-run connector<span class="status-code s200">200</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Requirements ─── -->
+      <div class="domain-block">
+        <div class="domain-dot" style="background: var(--domain-requirement);"></div>
+        <div class="domain-header">
+          <span class="domain-name">Requirements</span>
+          <span class="domain-tag" style="background: rgba(167, 139, 250, 0.12); color: var(--domain-requirement); border: 1px solid rgba(167, 139, 250, 0.2);">Protected</span>
+        </div>
+        <div class="domain-desc">Business requirements của project. Versioned — version tăng khi content thay đổi. Archive qua PATCH status=ARCHIVED.</div>
+        <div class="endpoint-list">
+          <div class="endpoint">
+            <span class="method-pill post">POST</span>
+            <span class="endpoint-path">/api/v1/projects/<span class="param">{projectPublicId}</span>/requirements</span>
+            <span class="endpoint-summary">Tạo requirement<span class="status-code s201">201</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill get">GET</span>
+            <span class="endpoint-path">/api/v1/projects/<span class="param">{projectPublicId}</span>/requirements</span>
+            <span class="endpoint-summary">Danh sách requirements<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill get">GET</span>
+            <span class="endpoint-path">/api/v1/requirements/<span class="param">{requirementPublicId}</span></span>
+            <span class="endpoint-summary">Chi tiết requirement<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill patch">PATCH</span>
+            <span class="endpoint-path">/api/v1/requirements/<span class="param">{requirementPublicId}</span></span>
+            <span class="endpoint-summary">Cập nhật requirement<span class="status-code s200">200</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Datasets ─── -->
+      <div class="domain-block">
+        <div class="domain-dot" style="background: var(--domain-dataset);"></div>
+        <div class="domain-header">
+          <span class="domain-name">Datasets</span>
+          <span class="domain-tag" style="background: rgba(244, 114, 182, 0.12); color: var(--domain-dataset); border: 1px solid rgba(244, 114, 182, 0.2);">Protected</span>
+        </div>
+        <div class="domain-desc">Tập dữ liệu test. Status: DRAFT → APPROVED (cần 1–100 active test cases) → ARCHIVED. Dataset ARCHIVED thì không thể thêm/sửa/xóa test case.</div>
+        <div class="endpoint-list">
+          <div class="endpoint">
+            <span class="method-pill post">POST</span>
+            <span class="endpoint-path">/api/v1/projects/<span class="param">{projectPublicId}</span>/datasets</span>
+            <span class="endpoint-summary">Tạo dataset<span class="status-code s201">201</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill get">GET</span>
+            <span class="endpoint-path">/api/v1/projects/<span class="param">{projectPublicId}</span>/datasets</span>
+            <span class="endpoint-summary">Danh sách datasets<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill get">GET</span>
+            <span class="endpoint-path">/api/v1/datasets/<span class="param">{datasetPublicId}</span></span>
+            <span class="endpoint-summary">Chi tiết dataset<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill patch">PATCH</span>
+            <span class="endpoint-path">/api/v1/datasets/<span class="param">{datasetPublicId}</span></span>
+            <span class="endpoint-summary">Cập nhật dataset<span class="status-code s200">200</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Test Cases ─── -->
+      <div class="domain-block">
+        <div class="domain-dot" style="background: var(--domain-testcase);"></div>
+        <div class="domain-header">
+          <span class="domain-name">Test Cases</span>
+          <span class="domain-tag" style="background: rgba(251, 146, 60, 0.12); color: var(--domain-testcase); border: 1px solid rgba(251, 146, 60, 0.2);">Protected</span>
+        </div>
+        <div class="domain-desc">Test cases nằm trong dataset. Mỗi case có question, precondition, ground_truth. DELETE là hard-delete.</div>
+        <div class="endpoint-list">
+          <div class="endpoint">
+            <span class="method-pill post">POST</span>
+            <span class="endpoint-path">/api/v1/datasets/<span class="param">{datasetPublicId}</span>/test-cases</span>
+            <span class="endpoint-summary">Tạo test case<span class="status-code s201">201</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill get">GET</span>
+            <span class="endpoint-path">/api/v1/datasets/<span class="param">{datasetPublicId}</span>/test-cases</span>
+            <span class="endpoint-summary">Danh sách test cases<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill patch">PATCH</span>
+            <span class="endpoint-path">/api/v1/test-cases/<span class="param">{testCasePublicId}</span></span>
+            <span class="endpoint-summary">Cập nhật test case<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill delete">DEL</span>
+            <span class="endpoint-path">/api/v1/test-cases/<span class="param">{testCasePublicId}</span></span>
+            <span class="endpoint-summary">Xóa test case<span class="status-code s204">204</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Rubrics ─── -->
+      <div class="domain-block">
+        <div class="domain-dot" style="background: var(--domain-rubric);"></div>
+        <div class="domain-header">
+          <span class="domain-name">Rubrics</span>
+          <span class="domain-tag" style="background: rgba(129, 140, 248, 0.12); color: var(--domain-rubric); border: 1px solid rgba(129, 140, 248, 0.2);">Protected</span>
+        </div>
+        <div class="domain-desc">Rubric → Versions → Criteria. Mỗi version có status DRAFT/PUBLISHED/ARCHIVED. Publish yêu cầu có criteria và tổng weight = 1.0. Published/Archived versions là immutable.</div>
+        <div class="endpoint-list">
+          <div class="endpoint">
+            <span class="method-pill post">POST</span>
+            <span class="endpoint-path">/api/v1/projects/<span class="param">{projectPublicId}</span>/rubrics</span>
+            <span class="endpoint-summary">Tạo rubric<span class="status-code s201">201</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill get">GET</span>
+            <span class="endpoint-path">/api/v1/projects/<span class="param">{projectPublicId}</span>/rubrics</span>
+            <span class="endpoint-summary">Danh sách rubrics<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill get">GET</span>
+            <span class="endpoint-path">/api/v1/rubrics/<span class="param">{rubricPublicId}</span></span>
+            <span class="endpoint-summary">Chi tiết rubric<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill patch">PATCH</span>
+            <span class="endpoint-path">/api/v1/rubrics/<span class="param">{rubricPublicId}</span></span>
+            <span class="endpoint-summary">Cập nhật rubric<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill delete">DEL</span>
+            <span class="endpoint-path">/api/v1/rubrics/<span class="param">{rubricPublicId}</span></span>
+            <span class="endpoint-summary">Archive rubric<span class="status-code s204">204</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill post">POST</span>
+            <span class="endpoint-path">/api/v1/rubrics/<span class="param">{rubricPublicId}</span>/versions</span>
+            <span class="endpoint-summary">Tạo version mới<span class="status-code s201">201</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill get">GET</span>
+            <span class="endpoint-path">/api/v1/rubrics/<span class="param">{rubricPublicId}</span>/versions</span>
+            <span class="endpoint-summary">Danh sách versions<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill get">GET</span>
+            <span class="endpoint-path">/api/v1/rubric-versions/<span class="param">{rubricVersionPublicId}</span></span>
+            <span class="endpoint-summary">Chi tiết version<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill patch">PATCH</span>
+            <span class="endpoint-path">/api/v1/rubric-versions/<span class="param">{rubricVersionPublicId}</span></span>
+            <span class="endpoint-summary">Publish / Archive version<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill post">POST</span>
+            <span class="endpoint-path">/api/v1/rubric-versions/<span class="param">{rubricVersionPublicId}</span>/criteria</span>
+            <span class="endpoint-summary">Tạo criterion<span class="status-code s201">201</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill get">GET</span>
+            <span class="endpoint-path">/api/v1/rubric-versions/<span class="param">{rubricVersionPublicId}</span>/criteria</span>
+            <span class="endpoint-summary">Danh sách criteria<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill patch">PATCH</span>
+            <span class="endpoint-path">/api/v1/rubric-criteria/<span class="param">{criterionPublicId}</span></span>
+            <span class="endpoint-summary">Cập nhật criterion<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill delete">DEL</span>
+            <span class="endpoint-path">/api/v1/rubric-criteria/<span class="param">{criterionPublicId}</span></span>
+            <span class="endpoint-summary">Xóa criterion<span class="status-code s204">204</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Evaluation Runs ─── -->
+      <div class="domain-block">
+        <div class="domain-dot" style="background: var(--domain-eval);"></div>
+        <div class="domain-header">
+          <span class="domain-name">Evaluation Runs</span>
+          <span class="domain-tag" style="background: rgba(20, 184, 166, 0.12); color: var(--domain-eval); border: 1px solid rgba(20, 184, 166, 0.2);">Protected · Async</span>
+        </div>
+        <div class="domain-desc">Tạo evaluation run kết hợp dataset (APPROVED) + rubric version (PUBLISHED) + connector → push job vào Redis → Worker xử lý Promptfoo CLI → kết quả từng test case.</div>
+        <div class="endpoint-list">
+          <div class="endpoint">
+            <span class="method-pill post">POST</span>
+            <span class="endpoint-path">/api/v1/projects/<span class="param">{projectPublicId}</span>/evaluation-runs</span>
+            <span class="endpoint-summary">Tạo evaluation run<span class="status-code s202">202</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill get">GET</span>
+            <span class="endpoint-path">/api/v1/projects/<span class="param">{projectPublicId}</span>/evaluation-runs</span>
+            <span class="endpoint-summary">Danh sách runs<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill get">GET</span>
+            <span class="endpoint-path">/api/v1/evaluation-runs/<span class="param">{runPublicId}</span></span>
+            <span class="endpoint-summary">Chi tiết run<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill get">GET</span>
+            <span class="endpoint-path">/api/v1/evaluation-runs/<span class="param">{runPublicId}</span>/results</span>
+            <span class="endpoint-summary">Kết quả evaluation<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill get">GET</span>
+            <span class="endpoint-path">/api/v1/evaluation-runs/<span class="param">{runPublicId}</span>/events</span>
+            <span class="endpoint-summary">Timeline job events<span class="status-code s200">200</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Jobs ─── -->
+      <div class="domain-block">
+        <div class="domain-dot" style="background: var(--domain-job);"></div>
+        <div class="domain-header">
+          <span class="domain-name">Jobs</span>
+          <span class="domain-tag" style="background: rgba(232, 121, 249, 0.12); color: var(--domain-job); border: 1px solid rgba(232, 121, 249, 0.2);">Protected</span>
+        </div>
+        <div class="domain-desc">Theo dõi trạng thái job bất đồng bộ. Job type: EVALUATE, EXPORT_EXCEL, EXPORT_JSON. Status: PENDING → RUNNING → COMPLETED/FAILED/CANCELLED.</div>
+        <div class="endpoint-list">
+          <div class="endpoint">
+            <span class="method-pill get">GET</span>
+            <span class="endpoint-path">/api/v1/jobs/<span class="param">{jobPublicId}</span></span>
+            <span class="endpoint-summary">Chi tiết job<span class="status-code s200">200</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Review Decisions ─── -->
+      <div class="domain-block">
+        <div class="domain-dot" style="background: var(--domain-review);"></div>
+        <div class="domain-header">
+          <span class="domain-name">Review Decisions</span>
+          <span class="domain-tag" style="background: rgba(244, 63, 94, 0.12); color: var(--domain-review); border: 1px solid rgba(244, 63, 94, 0.2);">Protected</span>
+        </div>
+        <div class="domain-desc">QC review cho từng evaluation result. Status: NOT_REVIEWED (default khi chưa có row) / PASS / FAIL / NEED_FIX / IGNORED. Hỗ trợ gán người chịu trách nhiệm bug (<code>picBugUserPublicId</code>).</div>
+        <div class="endpoint-list">
+          <div class="endpoint">
+            <span class="method-pill put">PUT</span>
+            <span class="endpoint-path">/api/v1/evaluation-results/<span class="param">{resultPublicId}</span>/review-decision</span>
+            <span class="endpoint-summary">Upsert review decision<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill get">GET</span>
+            <span class="endpoint-path">/api/v1/evaluation-results/<span class="param">{resultPublicId}</span>/review-decision</span>
+            <span class="endpoint-summary">Xem review decision<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill patch">PATCH</span>
+            <span class="endpoint-path">/api/v1/review-decisions/<span class="param">{reviewDecisionPublicId}</span></span>
+            <span class="endpoint-summary">Cập nhật review decision<span class="status-code s200">200</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Exports ─── -->
+      <div class="domain-block">
+        <div class="domain-dot" style="background: var(--domain-export);"></div>
+        <div class="domain-header">
+          <span class="domain-name">Exports</span>
+          <span class="domain-tag" style="background: rgba(56, 189, 248, 0.12); color: var(--domain-export); border: 1px solid rgba(56, 189, 248, 0.2);">Protected · Async</span>
+        </div>
+        <div class="domain-desc">Xuất kết quả evaluation ra Excel hoặc JSON. Tạo export → async job qua Redis → Worker generate file → download khi READY.</div>
+        <div class="endpoint-list">
+          <div class="endpoint">
+            <span class="method-pill post">POST</span>
+            <span class="endpoint-path">/api/v1/evaluation-runs/<span class="param">{runPublicId}</span>/exports</span>
+            <span class="endpoint-summary">Tạo export<span class="status-code s202">202</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill get">GET</span>
+            <span class="endpoint-path">/api/v1/exports/<span class="param">{exportPublicId}</span></span>
+            <span class="endpoint-summary">Chi tiết export<span class="status-code s200">200</span></span>
+          </div>
+          <div class="endpoint">
+            <span class="method-pill get">GET</span>
+            <span class="endpoint-path">/api/v1/exports/<span class="param">{exportPublicId}</span>/file</span>
+            <span class="endpoint-summary">Download file<span class="status-code s200">200</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Mock Chatbot ─── -->
+      <div class="domain-block">
+        <div class="domain-dot" style="background: var(--domain-mock);"></div>
+        <div class="domain-header">
+          <span class="domain-name">Mock Chatbot</span>
+          <span class="domain-tag" style="background: rgba(148, 163, 184, 0.12); color: var(--domain-mock); border: 1px solid rgba(148, 163, 184, 0.2);">Public</span>
+        </div>
+        <div class="domain-desc">API chatbot giả lập cho demo. Trả về câu trả lời deterministic dựa trên input. Không cần JWT — dùng làm fallback khi chưa có API chatbot thật.</div>
+        <div class="endpoint-list">
+          <div class="endpoint">
+            <span class="method-pill post">POST</span>
+            <span class="endpoint-path">/mock-chatbot/chat</span>
+            <span class="endpoint-summary">Mock chat response<span class="status-code s200">200</span></span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer class="page-footer">
+    VSF-QC-Copilot API Flow &mdash; 15 Controllers, 50+ Endpoints &mdash; Generated from Spring Boot Controllers
+  </footer>
+
+</body>
+</html>

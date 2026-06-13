@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.lang.reflect.Proxy;
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -112,7 +111,7 @@ class RubricVersionServiceImplTest {
   }
 
   @Test
-  void updateVersionPublishesDraftWhenCriteriaWeightsSumOne() {
+  void updateVersionPublishesDraftWhenCriteriaExist() {
     User creator = user();
     Rubric rubric = rubric(creator);
     RubricVersion version = version(rubric, 1, RubricVersionStatus.DRAFT);
@@ -128,7 +127,7 @@ class RubricVersionServiceImplTest {
                 Optional.of(version),
                 Optional.empty()),
             rubricRepository(savedRubric, Optional.empty()),
-            criterionRepository(List.of(criterion(version, "correctness", "0.4000"), criterion(version, "safety", "0.6000")), new AtomicReference<>(), 2),
+            criterionRepository(List.of(criterion(version, "correctness", 4), criterion(version, "safety", 6)), new AtomicReference<>(), 2),
             userRepository(Optional.of(creator)));
 
     RubricVersionResponse response =
@@ -146,7 +145,7 @@ class RubricVersionServiceImplTest {
   }
 
   @Test
-  void updateVersionRejectsPublishWhenWeightsDoNotSumOne() {
+  void updateVersionRejectsPublishWhenNoCriteria() {
     User creator = user();
     Rubric rubric = rubric(creator);
     RubricVersion version = version(rubric, 1, RubricVersionStatus.DRAFT);
@@ -160,7 +159,7 @@ class RubricVersionServiceImplTest {
                 Optional.of(version),
                 Optional.empty()),
             rubricRepository(new AtomicReference<>(), Optional.empty()),
-            criterionRepository(List.of(criterion(version, "correctness", "0.4000")), new AtomicReference<>(), 1),
+            criterionRepository(List.of(), new AtomicReference<>(), 0),
             userRepository(Optional.of(creator)));
 
     assertThatThrownBy(
@@ -353,12 +352,12 @@ class RubricVersionServiceImplTest {
     return version;
   }
 
-  private RubricCriterion criterion(RubricVersion version, String metricKey, String weight) {
+  private RubricCriterion criterion(RubricVersion version, String metricKey, int weight) {
     RubricCriterion criterion = new RubricCriterion();
     criterion.setPublicId(UUID.randomUUID());
     criterion.setRubricVersion(version);
     criterion.setName(metricKey);
-    criterion.setWeight(new BigDecimal(weight));
+    criterion.setWeight(weight);
     criterion.setJudgeInstruction("Judge " + metricKey);
     criterion.setMetricKey(metricKey);
     criterion.setCritical(false);

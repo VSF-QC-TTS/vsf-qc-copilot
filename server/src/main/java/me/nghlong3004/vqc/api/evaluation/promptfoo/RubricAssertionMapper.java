@@ -38,7 +38,7 @@ public class RubricAssertionMapper {
     assertion.put("value", buildJudgePrompt(criterion));
     assertion.put("metric", criterion.getMetricKey());
     if (criterion.getWeight() != null) {
-      assertion.put("weight", criterion.getWeight().doubleValue());
+      assertion.put("weight", criterion.getWeight());
     }
     return assertion;
   }
