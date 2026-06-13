@@ -1,8 +1,8 @@
 # Server Context
 
-Date: 2026-06-12
+Date: 2026-06-13
 Repo area: `server/`
-Last full-suite pass: 226 tests, 0 failures (2026-06-11). Latest focused rubric/promptfoo/job suite pass: 40 tests, 0 failures (2026-06-12). Latest focused secret-store/connector/crypto suite pass: 35 tests, 0 failures (2026-06-12). Latest real promptfoo worker smoke pass: 1 test, 0 failures (2026-06-12).
+Last full-suite pass: 371 tests, 0 failures (2026-06-13). Features 8–11 (bulk import, AI generate, rubric decoupling, quick evaluate) implemented and regression-tested.
 
 Purpose: this is the server bootstrap handoff. If a user only says "read `server/SERVER_CONTEXT.md`", the agent must use this file to discover the next files to read without asking for more pointers. Current code is the source of truth when docs and implementation differ. The full product target lives in `docs/`; treat docs as roadmap/contract intent unless the user explicitly asks to migrate current code toward them.
 
@@ -94,9 +94,9 @@ Domain choices in current code:
 ## [CURRENT_STATE] Persistence
 
 Persistence now vs target:
-- Current Flyway has two migrations: `V1__init_schema.sql` (auth, project, connector, requirement, dataset, test_case, rubric) and `V2__create_jobs_evaluation_tables.sql` (jobs, job_events, evaluation_runs, evaluation_results).
-- The old incremental migrations (`V1__enable_extensions.sql` through `V5__create_business_requirements.sql`) were merged into `V1` because the product database was empty at that time.
-- `V2__create_jobs_evaluation_tables.sql` adds `jobs` (async job tracking), `job_events` (status change audit trail), `evaluation_runs` (one per evaluation batch), and `evaluation_results` (one per test case per run).
+- Current Flyway has five migrations: `V1__init_schema.sql` (auth, project, connector, requirement, dataset, test_case, rubric — rubric `project_id` is nullable, `is_template` added), `V2__create_jobs_evaluation.sql` (jobs, job_events, evaluation_runs, evaluation_results), `V3__create_review_decisions.sql`, `V4__create_export_files.sql`, `V5__create_connector_secrets.sql`.
+- Dataset has `generation_prompt TEXT` column for AI generation context.
+- Rubrics are user-scoped (nullable `project_id`); `is_template BOOLEAN NOT NULL DEFAULT FALSE` flags system templates.
 - Email verification and password reset tokens are opaque raw values; only SHA-256 hashes are stored.
 - `OpaqueTokenService` owns raw token generation and hashing for one-time email tokens.
 - Future MVP docs expect main tables to use internal `BIGINT id` plus public `UUID public_id`; APIs should expose `publicId`, not internal `id`.
@@ -132,8 +132,14 @@ Implemented API slices after auth:
   - Test cases support `ACTIVE` and `INACTIVE`; `DELETE` hard-deletes a test case per current API contract.
   - Archived datasets reject test case create/update/delete.
 - Rubrics, rubric versions, and criteria:
-  - Rubric create/list are nested under `/api/v1/projects/{projectPublicId}/rubrics`.
+  - Rubrics are now **user-scoped** (not project-scoped). `project_id` is nullable; `is_template` flag marks system templates.
+  - `POST /api/v1/projects/{projectPublicId}/rubrics` creates a rubric linked to a project (backward compat).
+  - `GET /api/v1/projects/{projectPublicId}/rubrics` lists rubrics under a project.
+  - `GET /api/v1/rubrics` lists all rubrics owned by the authenticated user (user-scoped).
+  - `GET /api/v1/rubrics/templates` lists system-provided rubric templates.
+  - `POST /api/v1/rubrics/{rubricPublicId}/clone` creates a copy of a rubric for the user.
   - Rubric detail/update/archive use `/api/v1/rubrics/{rubricPublicId}`; `DELETE` soft-archives with status `ARCHIVED`.
+  - `RubricTemplateSeeder` seeds 5 built-in templates on first boot (idempotent).
   - Version create/list are nested under `/api/v1/rubrics/{rubricPublicId}/versions`.
   - Version detail/update use `/api/v1/rubric-versions/{rubricVersionPublicId}`.
   - Criteria create/list are nested under `/api/v1/rubric-versions/{rubricVersionPublicId}/criteria`.
@@ -180,6 +186,19 @@ Implemented API slices after auth:
   - Export storage uses `ObjectStorageService`; current implementation is local filesystem via `vqc.storage.type=local` and `vqc.storage.local.base-dir`.
   - `export_files` stores storage metadata (`storageProvider`, `storageKey`, `contentType`, `sizeBytes`) instead of a local-only file path.
   - Excel generation uses Apache POI `poi-ooxml` and JSON generation uses Jackson; optional/missing export fields are written blank/default rather than failing.
+- Bulk import test cases:
+  - `POST /api/v1/datasets/{datasetPublicId}/test-cases/import` accepts `.xlsx` or `.csv` uploads.
+  - Returns `ImportTestCaseResponse` with `totalRows`, `importedCount`, `skippedCount`, and per-row `errors[]`.
+  - Validates file size (≤5MB), format, and 100-case limit per dataset. Dataset must be `DRAFT`.
+- AI generate dataset:
+  - `POST /api/v1/datasets/{datasetPublicId}/generate` queues a `DATASET_GENERATION` job (202 Accepted).
+  - `DatasetGenerationJobHandler` calls Gemini AI via Spring AI `ChatClient` to generate test cases.
+  - Validates dataset is `DRAFT`, requirement is `ACTIVE`, and test case count + requested count ≤ 100.
+  - `GenerateDatasetRequest` has `requirementPublicId`, `count` (5–100), and optional `additionalPrompt`.
+- Quick evaluate:
+  - `POST /api/v1/projects/{projectPublicId}/quick-evaluate` starts an evaluation with auto-resolve.
+  - Null `datasetPublicId`, `connectorPublicId`, or `rubricVersionPublicId` are resolved to the sole candidate; 422 if 0 or >1.
+  - Delegates to `createEvaluationRun` after resolution.
 
 ## [FUTURE_SLICE] Known Current Gaps
 
@@ -188,18 +207,6 @@ Known current gaps:
 - OAuth persistence/linking remains incomplete.
 - Connector response extraction only supports the current simple selector path used by tests.
 - S3/R2/MinIO export storage providers are future work; the storage interface is in place and local is the only current provider.
-- Rubrics are currently project-scoped; planned decoupling to user-scoped with template/clone support.
-- No bulk import for test cases; QC must create each test case individually via API.
-- No AI-assisted dataset generation; `DatasetSourceType.GENERATED` exists but no generation handler.
-- No convenience endpoint for quick evaluation with auto-resolution.
-
-## [FUTURE_SLICE] Next Implementation Steps — QC Productivity Features
-
-Current plan (see `server/API_PLAN.md` for full details):
-- Step 8: Bulk import test cases from Excel (.xlsx) and CSV (.csv).
-- Step 9: AI-powered dataset generation using Gemini via Spring AI (async via Redis job).
-- Step 10: Decouple rubrics from project scope — user-scoped rubrics with `is_template` flag, clone endpoint, system template seeder.
-- Step 11: Quick evaluate endpoint with auto-resolve (sole APPROVED dataset, active connector, PUBLISHED rubric version).
 
 Following backend slices:
 - Connector runtime hardening: align connector timeout/retry settings with real outbound calls and Promptfoo execution.
@@ -259,8 +266,8 @@ Code conventions:
 ## [TESTS] Focused Tests
 
 Focused tests:
-- Full server suite passed on 2026-06-11 after Evaluation Run/Job API:
-  `rtk bash mvnw test` -> 226 tests, 0 failures/errors.
+- Full server suite passed on 2026-06-13 after QC Productivity Features:
+  `rtk bash mvnw test` -> 371 tests, 0 failures/errors.
 - `ServerApplicationTests` injects dummy test properties for JWT/OAuth/Gemini/base URLs because the full context uses `dev` profile but does not load `server/.env`.
 - Existing safe server suite:
   `rtk bash mvnw -Dtest=RoleTest,UserMapperTest,UserServiceImplTest,HtmlMailTemplateRendererTest,EmailVerificationMailStrategyTest,PasswordResetMailStrategyTest,ErrorResponseTest,AuthServiceImplTest,EmailVerificationServiceImplTest,PasswordResetServiceImplTest,AuthControllerTest,JwtTokenServiceImplTest,RefreshTokenCookieFactoryTest test`
