@@ -69,6 +69,9 @@ public class Dataset {
   @Column(columnDefinition = "TEXT")
   private String description;
 
+  @Column(name = "generation_prompt", columnDefinition = "TEXT")
+  private String generationPrompt;
+
   @Column(nullable = false)
   @Builder.Default
   private Integer version = 1;

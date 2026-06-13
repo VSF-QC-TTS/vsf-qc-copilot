@@ -142,6 +142,7 @@ CREATE TABLE datasets (
     requirement_id BIGINT,
     name VARCHAR(255) NOT NULL,
     description TEXT,
+    generation_prompt TEXT,
     version INTEGER NOT NULL DEFAULT 1,
     source_type VARCHAR(50) NOT NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'DRAFT',
