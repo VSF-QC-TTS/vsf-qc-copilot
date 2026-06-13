@@ -15,10 +15,13 @@ import java.util.UUID;
 import me.nghlong3004.vqc.api.dataset.enums.DatasetSourceType;
 import me.nghlong3004.vqc.api.dataset.enums.DatasetStatus;
 import me.nghlong3004.vqc.api.dataset.request.CreateDatasetRequest;
+import me.nghlong3004.vqc.api.dataset.request.GenerateDatasetRequest;
 import me.nghlong3004.vqc.api.dataset.request.UpdateDatasetRequest;
 import me.nghlong3004.vqc.api.dataset.response.DatasetListItemResponse;
 import me.nghlong3004.vqc.api.dataset.response.DatasetPageResponse;
 import me.nghlong3004.vqc.api.dataset.response.DatasetResponse;
+import me.nghlong3004.vqc.api.dataset.response.GenerateDatasetResponse;
+import me.nghlong3004.vqc.api.dataset.service.DatasetGenerationService;
 import me.nghlong3004.vqc.api.dataset.service.DatasetService;
 import me.nghlong3004.vqc.api.exception.GlobalException;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,6 +58,7 @@ class DatasetControllerTest {
   @BeforeEach
   void resetTestDoubles() {
     RecordingDatasetService.reset();
+    RecordingDatasetGenerationService.reset();
   }
 
   @Test
@@ -336,12 +340,72 @@ class DatasetControllerTest {
     assertThat(RecordingDatasetService.updateDatasetRequest).isNull();
   }
 
+  @Test
+  void generateTestCasesReturnsAcceptedWithJobInfo() throws Exception {
+    RecordingDatasetGenerationService.response =
+        new GenerateDatasetResponse(
+            UUID.fromString("0f6d90c2-7410-4db2-86be-8adfd3140f63"),
+            UUID.fromString("a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"),
+            "PENDING",
+            "Dataset generation queued successfully.");
+
+    mockMvc
+        .perform(
+            post("/api/v1/datasets/0f6d90c2-7410-4db2-86be-8adfd3140f63/generate")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "requirementPublicId": "ebd7f0f0-4924-4e81-9795-d1f060bec2f2",
+                      "count": 30,
+                      "additionalPrompt": "Focus on edge cases"
+                    }
+                    """))
+        .andExpect(status().isAccepted())
+        .andExpect(jsonPath("$.datasetPublicId").value("0f6d90c2-7410-4db2-86be-8adfd3140f63"))
+        .andExpect(jsonPath("$.jobPublicId").value("a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"))
+        .andExpect(jsonPath("$.status").value("PENDING"))
+        .andExpect(jsonPath("$.message").value("Dataset generation queued successfully."));
+
+    assertThat(RecordingDatasetGenerationService.datasetPublicId)
+        .isEqualTo(UUID.fromString("0f6d90c2-7410-4db2-86be-8adfd3140f63"));
+    assertThat(RecordingDatasetGenerationService.request.count()).isEqualTo(30);
+    assertThat(RecordingDatasetGenerationService.username).isEqualTo("qc.demo@example.com");
+  }
+
+  @Test
+  void generateTestCasesReturnsValidationProblemDetailsForMissingFields() throws Exception {
+    mockMvc
+        .perform(
+            post("/api/v1/datasets/0f6d90c2-7410-4db2-86be-8adfd3140f63/generate")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "count": 200
+                    }
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+        .andExpect(jsonPath("$.errors[*].field", hasItem("requirementPublicId")));
+
+    assertThat(RecordingDatasetGenerationService.request).isNull();
+  }
+
   @TestConfiguration
   static class MockBeans {
 
     @Bean
     DatasetService datasetService() {
       return new RecordingDatasetService();
+    }
+
+    @Bean
+    DatasetGenerationService datasetGenerationService() {
+      return new RecordingDatasetGenerationService();
     }
   }
 
@@ -402,6 +466,30 @@ class DatasetControllerTest {
       RecordingDatasetService.updateDatasetRequest = request;
       RecordingDatasetService.username = username;
       return datasetResponse;
+    }
+  }
+
+  static class RecordingDatasetGenerationService implements DatasetGenerationService {
+
+    static UUID datasetPublicId;
+    static GenerateDatasetRequest request;
+    static String username;
+    static GenerateDatasetResponse response;
+
+    static void reset() {
+      datasetPublicId = null;
+      request = null;
+      username = null;
+      response = null;
+    }
+
+    @Override
+    public GenerateDatasetResponse generateTestCases(
+        UUID datasetPublicId, GenerateDatasetRequest request, String username) {
+      RecordingDatasetGenerationService.datasetPublicId = datasetPublicId;
+      RecordingDatasetGenerationService.request = request;
+      RecordingDatasetGenerationService.username = username;
+      return response;
     }
   }
 }
