@@ -1,0 +1,39 @@
+"use client";
+
+import { useLocale } from "next-intl";
+import { usePathname, useRouter } from "@/i18n/navigation";
+import { Translate } from "@phosphor-icons/react";
+import { Button } from "@/components/ui/button";
+import type { Locale } from "@/i18n/config";
+import { locales } from "@/i18n/config";
+
+const localeLabels: Record<Locale, string> = {
+  vi: "VI",
+  en: "EN",
+};
+
+export function LanguageSwitcher() {
+  const locale = useLocale() as Locale;
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const nextLocale = locales.find((l) => l !== locale) ?? locales[0];
+
+  function handleSwitch() {
+    router.replace(pathname, { locale: nextLocale });
+  }
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={handleSwitch}
+      aria-label={`Switch to ${localeLabels[nextLocale]}`}
+    >
+      <Translate size={18} />
+      <span className="sr-only">
+        {localeLabels[nextLocale]}
+      </span>
+    </Button>
+  );
+}

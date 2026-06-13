@@ -1,0 +1,57 @@
+import { z } from 'zod';
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+export const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
+export const AUTH_TYPES = ['NONE', 'BEARER', 'API_KEY', 'BASIC'] as const;
+export const BODY_TYPES = ['NONE', 'JSON', 'FORM', 'RAW'] as const;
+export const RESPONSE_FORMATS = ['JSON', 'TEXT', 'XML'] as const;
+
+// ---------------------------------------------------------------------------
+// Create / Edit Connector
+// ---------------------------------------------------------------------------
+
+export const createConnectorSchema = z.object({
+  name: z.string().min(1, 'Connector name is required').max(200, 'Name too long'),
+  description: z.string().max(1000, 'Description too long').optional().or(z.literal('')),
+  protocol: z.string().optional().or(z.literal('')),
+  method: z.enum(HTTP_METHODS, { message: 'HTTP method is required' }),
+  baseUrl: z.string().url('Must be a valid URL'),
+  path: z.string().optional().or(z.literal('')),
+  bodyType: z.enum(BODY_TYPES).optional(),
+  bodyTemplate: z.string().optional().or(z.literal('')),
+  bodyTemplateText: z.string().optional().or(z.literal('')),
+  responseFormat: z.enum(RESPONSE_FORMATS).optional(),
+  responseSelector: z.string().optional().or(z.literal('')),
+  authType: z.enum(AUTH_TYPES).optional(),
+  timeoutSeconds: z.coerce
+    .number()
+    .int()
+    .min(1, 'Minimum 1 second')
+    .max(300, 'Maximum 300 seconds')
+    .default(30),
+  retryCount: z.coerce
+    .number()
+    .int()
+    .min(0, 'Minimum 0')
+    .max(5, 'Maximum 5 retries')
+    .default(0),
+  active: z.boolean().default(true),
+  isStreaming: z.boolean().default(false),
+});
+
+export type CreateConnectorFormValues = z.input<typeof createConnectorSchema>;
+
+// ---------------------------------------------------------------------------
+// Test Run
+// ---------------------------------------------------------------------------
+
+export const testRunSchema = z.object({
+  question: z.string().min(1, 'Question is required'),
+  precondition: z.string().optional().or(z.literal('')),
+  metadata: z.string().optional().or(z.literal('')),
+});
+
+export type TestRunFormValues = z.infer<typeof testRunSchema>;
