@@ -35,7 +35,8 @@ import me.nghlong3004.vqc.api.user.entity.User;
     indexes = {
       @Index(name = "idx_rubrics_project_id", columnList = "project_id"),
       @Index(name = "idx_rubrics_status", columnList = "status"),
-      @Index(name = "idx_rubrics_created_by", columnList = "created_by")
+      @Index(name = "idx_rubrics_created_by", columnList = "created_by"),
+      @Index(name = "idx_rubrics_is_template", columnList = "is_template")
     })
 @Getter
 @Setter
@@ -52,8 +53,8 @@ public class Rubric {
   @Builder.Default
   private UUID publicId = UUID.randomUUID();
 
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "project_id", nullable = false)
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "project_id")
   private Project project;
 
   @Column(nullable = false)
@@ -64,6 +65,10 @@ public class Rubric {
 
   @Column(name = "current_version")
   private Integer currentVersion;
+
+  @Column(name = "is_template", nullable = false)
+  @Builder.Default
+  private Boolean isTemplate = false;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 50)
