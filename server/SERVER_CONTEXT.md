@@ -147,7 +147,8 @@ Implemented API slices after auth:
   - Rubric access is owner-scoped by authenticated username/email through `createdBy`.
   - Version numbers are server-managed and auto-increment from the latest version.
   - Rubric `currentVersion` starts as `null`; publishing a draft version sets `publishedAt` and the rubric `currentVersion`.
-  - Publishing requires at least one criterion and total criterion weight exactly `1.0000`.
+  - Criteria use **relative integer weights** (1–100, default 1). System normalizes at evaluation time via `Σ(w×s)/Σ(w)`.
+  - Publishing requires at least one criterion (no sum constraint).
   - Published/archived versions are immutable for criteria create/update/delete; archived rubrics reject version/criteria mutation.
   - `metricKey` is unique per rubric version and must be lowercase letters/numbers/underscores.
 - Evaluation runs and jobs:
