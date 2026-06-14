@@ -296,7 +296,10 @@
       "retryCount": "Số lần thử lại",
       "active": "Hoạt động",
       "isStreaming": "Streaming",
-      "updatedAt": "Cập nhật"
+      "updatedAt": "Cập nhật",
+      "status": "Trạng thái",
+      "url": "URL",
+      "secrets": "Secret Values"
     },
     "quickCreate": "Tạo Nhanh (cURL)",
     "manualSetup": "Cài đặt Thủ công",
@@ -307,7 +310,8 @@
       "description": "Dán lệnh cURL để tự điền URL, method, headers, body và xác thực.",
       "placeholder": "curl -X POST https://api.example.com/chat -H 'Authorization: Bearer sk-...' -H 'Content-Type: application/json' -d '{\"question\":\"{{question}}\"}'",
       "apply": "Áp dụng cURL",
-      "invalid": "Không parse được lệnh cURL này."
+      "invalid": "Không parse được lệnh cURL này.",
+      "helpPlaceholder": "Lưu ý: Hãy sửa câu hỏi mẫu (hardcoded) trong body cURL thành {{question}}, {{precondition}} hoặc {{metadata}} để hệ thống tự động điền giá trị khi chạy thử."
     },
     "auth": {
       "noneHelp": "Connector này không gắn header hoặc query parameter xác thực.",
@@ -329,6 +333,7 @@
     "responseSelectorHelp": "Gemini generateContent dùng $.candidates[0].content.parts[0].text.",
     "testRun": {
       "title": "Chạy thử",
+      "description": "Gửi yêu cầu thử nghiệm để xem Connector có hoạt động không.",
       "question": "Câu hỏi mẫu",
       "questionPlaceholder": "Nhập câu hỏi đại diện từ người dùng",
       "precondition": "Tiền điều kiện",
@@ -336,11 +341,18 @@
       "metadata": "Metadata",
       "metadataPlaceholder": "{\"source\":\"manual\"}",
       "run": "Chạy thử",
+      "runButton": "Chạy thử",
       "running": "Đang chạy...",
       "latency": "Độ trễ",
       "extractedAnswer": "Câu trả lời trích xuất",
       "responseBody": "Response Body",
-      "fullPayload": "Toàn bộ payload"
+      "rawResponse": "Raw Response",
+      "fullPayload": "Toàn bộ payload",
+      "result": "Kết quả",
+      "noAnswer": "Không thể trích xuất",
+      "error": "Lỗi",
+      "errorDetails": "Chi tiết lỗi",
+      "emptyState": "Điền câu hỏi mẫu và bấm Chạy thử để xem kết quả"
     },
     "testQuestion": "Câu hỏi mẫu",
     "testPrecondition": "Tiền điều kiện",
@@ -444,6 +456,8 @@
     "fieldMetadataPlaceholder": "{\"priority\":\"high\"}",
     "fieldMetadataHint": "Metadata JSON tùy chọn cho test case này.",
     "invalidJson": "JSON không hợp lệ",
+    "aiFieldAdditionalPrompt": "Prompt bổ sung (tùy chọn)",
+    "aiFieldAdditionalPromptPlaceholder": "Ví dụ: 'Chỉ tạo câu hỏi về chính sách hoàn tiền...'",
     "deleteTestCase": "Xóa test case",
     "deleteTitle": "Xóa test case",
     "deleteDescription": "Bạn có chắc muốn xóa test case này?",

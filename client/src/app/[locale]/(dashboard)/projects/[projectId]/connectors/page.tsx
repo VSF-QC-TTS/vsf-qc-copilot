@@ -106,7 +106,7 @@ export default function ConnectorsPage() {
           return (
             <span
               className={cn(
-                'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+                'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap',
                 METHOD_COLORS[method] ?? 'bg-zinc-100 text-zinc-600',
               )}
             >

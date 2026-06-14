@@ -296,7 +296,10 @@
       "retryCount": "Retry Count",
       "active": "Active",
       "isStreaming": "Streaming",
-      "updatedAt": "Updated"
+      "updatedAt": "Updated",
+      "status": "Status",
+      "url": "URL",
+      "secrets": "Secret Values"
     },
     "quickCreate": "Quick Create (cURL)",
     "manualSetup": "Manual Setup",
@@ -307,7 +310,8 @@
       "description": "Paste a cURL request to prefill URL, method, headers, body, and authentication.",
       "placeholder": "curl -X POST https://api.example.com/chat -H 'Authorization: Bearer sk-...' -H 'Content-Type: application/json' -d '{\"question\":\"{{question}}\"}'",
       "apply": "Apply cURL",
-      "invalid": "Could not parse this cURL command."
+      "invalid": "Could not parse this cURL command.",
+      "helpPlaceholder": "Note: Replace any hardcoded question in your cURL body with {{question}}, {{precondition}}, or {{metadata}} so the system can inject test values."
     },
     "auth": {
       "noneHelp": "This connector does not attach an authentication header or query parameter.",
@@ -329,6 +333,7 @@
     "responseSelectorHelp": "Gemini generateContent uses $.candidates[0].content.parts[0].text.",
     "testRun": {
       "title": "Test Run",
+      "description": "Send a test request to see if the Connector is working.",
       "question": "Sample question",
       "questionPlaceholder": "Ask a representative user question",
       "precondition": "Precondition",
@@ -336,11 +341,18 @@
       "metadata": "Metadata",
       "metadataPlaceholder": "{\"source\":\"manual\"}",
       "run": "Run Test",
+      "runButton": "Run Test",
       "running": "Running...",
       "latency": "Latency",
       "extractedAnswer": "Extracted Answer",
       "responseBody": "Response Body",
-      "fullPayload": "Full Payload"
+      "rawResponse": "Raw Response",
+      "fullPayload": "Full Payload",
+      "result": "Result",
+      "noAnswer": "Could not extract answer",
+      "error": "Error",
+      "errorDetails": "Error details",
+      "emptyState": "Fill in the form and click Run Test to see results"
     },
     "testQuestion": "Sample question",
     "testPrecondition": "Precondition",
@@ -444,6 +456,8 @@
     "fieldMetadataPlaceholder": "{\"priority\":\"high\"}",
     "fieldMetadataHint": "Optional JSON metadata for this test case.",
     "invalidJson": "Invalid JSON",
+    "aiFieldAdditionalPrompt": "Additional Prompt (optional)",
+    "aiFieldAdditionalPromptPlaceholder": "E.g., 'Only generate questions about the refund policy'",
     "deleteTestCase": "Delete Test Case",
     "deleteTitle": "Delete Test Case",
     "deleteDescription": "Are you sure you want to delete this test case?",

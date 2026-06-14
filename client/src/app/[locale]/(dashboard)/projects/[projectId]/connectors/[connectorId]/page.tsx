@@ -12,6 +12,7 @@ import {
   PlayIcon,
   SpinnerGapIcon,
   XIcon,
+  InfoIcon,
 } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
@@ -74,7 +75,7 @@ type ConnectorDetail = {
 type TestRunResult = {
   status: string;
   latencyMs: number;
-  responseBody: string | null;
+  rawResponse: Record<string, unknown> | null;
   extractedAnswer: string | null;
   error: string | null;
 };
@@ -376,12 +377,18 @@ export default function ConnectorDetailPage() {
               </div>
 
               <div className="space-y-2 sm:col-span-2">
-                <label
-                  htmlFor="edit-rawCurl"
-                  className="text-sm font-medium leading-none text-foreground"
-                >
-                  {t('rawCurl')}
-                </label>
+                <div className="flex items-center gap-2">
+                  <label
+                    htmlFor="edit-rawCurl"
+                    className="text-sm font-medium leading-none text-foreground"
+                  >
+                    {t('rawCurl')}
+                  </label>
+                </div>
+                <p className="text-[13px] text-muted-foreground flex items-start gap-2 rounded-md border bg-blue-50/50 p-3 dark:bg-blue-950/20 dark:border-blue-900/30">
+                  <InfoIcon className="mt-0.5 size-4 shrink-0 text-blue-500" weight="fill" />
+                  <span>{t('curl.helpPlaceholder')}</span>
+                </p>
                 <textarea
                   id="edit-rawCurl"
                   disabled={isSubmitting}
@@ -824,9 +831,9 @@ export default function ConnectorDetailPage() {
                       {t('testRun.rawResponse')}
                     </span>
                     <pre className="max-h-96 overflow-auto rounded-md border bg-background p-3 font-mono text-xs">
-                      {typeof testResult.responseBody === 'string'
-                        ? testResult.responseBody
-                        : JSON.stringify(testResult.responseBody, null, 2)}
+                      {typeof testResult.rawResponse === 'string'
+                        ? testResult.rawResponse
+                        : JSON.stringify(testResult.rawResponse, null, 2)}
                     </pre>
                   </div>
                 </div>
