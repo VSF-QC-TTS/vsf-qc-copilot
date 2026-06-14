@@ -17,9 +17,6 @@ import me.nghlong3004.vqc.api.job.enums.JobType;
 import me.nghlong3004.vqc.api.job.enums.ResourceType;
 import me.nghlong3004.vqc.api.job.repository.JobRepository;
 import me.nghlong3004.vqc.api.job.service.JobQueuePublisher;
-import me.nghlong3004.vqc.api.requirement.entity.BusinessRequirement;
-import me.nghlong3004.vqc.api.requirement.enums.RequirementStatus;
-import me.nghlong3004.vqc.api.requirement.repository.BusinessRequirementRepository;
 import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
 import me.nghlong3004.vqc.api.testcase.repository.TestCaseRepository;
 import me.nghlong3004.vqc.api.user.entity.User;
@@ -39,7 +36,6 @@ public class DatasetGenerationServiceImpl implements DatasetGenerationService {
   private static final int MAX_TEST_CASES = 100;
 
   private final DatasetRepository datasetRepository;
-  private final BusinessRequirementRepository requirementRepository;
   private final TestCaseRepository testCaseRepository;
   private final JobRepository jobRepository;
   private final UserRepository userRepository;
@@ -57,22 +53,14 @@ public class DatasetGenerationServiceImpl implements DatasetGenerationService {
       throw new ResourceException(ErrorCode.DATASET_ARCHIVED);
     }
 
-    BusinessRequirement requirement =
-        findRequirement(request.requirementPublicId(), creator);
-    if (requirement.getStatus() != RequirementStatus.ACTIVE) {
-      throw new ResourceException(ErrorCode.REQUIREMENT_NOT_FOUND);
-    }
-    if (!requirement.getProject().getId().equals(dataset.getProject().getId())) {
-      throw new ResourceException(ErrorCode.REQUIREMENT_NOT_FOUND);
-    }
-
     long existingCount =
         testCaseRepository.countByDatasetAndStatus(dataset, TestCaseStatus.ACTIVE);
     if (existingCount + request.count() > MAX_TEST_CASES) {
       throw new ResourceException(ErrorCode.IMPORT_TOO_MANY_ROWS);
     }
 
-    dataset.setGenerationPrompt(request.additionalPrompt());
+    // Store the generation prompt for the job handler to use
+    dataset.setGenerationPrompt(request.prompt());
     datasetRepository.save(dataset);
 
     Job job =
@@ -107,12 +95,6 @@ public class DatasetGenerationServiceImpl implements DatasetGenerationService {
     return datasetRepository
         .findByPublicIdAndCreatedBy(datasetPublicId, creator)
         .orElseThrow(() -> new ResourceException(ErrorCode.DATASET_NOT_FOUND));
-  }
-
-  private BusinessRequirement findRequirement(UUID requirementPublicId, User creator) {
-    return requirementRepository
-        .findByPublicIdAndCreatedBy(requirementPublicId, creator)
-        .orElseThrow(() -> new ResourceException(ErrorCode.REQUIREMENT_NOT_FOUND));
   }
 
   private User findCreator(String username) {

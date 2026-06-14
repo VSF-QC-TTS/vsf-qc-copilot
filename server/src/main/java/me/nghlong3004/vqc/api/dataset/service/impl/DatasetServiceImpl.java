@@ -1,7 +1,7 @@
 package me.nghlong3004.vqc.api.dataset.service.impl;
 
-import java.util.UUID;
 import java.util.List;
+import java.util.UUID;
 import java.time.OffsetDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,8 +19,6 @@ import me.nghlong3004.vqc.api.exception.ErrorCode;
 import me.nghlong3004.vqc.api.exception.ResourceException;
 import me.nghlong3004.vqc.api.project.entity.Project;
 import me.nghlong3004.vqc.api.project.repository.ProjectRepository;
-import me.nghlong3004.vqc.api.requirement.entity.BusinessRequirement;
-import me.nghlong3004.vqc.api.requirement.repository.BusinessRequirementRepository;
 import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
 import me.nghlong3004.vqc.api.testcase.repository.TestCaseRepository;
 import me.nghlong3004.vqc.api.user.entity.User;
@@ -41,7 +39,6 @@ public class DatasetServiceImpl implements DatasetService {
 
   private final DatasetRepository datasetRepository;
   private final ProjectRepository projectRepository;
-  private final BusinessRequirementRepository businessRequirementRepository;
   private final TestCaseRepository testCaseRepository;
   private final UserRepository userRepository;
   private final DatasetMapper datasetMapper;
@@ -52,11 +49,9 @@ public class DatasetServiceImpl implements DatasetService {
       UUID projectPublicId, CreateDatasetRequest request, String username) {
     User creator = findCreator(username);
     Project project = findProject(projectPublicId, creator);
-    BusinessRequirement requirement = findRequirement(request.requirementPublicId(), creator, project);
     Dataset dataset =
         Dataset.builder()
             .project(project)
-            .requirement(requirement)
             .name(request.name().trim())
             .description(trimToNull(request.description()))
             .version(1)
@@ -168,21 +163,6 @@ public class DatasetServiceImpl implements DatasetService {
     return datasetRepository
         .findByPublicIdAndCreatedBy(datasetPublicId, creator)
         .orElseThrow(() -> new ResourceException(ErrorCode.DATASET_NOT_FOUND));
-  }
-
-  private BusinessRequirement findRequirement(
-      UUID requirementPublicId, User creator, Project project) {
-    if (requirementPublicId == null) {
-      return null;
-    }
-    BusinessRequirement requirement =
-        businessRequirementRepository
-            .findByPublicIdAndCreatedBy(requirementPublicId, creator)
-            .orElseThrow(() -> new ResourceException(ErrorCode.REQUIREMENT_NOT_FOUND));
-    if (!project.getPublicId().equals(requirement.getProject().getPublicId())) {
-      throw new ResourceException(ErrorCode.REQUIREMENT_NOT_FOUND);
-    }
-    return requirement;
   }
 
   private Project findProject(UUID projectPublicId, User creator) {

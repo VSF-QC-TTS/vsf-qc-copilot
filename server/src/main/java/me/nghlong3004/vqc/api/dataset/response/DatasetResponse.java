@@ -17,8 +17,6 @@ public record DatasetResponse(
             example = "0f6d90c2-7410-4db2-86be-8adfd3140f63")
         UUID publicId,
     @Schema(description = "Owning project public identifier.") UUID projectPublicId,
-    @Schema(description = "Linked requirement public identifier.", nullable = true)
-        UUID requirementPublicId,
     @Schema(description = "Dataset name.", example = "Health Demo Dataset") String name,
     @Schema(description = "Dataset description.", nullable = true) String description,
     @Schema(description = "Dataset version.", example = "1") Integer version,

@@ -71,7 +71,7 @@ public class DatasetController {
                 schema = @Schema(implementation = ErrorResponse.class))),
     @ApiResponse(
         responseCode = "404",
-        description = "Project or requirement not found",
+        description = "Project not found",
         content =
             @Content(
                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
@@ -116,7 +116,7 @@ public class DatasetController {
                 schema = @Schema(implementation = ErrorResponse.class))),
     @ApiResponse(
         responseCode = "404",
-        description = "Dataset or requirement not found",
+        description = "Dataset not found",
         content =
             @Content(
                 mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,

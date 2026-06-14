@@ -1,6 +1,6 @@
 package me.nghlong3004.vqc.api.dataset.mapper;
 
-import java.util.UUID;
+
 import me.nghlong3004.vqc.api.dataset.entity.Dataset;
 import me.nghlong3004.vqc.api.dataset.response.DatasetListItemResponse;
 import me.nghlong3004.vqc.api.dataset.response.DatasetResponse;
@@ -21,12 +21,9 @@ public class DatasetMapper {
    * @return public {@link DatasetResponse}
    */
   public DatasetResponse toResponse(Dataset dataset, long totalCases) {
-    UUID requirementPublicId =
-        dataset.getRequirement() == null ? null : dataset.getRequirement().getPublicId();
     return new DatasetResponse(
         dataset.getPublicId(),
         dataset.getProject().getPublicId(),
-        requirementPublicId,
         dataset.getName(),
         dataset.getDescription(),
         dataset.getVersion(),

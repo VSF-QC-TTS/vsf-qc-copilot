@@ -24,7 +24,7 @@ import lombok.Setter;
 import me.nghlong3004.vqc.api.dataset.enums.DatasetSourceType;
 import me.nghlong3004.vqc.api.dataset.enums.DatasetStatus;
 import me.nghlong3004.vqc.api.project.entity.Project;
-import me.nghlong3004.vqc.api.requirement.entity.BusinessRequirement;
+
 import me.nghlong3004.vqc.api.user.entity.User;
 
 /**
@@ -36,7 +36,7 @@ import me.nghlong3004.vqc.api.user.entity.User;
     name = "datasets",
     indexes = {
       @Index(name = "idx_datasets_project_id", columnList = "project_id"),
-      @Index(name = "idx_datasets_requirement_id", columnList = "requirement_id"),
+
       @Index(name = "idx_datasets_status", columnList = "status"),
       @Index(name = "idx_datasets_created_by", columnList = "created_by")
     })
@@ -59,9 +59,7 @@ public class Dataset {
   @JoinColumn(name = "project_id", nullable = false)
   private Project project;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "requirement_id")
-  private BusinessRequirement requirement;
+
 
   @Column(nullable = false)
   private String name;

@@ -25,7 +25,6 @@ Auth
     `-- Project
         |-- Target API Connector
         |   `-- Connector test run
-        |-- Requirement
         |-- Dataset
         |   `-- Test Case
         |-- Rubric
@@ -82,15 +81,9 @@ Auth
 |   |   `-- GET /
 |   |       `-- List connector của project; pageable/sortable
 |   |
-|   |-- /{projectPublicId}/requirements [auth]
-|   |   |-- POST /
-|   |   |   `-- Tạo requirement dưới project
-|   |   `-- GET /
-|   |       `-- List requirement của project; filter: status; pageable/sortable
-|   |
 |   |-- /{projectPublicId}/datasets [auth]
 |   |   |-- POST /
-|   |   |   `-- Tạo dataset dưới project, có thể gắn requirement
+|   |   |   `-- Tạo dataset dưới project
 |   |   `-- GET /
 |   |       `-- List dataset của project; filter: status; pageable/sortable
 |   |
@@ -114,13 +107,6 @@ Auth
 |       |   `-- Update connector; secretValues thay raw values bằng placeholders
 |       `-- POST /test-runs
 |           `-- Chạy thử 1 request qua connector; hiện chỉ extract $.answer
-|
-|-- /api/v1/requirements [auth]
-|   `-- /{requirementPublicId}
-|       |-- GET /
-|       |   `-- Chi tiết requirement
-|       `-- PATCH /
-|           `-- Update content/status; version chỉ tăng khi content đổi
 |
 |-- /api/v1/datasets [auth]
 |   `-- /{datasetPublicId}
@@ -228,9 +214,6 @@ User
     |   |-- lưu config bằng secret placeholders
     |   `-- có thể chạy one-off connector test calls
     |
-    |-- has many Requirement
-    |   `-- content version bắt đầu từ 1 và tăng khi content đổi
-    |
     |-- has many Dataset
     |   |-- status: DRAFT, APPROVED, ARCHIVED
     |   `-- has many TestCase
@@ -271,40 +254,39 @@ User
 6b. POST /api/v1/projects/{projectPublicId}/target-api-connectors/from-curl
     `-- alternative: paste raw cURL → auto-parse, test-call, save on success
 7. POST /api/v1/target-api-connectors/{connectorPublicId}/test-runs
-8. POST /api/v1/projects/{projectPublicId}/requirements
-9. POST /api/v1/projects/{projectPublicId}/datasets
-10. POST /api/v1/datasets/{datasetPublicId}/test-cases
-11. PATCH /api/v1/datasets/{datasetPublicId}
+8. POST /api/v1/projects/{projectPublicId}/datasets
+9. POST /api/v1/datasets/{datasetPublicId}/test-cases
+10. PATCH /api/v1/datasets/{datasetPublicId}
     `-- approve dataset sau khi có active test cases
-12. POST /api/v1/projects/{projectPublicId}/rubrics
-13. POST /api/v1/rubrics/{rubricPublicId}/versions
-14. POST /api/v1/rubric-versions/{rubricVersionPublicId}/criteria
-15. PATCH /api/v1/rubric-versions/{rubricVersionPublicId}
+11. POST /api/v1/projects/{projectPublicId}/rubrics
+12. POST /api/v1/rubrics/{rubricPublicId}/versions
+13. POST /api/v1/rubric-versions/{rubricVersionPublicId}/criteria
+14. PATCH /api/v1/rubric-versions/{rubricVersionPublicId}
      `-- publish khi có ≥1 criterion (weight là relative, không cần tổng = 1)
-16. POST /api/v1/projects/{projectPublicId}/evaluation-runs
+15. POST /api/v1/projects/{projectPublicId}/evaluation-runs
     `-- tạo evaluation run + job, trả 202
-17. GET  /api/v1/jobs/{jobPublicId}
+16. GET  /api/v1/jobs/{jobPublicId}
     `-- poll job progress
-18. GET  /api/v1/evaluation-runs/{runPublicId}
+17. GET  /api/v1/evaluation-runs/{runPublicId}
     `-- xem kết quả tổng
-19. GET  /api/v1/evaluation-runs/{runPublicId}/results
+18. GET  /api/v1/evaluation-runs/{runPublicId}/results
     `-- xem kết quả chi tiết từng test case, gồm qcStatus/qcNote/picBug
-20. Worker consumes Redis queue `vqc:jobs:queue`
+19. Worker consumes Redis queue `vqc:jobs:queue`
     |-- promptfoo executor writes evaluation results and job events
     |-- mock mode for local fallback, CLI mode for real promptfoo eval
     |-- rubric criteria → llm-rubric assertions; grading via google:gemini-2.5-flash
     `-- weighted scoring + isCritical override for final judgeStatus/judgeScore
-21. PUT  /api/v1/evaluation-results/{resultPublicId}/review-decision
+20. PUT  /api/v1/evaluation-results/{resultPublicId}/review-decision
     `-- QC upsert final decision cho một result
-22. GET  /api/v1/evaluation-results/{resultPublicId}/review-decision
+21. GET  /api/v1/evaluation-results/{resultPublicId}/review-decision
     `-- xem QC decision, default NOT_REVIEWED nếu chưa review
-23. PATCH /api/v1/review-decisions/{reviewDecisionPublicId}
+22. PATCH /api/v1/review-decisions/{reviewDecisionPublicId}
     `-- update QC decision hiện có
-24. POST /api/v1/evaluation-runs/{runPublicId}/exports
+23. POST /api/v1/evaluation-runs/{runPublicId}/exports
     `-- tạo async export job
-25. GET  /api/v1/exports/{exportPublicId}
+24. GET  /api/v1/exports/{exportPublicId}
     `-- xem export metadata
-26. GET  /api/v1/exports/{exportPublicId}/file
+25. GET  /api/v1/exports/{exportPublicId}/file
     `-- download file khi export READY
 ```
 

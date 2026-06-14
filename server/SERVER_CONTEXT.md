@@ -94,7 +94,7 @@ Domain choices in current code:
 ## [CURRENT_STATE] Persistence
 
 Persistence now vs target:
-- Current Flyway has five migrations: `V1__init_schema.sql` (auth, project, connector, requirement, dataset, test_case, rubric — rubric `project_id` is nullable, `is_template` added), `V2__create_jobs_evaluation.sql` (jobs, job_events, evaluation_runs, evaluation_results), `V3__create_review_decisions.sql`, `V4__create_export_files.sql`, `V5__create_connector_secrets.sql`.
+- Current Flyway has six migrations: `V1__init_schema.sql` (auth, project, connector, requirement, dataset, test_case, rubric — rubric `project_id` is nullable, `is_template` added), `V2__create_jobs_evaluation.sql` (jobs, job_events, evaluation_runs, evaluation_results), `V3__create_review_decisions.sql`, `V4__create_export_files.sql`, `V5__create_connector_secrets.sql`, `V6__drop_requirement_from_datasets.sql` (drops requirement FK from datasets).
 - Dataset has `generation_prompt TEXT` column for AI generation context.
 - Rubrics are user-scoped (nullable `project_id`); `is_template BOOLEAN NOT NULL DEFAULT FALSE` flags system templates.
 - Email verification and password reset tokens are opaque raw values; only SHA-256 hashes are stored.
@@ -116,13 +116,7 @@ Implemented API slices after auth:
   - Test-run renders `{{question}}`, `{{precondition}}`, and `{{metadata}}`, resolves `{{secret:KEY}}` placeholders to real decrypted values before calling the configured API, and returns masked preview headers. Test-runs now work for authed connectors.
   - `RestClient.Builder` is provided by `ApplicationConfig`; `timeoutSeconds` is accepted but not yet wired into a per-request HTTP timeout.
   - **Create from cURL**: `POST /api/v1/projects/{projectPublicId}/target-api-connectors/from-curl` accepts `{name, rawCurl}` (+ optional description/responseSelector/timeoutSeconds/retryCount). `CurlParser` extracts method/URL/headers/body. `ConnectorSecretDetector` auto-detects and masks sensitive headers with `{{secret:KEY}}` placeholders. Backend test-calls the target API; saves only on success (422 if test fails). `ResponseSelectorDetector` auto-guesses the response JSONPath selector from common keys. Minimal input: just `name` + `rawCurl`.
-- Requirements:
-  - Create/list are nested under `/api/v1/projects/{projectPublicId}/requirements`.
-  - Detail/update use `/api/v1/requirements/{requirementPublicId}`.
-  - Requirement access is owner-scoped by authenticated username/email through project `createdBy`.
-  - `content` is stored trimmed, `version` starts at `1`, and `PATCH` increments `version` only when content changes.
-  - `status` supports `ACTIVE` and `ARCHIVED`; use `PATCH status=ARCHIVED` instead of a separate archive endpoint for now.
-  - `RequirementServiceImpl` logs each API operation with public IDs/user IDs and never logs raw requirement content.
+- Requirements: **REMOVED** (module deleted in V6 migration; `me.nghlong3004.vqc.api.requirement` package removed).
 - Datasets and test cases:
   - Dataset create/list are nested under `/api/v1/projects/{projectPublicId}/datasets`.
   - Dataset detail/update use `/api/v1/datasets/{datasetPublicId}`.
@@ -195,8 +189,8 @@ Implemented API slices after auth:
 - AI generate dataset:
   - `POST /api/v1/datasets/{datasetPublicId}/generate` queues a `DATASET_GENERATION` job (202 Accepted).
   - `DatasetGenerationJobHandler` calls Gemini AI via Spring AI `ChatClient` to generate test cases.
-  - Validates dataset is `DRAFT`, requirement is `ACTIVE`, and test case count + requested count ≤ 100.
-  - `GenerateDatasetRequest` has `requirementPublicId`, `count` (5–100), and optional `additionalPrompt`.
+  - Validates dataset is `DRAFT` and test case count + requested count ≤ 100.
+  - `GenerateDatasetRequest` has `prompt` (generation context), `count` (5–100), and optional `additionalPrompt`.
 - Quick evaluate:
   - `POST /api/v1/projects/{projectPublicId}/quick-evaluate` starts an evaluation with auto-resolve.
   - Null `datasetPublicId`, `connectorPublicId`, or `rubricVersionPublicId` are resolved to the sole candidate; 422 if 0 or >1.
@@ -217,7 +211,7 @@ Following backend slices:
 ## [FUTURE_SLICE] Product Direction
 
 Future product direction from docs:
-- MVP flow: Login -> Project -> Dynamic Target API Connector -> Requirement -> Dataset/Test Cases -> Rubric/Criteria -> Evaluation Run/Job -> Results -> QC Review -> Export.
+- MVP flow: Login -> Project -> Dynamic Target API Connector -> Dataset/Test Cases -> Rubric/Criteria -> Evaluation Run/Job -> Results -> QC Review -> Export.
 - Evaluation Run/Job, Worker, Results, QC Review, and Export APIs are implemented (see `[API_CHANGE]`).
 - Use `target_api_connectors` / API path `target-api-connectors`, not the older ambiguous `api_connectors`, when implementing connector work.
 - Dynamic connector must support manual config first: method/url/headers/body template/response selector, non-streaming JSON, timeout/retry, and secret placeholders.
@@ -277,8 +271,7 @@ Focused tests:
   `rtk bash mvnw -Dtest=AuthProviderTest,OAuth2UserProfileExtractorTest,OAuth2UserProfileServiceTest,ProviderAwareOAuth2UserServiceTest,GithubEmailOAuth2UserEnricherTest,OAuth2LoginSuccessHandlerTest test`
 - Project/connector/mock focused suite:
   `rtk bash mvnw -Dtest=ProjectControllerTest,ProjectServiceImplTest,ProjectMapperTest,MockChatbotControllerTest,MockChatbotServiceImplTest,TargetApiConnectorControllerTest,TargetApiConnectorServiceImplTest,TargetApiConnectorMapperTest,CurlParserTest,ConnectorSecretDetectorTest,ResponseSelectorDetectorTest test`
-- Requirement focused suite:
-  `rtk bash mvnw -Dtest=RequirementControllerTest,RequirementServiceImplTest,RequirementMapperTest test`
+- Requirement focused suite: **REMOVED** (module deleted).
 - Dataset/test case focused suite:
   `rtk bash mvnw -Dtest=DatasetControllerTest,DatasetServiceImplTest,DatasetMapperTest,TestCaseControllerTest,TestCaseServiceImplTest,TestCaseMapperTest test`
 - Rubric focused suite:

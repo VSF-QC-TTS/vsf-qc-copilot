@@ -17,7 +17,7 @@ import me.nghlong3004.vqc.api.job.enums.JobStatus;
 import me.nghlong3004.vqc.api.job.enums.JobType;
 import me.nghlong3004.vqc.api.job.repository.JobEventRepository;
 import me.nghlong3004.vqc.api.job.repository.JobRepository;
-import me.nghlong3004.vqc.api.requirement.entity.BusinessRequirement;
+
 import me.nghlong3004.vqc.api.testcase.entity.TestCase;
 import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
 import me.nghlong3004.vqc.api.testcase.repository.TestCaseRepository;
@@ -120,9 +120,8 @@ public class DatasetGenerationJobHandler {
   }
 
   String callGemini(Dataset dataset, int count) {
-    BusinessRequirement requirement = dataset.getRequirement();
-    String requirementContent =
-        requirement != null ? requirement.getContent() : "No requirement provided.";
+    String generationContext =
+        dataset.getGenerationPrompt() != null ? dataset.getGenerationPrompt() : "No context provided.";
 
     List<TestCase> existing =
         testCaseRepository.findByDatasetAndStatusOrderBySortOrderAscIdAsc(
@@ -146,7 +145,7 @@ public class DatasetGenerationJobHandler {
 
     String userPrompt =
         """
-        Business requirement:
+        Generation context:
         %s
 
         %s
@@ -158,7 +157,7 @@ public class DatasetGenerationJobHandler {
         [{"question": "...", "ground_truth": "..."}, ...]
         """
             .formatted(
-                requirementContent,
+                generationContext,
                 additionalPrompt.isBlank() ? "" : "Additional instructions:\n" + additionalPrompt,
                 existingQuestions.isEmpty() ? "(none)" : existingQuestions.toString(),
                 count);

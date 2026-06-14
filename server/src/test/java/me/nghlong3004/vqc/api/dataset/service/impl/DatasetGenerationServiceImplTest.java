@@ -21,9 +21,6 @@ import me.nghlong3004.vqc.api.job.enums.ResourceType;
 import me.nghlong3004.vqc.api.job.repository.JobRepository;
 import me.nghlong3004.vqc.api.job.service.JobQueuePublisher;
 import me.nghlong3004.vqc.api.project.entity.Project;
-import me.nghlong3004.vqc.api.requirement.entity.BusinessRequirement;
-import me.nghlong3004.vqc.api.requirement.enums.RequirementStatus;
-import me.nghlong3004.vqc.api.requirement.repository.BusinessRequirementRepository;
 import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
 import me.nghlong3004.vqc.api.testcase.repository.TestCaseRepository;
 import me.nghlong3004.vqc.api.user.entity.User;
@@ -41,7 +38,6 @@ class DatasetGenerationServiceImplTest {
     User creator = user();
     Project project = project(creator);
     Dataset dataset = dataset(project, creator, DatasetStatus.DRAFT);
-    BusinessRequirement requirement = requirement(project, creator, RequirementStatus.ACTIVE);
 
     AtomicReference<Job> savedJob = new AtomicReference<>();
     AtomicReference<Dataset> savedDataset = new AtomicReference<>();
@@ -50,7 +46,6 @@ class DatasetGenerationServiceImplTest {
     DatasetGenerationServiceImpl service =
         new DatasetGenerationServiceImpl(
             datasetRepository(Optional.of(dataset), savedDataset),
-            requirementRepository(Optional.of(requirement)),
             testCaseRepository(0L),
             jobRepository(savedJob),
             userRepository(Optional.of(creator)),
@@ -60,7 +55,8 @@ class DatasetGenerationServiceImplTest {
         service.generateTestCases(
             dataset.getPublicId(),
             new GenerateDatasetRequest(
-                requirement.getPublicId(), 30, "Focus on edge cases"),
+                "The chatbot should answer health-related questions accurately.",
+                30, "Focus on edge cases"),
             "qc.demo@example.com");
 
     assertThat(response.datasetPublicId()).isEqualTo(dataset.getPublicId());
@@ -73,7 +69,8 @@ class DatasetGenerationServiceImplTest {
     assertThat(savedJob.get().getResourceId()).isEqualTo(dataset.getId());
     assertThat(savedJob.get().getProgressTotal()).isEqualTo(30);
 
-    assertThat(savedDataset.get().getGenerationPrompt()).isEqualTo("Focus on edge cases");
+    assertThat(savedDataset.get().getGenerationPrompt())
+        .isEqualTo("The chatbot should answer health-related questions accurately.");
 
     assertThat(publishedJobId.get()).isEqualTo(savedJob.get().getPublicId().toString());
   }
@@ -83,12 +80,10 @@ class DatasetGenerationServiceImplTest {
     User creator = user();
     Project project = project(creator);
     Dataset dataset = dataset(project, creator, DatasetStatus.APPROVED);
-    BusinessRequirement requirement = requirement(project, creator, RequirementStatus.ACTIVE);
 
     DatasetGenerationServiceImpl service =
         new DatasetGenerationServiceImpl(
             datasetRepository(Optional.of(dataset), new AtomicReference<>()),
-            requirementRepository(Optional.of(requirement)),
             testCaseRepository(0L),
             ignoredJobRepository(),
             userRepository(Optional.of(creator)),
@@ -98,7 +93,8 @@ class DatasetGenerationServiceImplTest {
             () ->
                 service.generateTestCases(
                     dataset.getPublicId(),
-                    new GenerateDatasetRequest(requirement.getPublicId(), 10, null),
+                    new GenerateDatasetRequest(
+                        "Some context", 10, null),
                     "qc.demo@example.com"))
         .isInstanceOf(ResourceException.class)
         .extracting(e -> ((ResourceException) e).getResponse().code())
@@ -112,7 +108,6 @@ class DatasetGenerationServiceImplTest {
     DatasetGenerationServiceImpl service =
         new DatasetGenerationServiceImpl(
             datasetRepository(Optional.empty(), new AtomicReference<>()),
-            ignoredRequirementRepository(),
             testCaseRepository(0L),
             ignoredJobRepository(),
             userRepository(Optional.of(creator)),
@@ -122,7 +117,8 @@ class DatasetGenerationServiceImplTest {
             () ->
                 service.generateTestCases(
                     UUID.randomUUID(),
-                    new GenerateDatasetRequest(UUID.randomUUID(), 10, null),
+                    new GenerateDatasetRequest(
+                        "Some context", 10, null),
                     "qc.demo@example.com"))
         .isInstanceOf(ResourceException.class)
         .extracting(e -> ((ResourceException) e).getResponse().code())
@@ -130,76 +126,14 @@ class DatasetGenerationServiceImplTest {
   }
 
   @Test
-  void generateRejectsMissingRequirement() {
-    User creator = user();
-    Project project = project(creator);
-    Dataset dataset = dataset(project, creator, DatasetStatus.DRAFT);
-
-    DatasetGenerationServiceImpl service =
-        new DatasetGenerationServiceImpl(
-            datasetRepository(Optional.of(dataset), new AtomicReference<>()),
-            requirementRepository(Optional.empty()),
-            testCaseRepository(0L),
-            ignoredJobRepository(),
-            userRepository(Optional.of(creator)),
-            ignoredJobQueuePublisher());
-
-    assertThatThrownBy(
-            () ->
-                service.generateTestCases(
-                    dataset.getPublicId(),
-                    new GenerateDatasetRequest(UUID.randomUUID(), 10, null),
-                    "qc.demo@example.com"))
-        .isInstanceOf(ResourceException.class)
-        .extracting(e -> ((ResourceException) e).getResponse().code())
-        .isEqualTo("REQUIREMENT_NOT_FOUND");
-  }
-
-  @Test
-  void generateRejectsRequirementFromDifferentProject() {
-    User creator = user();
-    Project project1 = project(creator);
-    Project project2 =
-        Project.builder()
-            .id(2L)
-            .publicId(UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"))
-            .name("Other Project")
-            .createdBy(creator)
-            .build();
-    Dataset dataset = dataset(project1, creator, DatasetStatus.DRAFT);
-    BusinessRequirement requirement = requirement(project2, creator, RequirementStatus.ACTIVE);
-
-    DatasetGenerationServiceImpl service =
-        new DatasetGenerationServiceImpl(
-            datasetRepository(Optional.of(dataset), new AtomicReference<>()),
-            requirementRepository(Optional.of(requirement)),
-            testCaseRepository(0L),
-            ignoredJobRepository(),
-            userRepository(Optional.of(creator)),
-            ignoredJobQueuePublisher());
-
-    assertThatThrownBy(
-            () ->
-                service.generateTestCases(
-                    dataset.getPublicId(),
-                    new GenerateDatasetRequest(requirement.getPublicId(), 10, null),
-                    "qc.demo@example.com"))
-        .isInstanceOf(ResourceException.class)
-        .extracting(e -> ((ResourceException) e).getResponse().code())
-        .isEqualTo("REQUIREMENT_NOT_FOUND");
-  }
-
-  @Test
   void generateRejectsWhenCountWouldExceedMax() {
     User creator = user();
     Project project = project(creator);
     Dataset dataset = dataset(project, creator, DatasetStatus.DRAFT);
-    BusinessRequirement requirement = requirement(project, creator, RequirementStatus.ACTIVE);
 
     DatasetGenerationServiceImpl service =
         new DatasetGenerationServiceImpl(
             datasetRepository(Optional.of(dataset), new AtomicReference<>()),
-            requirementRepository(Optional.of(requirement)),
             testCaseRepository(95L),
             ignoredJobRepository(),
             userRepository(Optional.of(creator)),
@@ -209,7 +143,8 @@ class DatasetGenerationServiceImplTest {
             () ->
                 service.generateTestCases(
                     dataset.getPublicId(),
-                    new GenerateDatasetRequest(requirement.getPublicId(), 10, null),
+                    new GenerateDatasetRequest(
+                        "Some context", 10, null),
                     "qc.demo@example.com"))
         .isInstanceOf(ResourceException.class)
         .extracting(e -> ((ResourceException) e).getResponse().code())
@@ -221,7 +156,6 @@ class DatasetGenerationServiceImplTest {
     DatasetGenerationServiceImpl service =
         new DatasetGenerationServiceImpl(
             ignoredDatasetRepository(),
-            ignoredRequirementRepository(),
             testCaseRepository(0L),
             ignoredJobRepository(),
             userRepository(Optional.empty()),
@@ -231,7 +165,8 @@ class DatasetGenerationServiceImplTest {
             () ->
                 service.generateTestCases(
                     UUID.randomUUID(),
-                    new GenerateDatasetRequest(UUID.randomUUID(), 10, null),
+                    new GenerateDatasetRequest(
+                        "Some context", 10, null),
                     "missing@example.com"))
         .isInstanceOf(ResourceException.class)
         .extracting(e -> ((ResourceException) e).getResponse().code())
@@ -260,26 +195,6 @@ class DatasetGenerationServiceImplTest {
   private DatasetRepository ignoredDatasetRepository() {
     return proxy(
         DatasetRepository.class,
-        (proxy, method, args) -> {
-          throw new UnsupportedOperationException(method.getName());
-        });
-  }
-
-  private BusinessRequirementRepository requirementRepository(
-      Optional<BusinessRequirement> requirement) {
-    return proxy(
-        BusinessRequirementRepository.class,
-        (proxy, method, args) -> {
-          if ("findByPublicIdAndCreatedBy".equals(method.getName())) {
-            return requirement;
-          }
-          throw new UnsupportedOperationException(method.getName());
-        });
-  }
-
-  private BusinessRequirementRepository ignoredRequirementRepository() {
-    return proxy(
-        BusinessRequirementRepository.class,
         (proxy, method, args) -> {
           throw new UnsupportedOperationException(method.getName());
         });
@@ -381,20 +296,6 @@ class DatasetGenerationServiceImplTest {
         .createdBy(creator)
         .createdAt(OffsetDateTime.parse("2026-06-08T10:30:00Z"))
         .updatedAt(OffsetDateTime.parse("2026-06-08T10:30:00Z"))
-        .build();
-  }
-
-  private BusinessRequirement requirement(
-      Project project, User creator, RequirementStatus status) {
-    return BusinessRequirement.builder()
-        .id(1L)
-        .publicId(UUID.fromString("ebd7f0f0-4924-4e81-9795-d1f060bec2f2"))
-        .project(project)
-        .content("The chatbot should answer health-related questions accurately.")
-        .status(status)
-        .createdBy(creator)
-        .createdAt(OffsetDateTime.parse("2026-06-08T10:00:00Z"))
-        .updatedAt(OffsetDateTime.parse("2026-06-08T10:00:00Z"))
         .build();
   }
 }

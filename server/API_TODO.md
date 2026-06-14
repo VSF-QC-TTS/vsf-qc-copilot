@@ -16,7 +16,7 @@ Update rule:
 - Project: create, list, detail, update, archive.
 - Mock chatbot: public chat fallback (`POST /mock-chatbot/chat`).
 - Target API connector: create, list, detail, update, test-run.
-- Requirement: create, list, detail, update.
+- Requirement: ~~removed~~ (module deleted, see V6 migration).
 - Dataset/Test Case: dataset create/list/detail/update; test case create/list/update/delete.
 - Rubric/Criteria: rubric create/list/detail/update/archive; version create/list/detail/publish/archive; criteria create/list/update/delete.
 - Evaluation Run: create (`POST`, 202 async), list under project, detail flat path.

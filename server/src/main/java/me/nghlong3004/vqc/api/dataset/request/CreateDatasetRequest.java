@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import java.util.UUID;
 import me.nghlong3004.vqc.api.dataset.enums.DatasetSourceType;
 
 /**
@@ -13,11 +12,6 @@ import me.nghlong3004.vqc.api.dataset.enums.DatasetSourceType;
  */
 @Schema(name = "CreateDatasetRequest", description = "Create dataset payload")
 public record CreateDatasetRequest(
-    @Schema(
-            description = "Optional requirement that informs this dataset.",
-            example = "ebd7f0f0-4924-4e81-9795-d1f060bec2f2",
-            nullable = true)
-        UUID requirementPublicId,
     @Schema(description = "Dataset source type.", example = "MANUAL")
         @NotNull(message = "Dataset source type is required.")
         DatasetSourceType sourceType,

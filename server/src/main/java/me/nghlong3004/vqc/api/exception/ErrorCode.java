@@ -91,10 +91,6 @@ public enum ErrorCode {
       422,
       "TARGET_CONNECTOR_TEST_FAILED",
       "The target API call failed. Please verify your cURL command and try again."),
-  REQUIREMENT_NOT_FOUND(
-      HttpStatus.NOT_FOUND.value(),
-      "REQUIREMENT_NOT_FOUND",
-      "No requirement found with the provided ID."),
   DATASET_NOT_FOUND(
       HttpStatus.NOT_FOUND.value(),
       "DATASET_NOT_FOUND",

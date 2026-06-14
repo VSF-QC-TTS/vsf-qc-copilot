@@ -67,7 +67,6 @@ class DatasetControllerTest {
         new DatasetResponse(
             UUID.fromString("0f6d90c2-7410-4db2-86be-8adfd3140f63"),
             UUID.fromString("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"),
-            UUID.fromString("ebd7f0f0-4924-4e81-9795-d1f060bec2f2"),
             "Health Demo Dataset",
             "Sample dataset for Week 4 demo.",
             1,
@@ -85,7 +84,6 @@ class DatasetControllerTest {
                 .content(
                     """
                     {
-                      "requirementPublicId": "ebd7f0f0-4924-4e81-9795-d1f060bec2f2",
                       "sourceType": "SAMPLE_DEMO",
                       "name": "Health Demo Dataset",
                       "description": "Sample dataset for Week 4 demo."
@@ -95,9 +93,6 @@ class DatasetControllerTest {
         .andExpect(jsonPath("$.publicId").value("0f6d90c2-7410-4db2-86be-8adfd3140f63"))
         .andExpect(
             jsonPath("$.projectPublicId").value("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"))
-        .andExpect(
-            jsonPath("$.requirementPublicId")
-                .value("ebd7f0f0-4924-4e81-9795-d1f060bec2f2"))
         .andExpect(jsonPath("$.name").value("Health Demo Dataset"))
         .andExpect(jsonPath("$.description").value("Sample dataset for Week 4 demo."))
         .andExpect(jsonPath("$.version").value(1))
@@ -231,7 +226,6 @@ class DatasetControllerTest {
         new DatasetResponse(
             UUID.fromString("0f6d90c2-7410-4db2-86be-8adfd3140f63"),
             UUID.fromString("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"),
-            null,
             "Health Demo Dataset",
             "Sample dataset for Week 4 demo.",
             1,
@@ -249,7 +243,6 @@ class DatasetControllerTest {
         .andExpect(jsonPath("$.publicId").value("0f6d90c2-7410-4db2-86be-8adfd3140f63"))
         .andExpect(
             jsonPath("$.projectPublicId").value("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"))
-        .andExpect(jsonPath("$.requirementPublicId").isEmpty())
         .andExpect(jsonPath("$.name").value("Health Demo Dataset"))
         .andExpect(jsonPath("$.sourceType").value("SAMPLE_DEMO"))
         .andExpect(jsonPath("$.status").value("DRAFT"));
@@ -279,7 +272,6 @@ class DatasetControllerTest {
         new DatasetResponse(
             UUID.fromString("0f6d90c2-7410-4db2-86be-8adfd3140f63"),
             UUID.fromString("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"),
-            null,
             "Health Demo Dataset v2",
             "Updated description",
             1,
@@ -357,7 +349,7 @@ class DatasetControllerTest {
                 .content(
                     """
                     {
-                      "requirementPublicId": "ebd7f0f0-4924-4e81-9795-d1f060bec2f2",
+                      "prompt": "The chatbot should answer health-related questions accurately.",
                       "count": 30,
                       "additionalPrompt": "Focus on edge cases"
                     }
@@ -390,7 +382,7 @@ class DatasetControllerTest {
         .andExpect(status().isBadRequest())
         .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
         .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
-        .andExpect(jsonPath("$.errors[*].field", hasItem("requirementPublicId")));
+        .andExpect(jsonPath("$.errors[*].field", hasItem("prompt")));
 
     assertThat(RecordingDatasetGenerationService.request).isNull();
   }

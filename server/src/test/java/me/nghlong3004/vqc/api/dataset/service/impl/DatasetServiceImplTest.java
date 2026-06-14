@@ -21,8 +21,6 @@ import me.nghlong3004.vqc.api.dataset.response.DatasetResponse;
 import me.nghlong3004.vqc.api.exception.ResourceException;
 import me.nghlong3004.vqc.api.project.entity.Project;
 import me.nghlong3004.vqc.api.project.repository.ProjectRepository;
-import me.nghlong3004.vqc.api.requirement.entity.BusinessRequirement;
-import me.nghlong3004.vqc.api.requirement.repository.BusinessRequirementRepository;
 import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
 import me.nghlong3004.vqc.api.testcase.repository.TestCaseRepository;
 import me.nghlong3004.vqc.api.user.entity.User;
@@ -41,15 +39,12 @@ class DatasetServiceImplTest {
   void createDatasetNormalizesCreatorAndPersistsDraftDataset() {
     User creator = user();
     Project project = project(creator);
-    BusinessRequirement requirement = requirement(project, creator);
     AtomicReference<Dataset> savedDataset = new AtomicReference<>();
     AtomicReference<ProjectLookup> projectLookup = new AtomicReference<>();
-    AtomicReference<RequirementLookup> requirementLookup = new AtomicReference<>();
     DatasetServiceImpl datasetService =
         new DatasetServiceImpl(
             datasetRepository(savedDataset),
             projectRepository(projectLookup, Optional.of(project)),
-            requirementRepository(requirementLookup, Optional.of(requirement)),
             testCaseRepository(0),
             userRepository(Optional.of(creator)),
             new DatasetMapper());
@@ -58,7 +53,6 @@ class DatasetServiceImplTest {
         datasetService.createDataset(
             project.getPublicId(),
             new CreateDatasetRequest(
-                requirement.getPublicId(),
                 DatasetSourceType.SAMPLE_DEMO,
                 "  Health Demo Dataset  ",
                 "  Sample dataset for Week 4 demo.  "),
@@ -66,10 +60,7 @@ class DatasetServiceImplTest {
 
     assertThat(projectLookup.get().publicId()).isEqualTo(project.getPublicId());
     assertThat(projectLookup.get().createdBy()).isSameAs(creator);
-    assertThat(requirementLookup.get().publicId()).isEqualTo(requirement.getPublicId());
-    assertThat(requirementLookup.get().createdBy()).isSameAs(creator);
     assertThat(savedDataset.get().getProject()).isSameAs(project);
-    assertThat(savedDataset.get().getRequirement()).isSameAs(requirement);
     assertThat(savedDataset.get().getCreatedBy()).isSameAs(creator);
     assertThat(savedDataset.get().getName()).isEqualTo("Health Demo Dataset");
     assertThat(savedDataset.get().getDescription()).isEqualTo("Sample dataset for Week 4 demo.");
@@ -77,12 +68,11 @@ class DatasetServiceImplTest {
     assertThat(savedDataset.get().getSourceType()).isEqualTo(DatasetSourceType.SAMPLE_DEMO);
     assertThat(savedDataset.get().getStatus()).isEqualTo(DatasetStatus.DRAFT);
     assertThat(response.projectPublicId()).isEqualTo(project.getPublicId());
-    assertThat(response.requirementPublicId()).isEqualTo(requirement.getPublicId());
     assertThat(response.totalCases()).isZero();
   }
 
   @Test
-  void createDatasetAllowsMissingRequirement() {
+  void createDatasetAllowsNullDescription() {
     User creator = user();
     Project project = project(creator);
     AtomicReference<Dataset> savedDataset = new AtomicReference<>();
@@ -90,7 +80,6 @@ class DatasetServiceImplTest {
         new DatasetServiceImpl(
             datasetRepository(savedDataset),
             projectRepository(new AtomicReference<>(), Optional.of(project)),
-            ignoredRequirementRepository(),
             testCaseRepository(0),
             userRepository(Optional.of(creator)),
             new DatasetMapper());
@@ -98,12 +87,10 @@ class DatasetServiceImplTest {
     DatasetResponse response =
         datasetService.createDataset(
             project.getPublicId(),
-            new CreateDatasetRequest(null, DatasetSourceType.MANUAL, "Manual Dataset", null),
+            new CreateDatasetRequest(DatasetSourceType.MANUAL, "Manual Dataset", null),
             "qc.demo@example.com");
 
-    assertThat(savedDataset.get().getRequirement()).isNull();
     assertThat(savedDataset.get().getDescription()).isNull();
-    assertThat(response.requirementPublicId()).isNull();
   }
 
   @Test
@@ -112,7 +99,6 @@ class DatasetServiceImplTest {
         new DatasetServiceImpl(
             ignoredDatasetRepository(),
             ignoredProjectRepository(),
-            ignoredRequirementRepository(),
             testCaseRepository(0),
             userRepository(Optional.empty()),
             new DatasetMapper());
@@ -121,7 +107,7 @@ class DatasetServiceImplTest {
             () ->
                 datasetService.createDataset(
                     UUID.randomUUID(),
-                    new CreateDatasetRequest(null, DatasetSourceType.MANUAL, "Manual Dataset", null),
+                    new CreateDatasetRequest(DatasetSourceType.MANUAL, "Manual Dataset", null),
                     "missing@example.com"))
         .isInstanceOf(ResourceException.class)
         .extracting(error -> ((ResourceException) error).getResponse().code())
@@ -136,7 +122,6 @@ class DatasetServiceImplTest {
         new DatasetServiceImpl(
             ignoredDatasetRepository(),
             projectRepository(projectLookup, Optional.empty()),
-            ignoredRequirementRepository(),
             testCaseRepository(0),
             userRepository(Optional.of(creator)),
             new DatasetMapper());
@@ -146,70 +131,13 @@ class DatasetServiceImplTest {
             () ->
                 datasetService.createDataset(
                     projectPublicId,
-                    new CreateDatasetRequest(null, DatasetSourceType.MANUAL, "Manual Dataset", null),
+                    new CreateDatasetRequest(DatasetSourceType.MANUAL, "Manual Dataset", null),
                     "qc.demo@example.com"))
         .isInstanceOf(ResourceException.class)
         .extracting(error -> ((ResourceException) error).getResponse().code())
         .isEqualTo("PROJECT_NOT_FOUND");
     assertThat(projectLookup.get().publicId()).isEqualTo(projectPublicId);
     assertThat(projectLookup.get().createdBy()).isSameAs(creator);
-  }
-
-  @Test
-  void createDatasetRejectsMissingRequirement() {
-    User creator = user();
-    Project project = project(creator);
-    AtomicReference<RequirementLookup> requirementLookup = new AtomicReference<>();
-    DatasetServiceImpl datasetService =
-        new DatasetServiceImpl(
-            ignoredDatasetRepository(),
-            projectRepository(new AtomicReference<>(), Optional.of(project)),
-            requirementRepository(requirementLookup, Optional.empty()),
-            testCaseRepository(0),
-            userRepository(Optional.of(creator)),
-            new DatasetMapper());
-    UUID requirementPublicId = UUID.randomUUID();
-
-    assertThatThrownBy(
-            () ->
-                datasetService.createDataset(
-                    project.getPublicId(),
-                    new CreateDatasetRequest(
-                        requirementPublicId, DatasetSourceType.MANUAL, "Manual Dataset", null),
-                    "qc.demo@example.com"))
-        .isInstanceOf(ResourceException.class)
-        .extracting(error -> ((ResourceException) error).getResponse().code())
-        .isEqualTo("REQUIREMENT_NOT_FOUND");
-    assertThat(requirementLookup.get().publicId()).isEqualTo(requirementPublicId);
-    assertThat(requirementLookup.get().createdBy()).isSameAs(creator);
-  }
-
-  @Test
-  void createDatasetRejectsRequirementFromAnotherProject() {
-    User creator = user();
-    Project project = project(creator);
-    Project otherProject = project(creator);
-    otherProject.setPublicId(UUID.fromString("94b0bc1c-d717-4998-8a28-0d2e9c034ca8"));
-    BusinessRequirement requirement = requirement(otherProject, creator);
-    DatasetServiceImpl datasetService =
-        new DatasetServiceImpl(
-            ignoredDatasetRepository(),
-            projectRepository(new AtomicReference<>(), Optional.of(project)),
-            requirementRepository(new AtomicReference<>(), Optional.of(requirement)),
-            testCaseRepository(0),
-            userRepository(Optional.of(creator)),
-            new DatasetMapper());
-
-    assertThatThrownBy(
-            () ->
-                datasetService.createDataset(
-                    project.getPublicId(),
-                    new CreateDatasetRequest(
-                        requirement.getPublicId(), DatasetSourceType.MANUAL, "Manual Dataset", null),
-                    "qc.demo@example.com"))
-        .isInstanceOf(ResourceException.class)
-        .extracting(error -> ((ResourceException) error).getResponse().code())
-        .isEqualTo("REQUIREMENT_NOT_FOUND");
   }
 
   @Test
@@ -226,7 +154,6 @@ class DatasetServiceImplTest {
                 new PageImpl<>(List.of(dataset), PageRequest.of(0, 20), 1),
                 datasetQuery),
             projectRepository(projectLookup, Optional.of(project)),
-            ignoredRequirementRepository(),
             testCaseRepository(0),
             userRepository(Optional.of(creator)),
             new DatasetMapper());
@@ -260,7 +187,6 @@ class DatasetServiceImplTest {
                 new PageImpl<>(List.of(), PageRequest.of(0, 20), 0),
                 datasetQuery),
             projectRepository(new AtomicReference<>(), Optional.of(project)),
-            ignoredRequirementRepository(),
             testCaseRepository(0),
             userRepository(Optional.of(creator)),
             new DatasetMapper());
@@ -286,7 +212,6 @@ class DatasetServiceImplTest {
                 Optional.of(dataset),
                 datasetLookup),
             ignoredProjectRepository(),
-            ignoredRequirementRepository(),
             testCaseRepository(0),
             userRepository(Optional.of(creator)),
             new DatasetMapper());
@@ -313,7 +238,6 @@ class DatasetServiceImplTest {
                 Optional.empty(),
                 datasetLookup),
             ignoredProjectRepository(),
-            ignoredRequirementRepository(),
             testCaseRepository(0),
             userRepository(Optional.of(creator)),
             new DatasetMapper());
@@ -342,7 +266,6 @@ class DatasetServiceImplTest {
                 Optional.of(dataset),
                 new AtomicReference<>()),
             ignoredProjectRepository(),
-            ignoredRequirementRepository(),
             testCaseRepository(12),
             userRepository(Optional.of(creator)),
             new DatasetMapper());
@@ -375,7 +298,6 @@ class DatasetServiceImplTest {
                 Optional.of(dataset),
                 new AtomicReference<>()),
             ignoredProjectRepository(),
-            ignoredRequirementRepository(),
             testCaseRepository(100),
             userRepository(Optional.of(creator)),
             new DatasetMapper());
@@ -408,7 +330,6 @@ class DatasetServiceImplTest {
                 Optional.of(dataset),
                 new AtomicReference<>()),
             ignoredProjectRepository(),
-            ignoredRequirementRepository(),
             testCaseRepository(0),
             userRepository(Optional.of(creator)),
             new DatasetMapper());
@@ -438,7 +359,6 @@ class DatasetServiceImplTest {
                 Optional.of(dataset),
                 new AtomicReference<>()),
             ignoredProjectRepository(),
-            ignoredRequirementRepository(),
             testCaseRepository(101),
             userRepository(Optional.of(creator)),
             new DatasetMapper());
@@ -472,7 +392,6 @@ class DatasetServiceImplTest {
                 Optional.of(dataset),
                 new AtomicReference<>()),
             ignoredProjectRepository(),
-            ignoredRequirementRepository(),
             testCaseRepository(12),
             userRepository(Optional.of(creator)),
             new DatasetMapper());
@@ -559,28 +478,6 @@ class DatasetServiceImplTest {
         });
   }
 
-  private BusinessRequirementRepository requirementRepository(
-      AtomicReference<RequirementLookup> requirementLookup,
-      Optional<BusinessRequirement> requirement) {
-    return proxy(
-        BusinessRequirementRepository.class,
-        (proxy, method, args) -> {
-          if ("findByPublicIdAndCreatedBy".equals(method.getName())) {
-            requirementLookup.set(new RequirementLookup((UUID) args[0], (User) args[1]));
-            return requirement;
-          }
-          throw new UnsupportedOperationException(method.getName());
-        });
-  }
-
-  private BusinessRequirementRepository ignoredRequirementRepository() {
-    return proxy(
-        BusinessRequirementRepository.class,
-        (proxy, method, args) -> {
-          throw new UnsupportedOperationException(method.getName());
-        });
-  }
-
   private UserRepository userRepository(Optional<User> user) {
     return proxy(
         UserRepository.class,
@@ -629,17 +526,6 @@ class DatasetServiceImplTest {
         .build();
   }
 
-  private BusinessRequirement requirement(Project project, User creator) {
-    return BusinessRequirement.builder()
-        .publicId(UUID.fromString("ebd7f0f0-4924-4e81-9795-d1f060bec2f2"))
-        .project(project)
-        .content("Evaluate Apple Health step-count answers.")
-        .createdBy(creator)
-        .createdAt(OffsetDateTime.parse("2026-06-08T10:30:00Z"))
-        .updatedAt(OffsetDateTime.parse("2026-06-08T10:30:00Z"))
-        .build();
-  }
-
   private Dataset dataset(Project project, User creator) {
     return Dataset.builder()
         .publicId(UUID.fromString("0f6d90c2-7410-4db2-86be-8adfd3140f63"))
@@ -654,8 +540,6 @@ class DatasetServiceImplTest {
   }
 
   private record ProjectLookup(UUID publicId, User createdBy) {}
-
-  private record RequirementLookup(UUID publicId, User createdBy) {}
 
   private record DatasetQuery(Project project, DatasetStatus status) {}
 
