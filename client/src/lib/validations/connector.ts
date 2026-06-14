@@ -44,6 +44,27 @@ export const createConnectorSchema = z.object({
 
 export type CreateConnectorFormValues = z.input<typeof createConnectorSchema>;
 
+export const createConnectorFromCurlSchema = z.object({
+  name: z.string().min(1, 'Connector name is required').max(200, 'Name too long'),
+  rawCurl: z.string().min(1, 'cURL command is required'),
+  description: z.string().max(1000, 'Description too long').optional().or(z.literal('')),
+  responseSelector: z.string().trim().optional().or(z.literal('')),
+  timeoutSeconds: z.coerce
+    .number()
+    .int()
+    .min(1, 'Minimum 1 second')
+    .max(300, 'Maximum 300 seconds')
+    .default(60),
+  retryCount: z.coerce
+    .number()
+    .int()
+    .min(0, 'Minimum 0')
+    .max(5, 'Maximum 5 retries')
+    .default(1),
+});
+
+export type CreateConnectorFromCurlFormValues = z.input<typeof createConnectorFromCurlSchema>;
+
 // ---------------------------------------------------------------------------
 // Test Run
 // ---------------------------------------------------------------------------

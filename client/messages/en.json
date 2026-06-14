@@ -298,6 +298,10 @@
       "isStreaming": "Streaming",
       "updatedAt": "Updated"
     },
+    "quickCreate": "Quick Create (cURL)",
+    "manualSetup": "Manual Setup",
+    "rawCurl": "Raw cURL Command",
+    "rawCurlPlaceholder": "curl --location 'https://api...'",
     "curl": {
       "title": "Import from cURL",
       "description": "Paste a cURL request to prefill URL, method, headers, body, and authentication.",

@@ -298,6 +298,10 @@
       "isStreaming": "Streaming",
       "updatedAt": "Cập nhật"
     },
+    "quickCreate": "Tạo Nhanh (cURL)",
+    "manualSetup": "Cài đặt Thủ công",
+    "rawCurl": "Lệnh cURL (Raw)",
+    "rawCurlPlaceholder": "curl --location 'https://api...'",
     "curl": {
       "title": "Nhập từ cURL",
       "description": "Dán lệnh cURL để tự điền URL, method, headers, body và xác thực.",
