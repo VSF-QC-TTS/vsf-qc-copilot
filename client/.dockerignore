@@ -1,0 +1,10 @@
+node_modules
+.next
+.next-tmp
+.pnpm-store
+.env*
+*.tsbuildinfo
+next-env.d.ts
+.git
+.gitignore
+README.md

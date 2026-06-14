@@ -11,7 +11,7 @@ import { EmptyState } from '@/components/feedback/empty-state';
 import { PageShell } from '@/components/layout/page-shell';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { apiClient } from '@/lib/api/client';
-import type { PageResponse } from '@/lib/api/types';
+import type { PageResponse, ProjectResponse } from '@/lib/api/types';
 
 export default function DashboardPage() {
   const t = useTranslations('dashboard');
@@ -20,7 +20,7 @@ export default function DashboardPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['projects', 'count'],
     queryFn: () =>
-      apiClient.get<PageResponse<any>>('/api/v1/projects?page=0&size=1'),
+      apiClient.get<PageResponse<ProjectResponse>>('/api/v1/projects?page=0&size=1'),
   });
 
   const totalProjects = data?.totalItems ?? 0;

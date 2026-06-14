@@ -1,6 +1,6 @@
 # ============================================================
 # VSF QC Copilot — Local Docker Compose
-# Frontend (Next.js dev) + Backend (Spring Boot) + DB + Redis
+# Frontend (Next.js + nginx) + Backend (Spring Boot) + DB + Redis
 # All ports bound to 127.0.0.1 only
 # ============================================================
 # Usage:
@@ -78,25 +78,22 @@ services:
       - app-logs:/app/logs
 
   # ---------------------------------------------------------
-  # Frontend (Next.js dev server)
+  # Frontend (Next.js + nginx)
   # ---------------------------------------------------------
   client:
-    image: node:22-alpine
-    working_dir: /app
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8080
+    restart: unless-stopped
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:3000:80"
     depends_on:
       - api
-    volumes:
-      - ./client:/app
-      - client-node-modules:/app/node_modules
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8080
-    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm dev --hostname 0.0.0.0"
 
 volumes:
   pgdata:
   app-runs:
   app-exports:
   app-logs:
-  client-node-modules:

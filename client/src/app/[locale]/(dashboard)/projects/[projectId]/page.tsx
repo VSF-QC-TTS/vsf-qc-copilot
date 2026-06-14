@@ -16,7 +16,11 @@ import {
 import { Link, useRouter } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
 import { apiClient } from '@/lib/api/client';
-import type { ProjectResponse, PageResponse } from '@/lib/api/types';
+import type {
+  EvaluationRunStatus,
+  PageResponse,
+  ProjectResponse,
+} from '@/lib/api/types';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -31,6 +35,12 @@ type QuickLink = {
   labelKey: string;
   href: string;
   icon: React.ElementType;
+};
+
+type EvaluationRunSummary = {
+  publicId: string;
+  status: EvaluationRunStatus;
+  createdAt: string;
 };
 
 function useQuickLinks(projectId: string): QuickLink[] {
@@ -129,7 +139,7 @@ export default function ProjectDetailPage() {
   } = useQuery({
     queryKey: ['evaluations', projectId, 'recent'],
     queryFn: () =>
-      apiClient.get<PageResponse<any>>(
+      apiClient.get<PageResponse<EvaluationRunSummary>>(
         '/api/v1/projects/' +
           projectId +
           '/evaluation-runs?page=0&size=5&sort=createdAt,desc',
@@ -251,24 +261,22 @@ export default function ProjectDetailPage() {
           />
         ) : (
           <div className="divide-y rounded-lg border bg-card">
-            {recentEvaluations.map(
-              (run: { publicId: string; status: string; createdAt: string }) => (
-                <div
-                  key={run.publicId}
-                  className="flex items-center justify-between px-4 py-3"
-                >
-                  <span className="text-sm font-medium truncate">
-                    {run.publicId}
+            {recentEvaluations.map((run) => (
+              <div
+                key={run.publicId}
+                className="flex items-center justify-between px-4 py-3"
+              >
+                <span className="text-sm font-medium truncate">
+                  {run.publicId}
+                </span>
+                <div className="flex items-center gap-3">
+                  <StatusBadge status={run.status} size="sm" />
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(run.createdAt).toLocaleDateString()}
                   </span>
-                  <div className="flex items-center gap-3">
-                    <StatusBadge status={run.status} size="sm" />
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(run.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
                 </div>
-              ),
-            )}
+              </div>
+            ))}
           </div>
         )}
       </section>

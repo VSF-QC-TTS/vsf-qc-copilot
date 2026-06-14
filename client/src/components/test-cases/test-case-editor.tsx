@@ -90,7 +90,12 @@ export function TestCaseEditor({
 
   /* ---- Sync form when testCase changes ---- */
   React.useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) return;
+
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+
       reset({
         question: testCase?.question ?? '',
         groundTruth: testCase?.groundTruth ?? '',
@@ -98,7 +103,11 @@ export function TestCaseEditor({
         metadata: testCase?.metadata ?? '',
       });
       setServerError(null);
-    }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen, testCase, reset]);
 
   /* ---- Escape key ---- */

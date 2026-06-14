@@ -111,14 +111,23 @@ export function ExportDialog({
 
   // Reset on close
   React.useEffect(() => {
-    if (!open) {
+    if (open) return;
+
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+
       setFileType('EXCEL');
       setJobPublicId(null);
       setExportPublicId(null);
       setDownloadUrl(null);
       setErrorMessage(null);
       startExportMutation.reset();
-    }
+    });
+
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 

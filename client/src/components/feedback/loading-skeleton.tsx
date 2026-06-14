@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 /*  Base skeleton                                                      */
 /* ------------------------------------------------------------------ */
 
-export interface SkeletonProps extends React.ComponentProps<"div"> {}
+export type SkeletonProps = React.ComponentProps<"div">;
 
 export function Skeleton({ className, ...props }: SkeletonProps) {
   return (

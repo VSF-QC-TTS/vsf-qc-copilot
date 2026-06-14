@@ -18,7 +18,6 @@ const inputClassName =
 
 export default function ForgotPasswordPage() {
   const t = useTranslations('auth');
-  const tErrors = useTranslations('errors');
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 

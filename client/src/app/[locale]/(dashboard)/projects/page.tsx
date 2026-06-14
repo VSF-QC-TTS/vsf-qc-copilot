@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
-import { Plus, Briefcase } from '@phosphor-icons/react';
+import { Plus } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';

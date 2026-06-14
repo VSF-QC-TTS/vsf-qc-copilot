@@ -2,3 +2,8 @@ node_modules/
 runs/
 server/runs/
 tooling/promptfoo-runner/node_modules/
+client/node_modules/
+client/.next/
+client/.next-tmp/
+client/.pnpm-store/
+client/*.tsbuildinfo
