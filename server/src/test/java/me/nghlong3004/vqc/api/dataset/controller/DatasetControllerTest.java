@@ -73,6 +73,7 @@ class DatasetControllerTest {
             DatasetSourceType.SAMPLE_DEMO,
             DatasetStatus.DRAFT,
             0,
+            0,
             OffsetDateTime.parse("2026-06-08T10:30:00Z"),
             OffsetDateTime.parse("2026-06-08T10:30:00Z"));
 
@@ -98,7 +99,8 @@ class DatasetControllerTest {
         .andExpect(jsonPath("$.version").value(1))
         .andExpect(jsonPath("$.sourceType").value("SAMPLE_DEMO"))
         .andExpect(jsonPath("$.status").value("DRAFT"))
-        .andExpect(jsonPath("$.totalCases").value(0));
+        .andExpect(jsonPath("$.testCaseCount").value(0))
+        .andExpect(jsonPath("$.activeTestCaseCount").value(0));
 
     assertThat(RecordingDatasetService.projectPublicId)
         .isEqualTo(UUID.fromString("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"));
@@ -189,7 +191,7 @@ class DatasetControllerTest {
         .andExpect(jsonPath("$.items[0].name").value("Health Demo Dataset"))
         .andExpect(jsonPath("$.items[0].sourceType").value("SAMPLE_DEMO"))
         .andExpect(jsonPath("$.items[0].status").value("DRAFT"))
-        .andExpect(jsonPath("$.items[0].totalCases").value(0))
+        .andExpect(jsonPath("$.items[0].testCaseCount").value(0))
         .andExpect(jsonPath("$.page").value(0))
         .andExpect(jsonPath("$.size").value(20))
         .andExpect(jsonPath("$.totalItems").value(1))
@@ -231,6 +233,7 @@ class DatasetControllerTest {
             1,
             DatasetSourceType.SAMPLE_DEMO,
             DatasetStatus.DRAFT,
+            0,
             0,
             OffsetDateTime.parse("2026-06-08T10:30:00Z"),
             OffsetDateTime.parse("2026-06-08T10:35:00Z"));
@@ -278,6 +281,7 @@ class DatasetControllerTest {
             DatasetSourceType.SAMPLE_DEMO,
             DatasetStatus.APPROVED,
             12,
+            12,
             OffsetDateTime.parse("2026-06-08T10:30:00Z"),
             OffsetDateTime.parse("2026-06-08T10:35:00Z"));
 
@@ -299,7 +303,8 @@ class DatasetControllerTest {
         .andExpect(jsonPath("$.name").value("Health Demo Dataset v2"))
         .andExpect(jsonPath("$.description").value("Updated description"))
         .andExpect(jsonPath("$.status").value("APPROVED"))
-        .andExpect(jsonPath("$.totalCases").value(12));
+        .andExpect(jsonPath("$.testCaseCount").value(12))
+        .andExpect(jsonPath("$.activeTestCaseCount").value(12));
 
     assertThat(RecordingDatasetService.datasetPublicId)
         .isEqualTo(UUID.fromString("0f6d90c2-7410-4db2-86be-8adfd3140f63"));

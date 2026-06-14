@@ -17,10 +17,11 @@ public class DatasetMapper {
    * Maps an internal {@link Dataset} entity to a public API response.
    *
    * @param dataset internal {@link Dataset} entity
-   * @param totalCases number of test cases in the dataset
+   * @param testCaseCount total number of test cases in the dataset
+   * @param activeTestCaseCount number of active test cases in the dataset
    * @return public {@link DatasetResponse}
    */
-  public DatasetResponse toResponse(Dataset dataset, long totalCases) {
+  public DatasetResponse toResponse(Dataset dataset, long testCaseCount, long activeTestCaseCount) {
     return new DatasetResponse(
         dataset.getPublicId(),
         dataset.getProject().getPublicId(),
@@ -29,7 +30,8 @@ public class DatasetMapper {
         dataset.getVersion(),
         dataset.getSourceType(),
         dataset.getStatus(),
-        totalCases,
+        testCaseCount,
+        activeTestCaseCount,
         dataset.getCreatedAt(),
         dataset.getUpdatedAt());
   }
@@ -38,17 +40,17 @@ public class DatasetMapper {
    * Maps an internal {@link Dataset} entity to a public list item response.
    *
    * @param dataset internal {@link Dataset} entity
-   * @param totalCases number of test cases in the dataset
+   * @param testCaseCount number of test cases in the dataset
    * @return public {@link DatasetListItemResponse}
    */
-  public DatasetListItemResponse toListItemResponse(Dataset dataset, long totalCases) {
+  public DatasetListItemResponse toListItemResponse(Dataset dataset, long testCaseCount) {
     return new DatasetListItemResponse(
         dataset.getPublicId(),
         dataset.getProject().getPublicId(),
         dataset.getName(),
         dataset.getSourceType(),
         dataset.getStatus(),
-        totalCases,
+        testCaseCount,
         dataset.getCreatedAt());
   }
 }

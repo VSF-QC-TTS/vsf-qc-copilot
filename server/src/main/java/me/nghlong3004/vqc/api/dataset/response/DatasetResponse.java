@@ -22,7 +22,8 @@ public record DatasetResponse(
     @Schema(description = "Dataset version.", example = "1") Integer version,
     @Schema(description = "Dataset source type.", example = "MANUAL") DatasetSourceType sourceType,
     @Schema(description = "Dataset lifecycle status.", example = "DRAFT") DatasetStatus status,
-    @Schema(description = "Number of test cases in this dataset.", example = "0") long totalCases,
+    @Schema(description = "Total number of test cases in this dataset.", example = "0") long testCaseCount,
+    @Schema(description = "Number of active test cases in this dataset.", example = "0") long activeTestCaseCount,
     @Schema(description = "Dataset creation time.", example = "2026-06-08T10:30:00+07:00")
         OffsetDateTime createdAt,
     @Schema(description = "Last dataset update time.", example = "2026-06-08T10:30:00+07:00")

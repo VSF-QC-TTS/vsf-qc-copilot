@@ -36,7 +36,7 @@ class DatasetMapperTest {
     dataset.setCreatedAt(OffsetDateTime.parse("2026-06-08T10:30:00Z"));
     dataset.setUpdatedAt(OffsetDateTime.parse("2026-06-08T10:35:00Z"));
 
-    DatasetResponse response = datasetMapper.toResponse(dataset, 12);
+    DatasetResponse response = datasetMapper.toResponse(dataset, 10, 5);
 
     assertThat(response.publicId()).isEqualTo(dataset.getPublicId());
     assertThat(response.projectPublicId()).isEqualTo(project.getPublicId());
@@ -46,7 +46,8 @@ class DatasetMapperTest {
     assertThat(response.version()).isEqualTo(1);
     assertThat(response.sourceType()).isEqualTo(DatasetSourceType.SAMPLE_DEMO);
     assertThat(response.status()).isEqualTo(DatasetStatus.DRAFT);
-    assertThat(response.totalCases()).isEqualTo(12);
+    assertThat(response.testCaseCount()).isEqualTo(10);
+    assertThat(response.activeTestCaseCount()).isEqualTo(5);
     assertThat(response.createdAt()).isEqualTo(OffsetDateTime.parse("2026-06-08T10:30:00Z"));
     assertThat(response.updatedAt()).isEqualTo(OffsetDateTime.parse("2026-06-08T10:35:00Z"));
   }
@@ -72,7 +73,7 @@ class DatasetMapperTest {
     assertThat(response.name()).isEqualTo("Health Demo Dataset");
     assertThat(response.sourceType()).isEqualTo(DatasetSourceType.SAMPLE_DEMO);
     assertThat(response.status()).isEqualTo(DatasetStatus.DRAFT);
-    assertThat(response.totalCases()).isEqualTo(3);
+    assertThat(response.testCaseCount()).isEqualTo(3);
     assertThat(response.createdAt()).isEqualTo(OffsetDateTime.parse("2026-06-08T10:30:00Z"));
   }
 }

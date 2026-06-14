@@ -65,7 +65,7 @@ public class DatasetServiceImpl implements DatasetService {
         saved.getPublicId(),
         project.getPublicId(),
         creator.getPublicId());
-    return datasetMapper.toResponse(saved, 0);
+    return datasetMapper.toResponse(saved, 0, 0);
   }
 
   @Override
@@ -80,7 +80,7 @@ public class DatasetServiceImpl implements DatasetService {
             : datasetRepository.findByProjectAndStatus(project, status, pageable);
     List<DatasetListItemResponse> items =
         datasets.getContent().stream()
-            .map(dataset -> datasetMapper.toListItemResponse(dataset, countActiveCases(dataset)))
+            .map(dataset -> datasetMapper.toListItemResponse(dataset, countAllCases(dataset)))
             .toList();
     log.info(
         "Listed datasets for project {} by user {} with status {} page {} size {}",
@@ -106,7 +106,7 @@ public class DatasetServiceImpl implements DatasetService {
         dataset.getPublicId(),
         dataset.getProject().getPublicId(),
         dataset.getCreatedBy().getPublicId());
-    return datasetMapper.toResponse(dataset, countActiveCases(dataset));
+    return datasetMapper.toResponse(dataset, countAllCases(dataset), countActiveCases(dataset));
   }
 
   @Override
@@ -132,7 +132,8 @@ public class DatasetServiceImpl implements DatasetService {
         saved.getProject().getPublicId(),
         creator.getPublicId(),
         saved.getStatus());
-    return datasetMapper.toResponse(saved, activeCases);
+    long totalCases = countAllCases(saved);
+    return datasetMapper.toResponse(saved, totalCases, activeCases);
   }
 
   private void applyStatus(Dataset dataset, DatasetStatus status, User creator) {
@@ -152,6 +153,10 @@ public class DatasetServiceImpl implements DatasetService {
 
   private long countActiveCases(Dataset dataset) {
     return testCaseRepository.countByDatasetAndStatus(dataset, TestCaseStatus.ACTIVE);
+  }
+
+  private long countAllCases(Dataset dataset) {
+    return testCaseRepository.countByDataset(dataset);
   }
 
   private Dataset findDataset(UUID datasetPublicId, String username) {

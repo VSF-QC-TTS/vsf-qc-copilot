@@ -11,6 +11,7 @@ import {
   XCircleIcon,
   CircleNotchIcon,
   HourglassIcon,
+  InfoIcon,
 } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
@@ -201,6 +202,12 @@ export function AIGenerateDialog({
         </div>
 
         <div className="mt-4 space-y-4">
+          {/* Helper hint */}
+          <div className="flex gap-2 rounded-md border bg-blue-50/50 p-3 text-sm text-muted-foreground dark:border-blue-900/30 dark:bg-blue-950/20">
+            <InfoIcon className="mt-0.5 size-4 shrink-0 text-blue-500" weight="fill" />
+            <p>{t('aiGenerateHint')}</p>
+          </div>
+
           {/* Server error */}
           {serverError && (
             <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">

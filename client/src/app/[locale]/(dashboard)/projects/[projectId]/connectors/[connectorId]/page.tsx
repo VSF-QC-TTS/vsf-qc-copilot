@@ -117,11 +117,11 @@ function ReadOnlyField({
   const tCommon = useTranslations('common');
 
   return (
-    <div className="space-y-1">
-      <span className="text-sm font-medium text-muted-foreground">
+    <div className="space-y-1 overflow-hidden">
+      <span className="text-sm font-medium text-muted-foreground block truncate">
         {label}
       </span>
-      <p className={cn('text-sm', mono && 'font-mono')}>
+      <p className={cn('text-sm break-all', mono && 'font-mono')}>
         {value || tCommon('notAvailable')}
       </p>
     </div>

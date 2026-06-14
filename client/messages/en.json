@@ -482,6 +482,7 @@
     "importErrors": "Import errors",
     "aiGenerate": "AI Generate",
     "aiGenerateTitle": "Generate test cases with AI",
+    "aiGenerateHint": "Tip: You can enter a detailed prompt or paste information (e.g. JSON schema, table structure) to generate accurate test cases. Image upload support is coming soon.",
     "aiFieldRequirement": "Requirement",
     "aiFieldRequirementPlaceholder": "Describe the requirement to cover",
     "aiFieldCount": "Number of test cases",

@@ -482,6 +482,7 @@
     "importErrors": "Lỗi nhập liệu",
     "aiGenerate": "Tạo bằng AI",
     "aiGenerateTitle": "Tạo test case bằng AI",
+    "aiGenerateHint": "Mẹo: Bạn có thể nhập prompt chi tiết, hoặc dán thông tin (ví dụ: schema JSON, cấu trúc bảng) để AI tạo dữ liệu phù hợp. Sắp tới sẽ hỗ trợ upload ảnh.",
     "aiFieldRequirement": "Yêu cầu",
     "aiFieldRequirementPlaceholder": "Mô tả yêu cầu cần bao phủ",
     "aiFieldCount": "Số lượng test case",

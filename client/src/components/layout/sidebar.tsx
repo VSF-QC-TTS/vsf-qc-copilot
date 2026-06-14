@@ -16,7 +16,8 @@ import {
 import { cn } from '@/lib/utils';
 import { useSidebarStore } from '@/lib/store/sidebar-store';
 import { Button } from '@/components/ui/button';
-import { APP_MONOGRAM, APP_NAME } from '@/lib/branding';
+import { APP_NAME } from '@/lib/branding';
+import Image from 'next/image';
 
 const items = [
   { key: 'dashboard', href: '/dashboard', icon: HouseIcon },
@@ -35,10 +36,8 @@ export function Sidebar() {
     <>
       {/* Logo */}
       <div className="flex h-16 items-center gap-3 border-b px-4">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
-          <span className="text-xs font-bold text-primary-foreground">
-            {APP_MONOGRAM}
-          </span>
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg overflow-hidden">
+          <Image src="/logo.png" alt="Logo" width={32} height={32} className="object-cover" />
         </div>
         {!isCollapsed && (
           <span className="text-sm font-semibold leading-tight tracking-tight">

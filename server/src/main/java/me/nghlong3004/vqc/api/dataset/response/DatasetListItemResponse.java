@@ -17,5 +17,5 @@ public record DatasetListItemResponse(
     @Schema(description = "Dataset name.") String name,
     @Schema(description = "Dataset source type.") DatasetSourceType sourceType,
     @Schema(description = "Dataset lifecycle status.") DatasetStatus status,
-    @Schema(description = "Number of test cases in this dataset.") long totalCases,
+    @Schema(description = "Number of test cases in this dataset.") long testCaseCount,
     @Schema(description = "Dataset creation time.") OffsetDateTime createdAt) {}

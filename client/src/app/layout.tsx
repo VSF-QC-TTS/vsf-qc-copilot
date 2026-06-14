@@ -24,6 +24,9 @@ export const metadata: Metadata = {
     template: `%s | ${APP_NAME}`,
   },
   description: "Internal QC dashboard for chatbot evaluation workflows.",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export const viewport: Viewport = {

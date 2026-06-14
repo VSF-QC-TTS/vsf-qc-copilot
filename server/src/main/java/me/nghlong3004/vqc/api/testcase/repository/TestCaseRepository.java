@@ -28,6 +28,14 @@ public interface TestCaseRepository extends JpaRepository<TestCase, Long> {
   long countByDatasetAndStatus(Dataset dataset, TestCaseStatus status);
 
   /**
+   * Counts all test cases in a dataset.
+   *
+   * @param dataset owner {@link Dataset}
+   * @return count of matching test cases
+   */
+  long countByDataset(Dataset dataset);
+
+  /**
    * Finds test cases under a {@link Dataset}.
    *
    * @param dataset owner {@link Dataset}

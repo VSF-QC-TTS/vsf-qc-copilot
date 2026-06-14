@@ -68,7 +68,7 @@ class DatasetServiceImplTest {
     assertThat(savedDataset.get().getSourceType()).isEqualTo(DatasetSourceType.SAMPLE_DEMO);
     assertThat(savedDataset.get().getStatus()).isEqualTo(DatasetStatus.DRAFT);
     assertThat(response.projectPublicId()).isEqualTo(project.getPublicId());
-    assertThat(response.totalCases()).isZero();
+    assertThat(response.testCaseCount()).isZero();
   }
 
   @Test
@@ -168,7 +168,7 @@ class DatasetServiceImplTest {
     assertThat(datasetQuery.get().status()).isEqualTo(DatasetStatus.DRAFT);
     assertThat(response.items()).hasSize(1);
     assertThat(response.items().getFirst().publicId()).isEqualTo(dataset.getPublicId());
-    assertThat(response.items().getFirst().totalCases()).isZero();
+    assertThat(response.items().getFirst().testCaseCount()).isZero();
     assertThat(response.page()).isZero();
     assertThat(response.size()).isEqualTo(20);
     assertThat(response.totalItems()).isEqualTo(1);
@@ -280,7 +280,7 @@ class DatasetServiceImplTest {
     assertThat(dataset.getName()).isEqualTo("Health Demo Dataset v2");
     assertThat(dataset.getDescription()).isEqualTo("Updated description");
     assertThat(dataset.getStatus()).isEqualTo(DatasetStatus.DRAFT);
-    assertThat(response.totalCases()).isEqualTo(12);
+    assertThat(response.testCaseCount()).isEqualTo(12);
   }
 
   @Test
@@ -313,7 +313,7 @@ class DatasetServiceImplTest {
     assertThat(dataset.getApprovedBy()).isSameAs(creator);
     assertThat(dataset.getApprovedAt()).isNotNull();
     assertThat(response.status()).isEqualTo(DatasetStatus.APPROVED);
-    assertThat(response.totalCases()).isEqualTo(100);
+    assertThat(response.testCaseCount()).isEqualTo(100);
   }
 
   @Test
@@ -496,6 +496,8 @@ class DatasetServiceImplTest {
         (proxy, method, args) -> {
           if ("countByDatasetAndStatus".equals(method.getName())) {
             assertThat(args[1]).isEqualTo(TestCaseStatus.ACTIVE);
+            return activeCases;
+          } else if ("countByDataset".equals(method.getName())) {
             return activeCases;
           }
           throw new UnsupportedOperationException(method.getName());
