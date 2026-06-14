@@ -30,6 +30,7 @@ type ConnectorRow = {
   active: boolean;
   createdAt: string;
 };
+const PAGE_SIZE = 10;
 
 // ---------------------------------------------------------------------------
 // HTTP method badge colors
@@ -65,20 +66,20 @@ function truncateUrl(url: string, max = 50): string {
 
 export default function ConnectorsPage() {
   const t = useTranslations('connectors');
+  const tCommon = useTranslations('common');
   const router = useRouter();
   const params = useParams();
   const projectId = params.projectId as string;
 
   // Pagination state
   const [page, setPage] = useState(0);
-  const pageSize = 20;
 
   // Fetch connectors
   const { data, isLoading } = useQuery({
-    queryKey: ['connectors', projectId, { page, size: pageSize }],
+    queryKey: ['connectors', projectId, { page, size: PAGE_SIZE }],
     queryFn: () =>
       apiClient.get<PageResponse<ConnectorRow>>(
-        `/api/v1/projects/${projectId}/target-api-connectors?page=${page}&size=${pageSize}`,
+        `/api/v1/projects/${projectId}/target-api-connectors?page=${page}&size=${PAGE_SIZE}`,
       ),
   });
 
@@ -168,6 +169,8 @@ export default function ConnectorsPage() {
     <PageShell
       title={t('title')}
       description={t('description')}
+      backHref={`/projects/${projectId}`}
+      backLabel={tCommon('back')}
       actions={
         <Button onClick={handleCreate}>
           <Plus weight="bold" />
@@ -181,7 +184,7 @@ export default function ConnectorsPage() {
         data={connectors}
         totalItems={totalItems}
         pageIndex={page}
-        pageSize={pageSize}
+        pageSize={PAGE_SIZE}
         onPaginationChange={(nextPage) => setPage(nextPage)}
         loading={isLoading}
         onRowClick={handleRowClick}
@@ -198,11 +201,10 @@ export default function ConnectorsPage() {
       {totalItems > 0 && (
         <DataTablePagination
           pageIndex={page}
-          pageSize={pageSize}
+          pageSize={PAGE_SIZE}
           totalItems={totalItems}
           totalPages={totalPages}
           onPageChange={setPage}
-          onPageSizeChange={() => setPage(0)}
         />
       )}
     </PageShell>

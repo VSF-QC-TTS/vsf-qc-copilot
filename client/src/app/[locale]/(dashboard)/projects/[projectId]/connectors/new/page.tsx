@@ -6,15 +6,20 @@ import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { PageShell } from '@/components/layout/page-shell';
 import { KeyValueEditor } from '@/components/connectors/key-value-editor';
+import {
+  AuthSettingsFields,
+  CurlImportPanel,
+  buildConnectorBodyPayload,
+  buildConnectorAuthPayload,
+  buildConnectorUrl,
+  type ParsedCurlConnector,
+} from '@/components/connectors/connector-form-helpers';
 import { apiClient } from '@/lib/api/client';
-import type { ApiError } from '@/lib/api/types';
-import { getErrorMessageKey } from '@/lib/utils/error-messages';
 import {
   createConnectorSchema,
   type CreateConnectorFormValues,
@@ -67,13 +72,10 @@ function FormSection({
 export default function CreateConnectorPage() {
   const t = useTranslations('connectors');
   const tCommon = useTranslations('common');
-  const tErrors = useTranslations('errors');
   const router = useRouter();
   const queryClient = useQueryClient();
   const params = useParams();
   const projectId = params.projectId as string;
-
-  const [serverError, setServerError] = React.useState<string | null>(null);
 
   // Extra fields not in Zod schema (sent alongside)
   const [headers, setHeaders] = React.useState<Record<string, string>>({});
@@ -81,11 +83,13 @@ export default function CreateConnectorPage() {
   const [pathParams, setPathParams] = React.useState<Record<string, string>>({});
   const [authConfig, setAuthConfig] = React.useState<Record<string, string>>({});
   const [secretValues, setSecretValues] = React.useState<Record<string, string>>({});
+  const [editorRevision, setEditorRevision] = React.useState(0);
 
   const {
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<CreateConnectorFormValues>({
     resolver: zodResolver(createConnectorSchema),
@@ -96,7 +100,7 @@ export default function CreateConnectorPage() {
       method: 'POST',
       baseUrl: '',
       path: '',
-      bodyType: 'JSON',
+      bodyType: 'RAW_JSON',
       bodyTemplate: '',
       bodyTemplateText: '',
       responseFormat: 'JSON',
@@ -114,15 +118,21 @@ export default function CreateConnectorPage() {
 
   // Submit
   async function onSubmit(values: CreateConnectorFormValues) {
-    setServerError(null);
-
-    const payload = {
-      ...values,
+    const authPayload = buildConnectorAuthPayload({
       headers,
       queryParams,
       pathParams,
-      authConfig: authType !== 'NONE' ? authConfig : undefined,
-      secretValues: authType !== 'NONE' ? secretValues : undefined,
+      authType,
+      authConfig,
+      secretValues,
+    });
+
+    const payload = {
+      ...values,
+      protocol: values.protocol || 'HTTP',
+      url: buildConnectorUrl(values.baseUrl, values.path),
+      ...buildConnectorBodyPayload(values.bodyType, values.bodyTemplate),
+      ...authPayload,
     };
 
     try {
@@ -134,21 +144,8 @@ export default function CreateConnectorPage() {
         queryKey: ['connectors', projectId],
       });
       router.push(`/projects/${projectId}/connectors`);
-    } catch (error: unknown) {
-      if (
-        typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        'status' in error &&
-        'message' in error
-      ) {
-        const apiError = error as ApiError;
-        const messageKey = getErrorMessageKey(apiError);
-        const key = messageKey.replace(/^errors\./, '');
-        setServerError(tErrors(key));
-      } else {
-        setServerError(tErrors('network'));
-      }
+    } catch {
+      // apiClient emits a localized toast for normalized backend errors.
     }
   }
 
@@ -156,22 +153,31 @@ export default function CreateConnectorPage() {
     router.push(`/projects/${projectId}/connectors`);
   };
 
+  const handleApplyCurl = (parsed: ParsedCurlConnector) => {
+    setValue('method', parsed.method);
+    setValue('baseUrl', parsed.baseUrl);
+    setValue('path', parsed.path);
+    setValue('bodyType', parsed.bodyType);
+    setValue('bodyTemplate', parsed.bodyTemplate);
+    if (parsed.responseSelector) {
+      setValue('responseSelector', parsed.responseSelector);
+    }
+    setValue('authType', parsed.authType);
+    setHeaders(parsed.headers);
+    setQueryParams(parsed.queryParams);
+    setAuthConfig(parsed.authConfig);
+    setSecretValues(parsed.secretValues);
+    setEditorRevision((revision) => revision + 1);
+  };
+
   return (
     <PageShell
       title={t('createConnector')}
-      actions={
-        <Button variant="outline" onClick={handleBack}>
-          <ArrowLeft weight="bold" />
-          {tCommon('back')}
-        </Button>
-      }
+      backHref={`/projects/${projectId}/connectors`}
+      backLabel={tCommon('back')}
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {serverError && (
-          <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-            {serverError}
-          </div>
-        )}
+        <CurlImportPanel disabled={isSubmitting} onApply={handleApplyCurl} />
 
         {/* ================================================================ */}
         {/* Basic Info */}
@@ -306,6 +312,7 @@ export default function CreateConnectorPage() {
         {/* ================================================================ */}
         <FormSection title={t('sections.requestConfig')}>
           <KeyValueEditor
+            key={`headers-${editorRevision}`}
             label={t('fields.headers')}
             value={headers}
             onChange={setHeaders}
@@ -314,12 +321,14 @@ export default function CreateConnectorPage() {
             valuePlaceholder="application/json"
           />
           <KeyValueEditor
+            key={`query-${editorRevision}`}
             label={t('fields.queryParams')}
             value={queryParams}
             onChange={setQueryParams}
             disabled={isSubmitting}
           />
           <KeyValueEditor
+            key={`path-${editorRevision}`}
             label={t('fields.pathParams')}
             value={pathParams}
             onChange={setPathParams}
@@ -403,24 +412,16 @@ export default function CreateConnectorPage() {
             </select>
           </div>
 
-          {/* Auth config (visible when not NONE) */}
-          {authType !== 'NONE' && (
-            <>
-              <KeyValueEditor
-                label={t('fields.authConfig')}
-                value={authConfig}
-                onChange={setAuthConfig}
-                disabled={isSubmitting}
-              />
-              <KeyValueEditor
-                label={t('fields.secretValues')}
-                value={secretValues}
-                onChange={setSecretValues}
-                disabled={isSubmitting}
-                masked
-              />
-            </>
-          )}
+          <AuthSettingsFields
+            authType={authType}
+            authConfig={authConfig}
+            secretValues={secretValues}
+            onAuthConfigChange={setAuthConfig}
+            onSecretValuesChange={setSecretValues}
+            inputClassName={inputClassName}
+            selectClassName={selectClassName}
+            disabled={isSubmitting}
+          />
         </FormSection>
 
         {/* ================================================================ */}
@@ -462,10 +463,18 @@ export default function CreateConnectorPage() {
                 id="connector-responseSelector"
                 type="text"
                 disabled={isSubmitting}
-                placeholder="$.choices[0].message.content"
+                placeholder="$.candidates[0].content.parts[0].text"
                 className={inputClassName}
                 {...register('responseSelector')}
               />
+              <p className="text-xs text-muted-foreground">
+                {t('responseSelectorHelp')}
+              </p>
+              {errors.responseSelector && (
+                <p className="text-sm text-destructive">
+                  {errors.responseSelector.message}
+                </p>
+              )}
             </div>
 
             {/* Timeout */}

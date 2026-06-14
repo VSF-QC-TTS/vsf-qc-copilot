@@ -10,7 +10,6 @@ import {
   Plus,
   PencilSimple,
   Trash,
-  ArrowLeft,
   X,
   Warning,
 } from '@phosphor-icons/react';
@@ -26,7 +25,6 @@ import {
   createCriterionSchema,
   type CreateCriterionFormValues,
 } from '@/lib/validations/rubric';
-import { useRouter } from '@/i18n/navigation';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -80,7 +78,6 @@ export default function VersionDetailPage({
   const { rubricId, versionId } = React.use(params);
   const t = useTranslations('rubrics');
   const tCommon = useTranslations('common');
-  const router = useRouter();
   const queryClient = useQueryClient();
 
   // Panel state
@@ -164,18 +161,9 @@ export default function VersionDetailPage({
           ? `v${version.versionNumber} - ${version.rubricName}`
           : t('title')
       }
-      actions={
-        <div className="flex items-center gap-2">
-          {version && <StatusBadge status={version.status} />}
-          <Button
-            variant="outline"
-            onClick={() => router.push(`/rubrics/${rubricId}`)}
-          >
-            <ArrowLeft weight="bold" />
-            {tCommon('back')}
-          </Button>
-        </div>
-      }
+      backHref={`/rubrics/${rubricId}`}
+      backLabel={tCommon('back')}
+      actions={version && <StatusBadge status={version.status} />}
     >
       {/* Criteria header */}
       <div className="flex items-center justify-between">

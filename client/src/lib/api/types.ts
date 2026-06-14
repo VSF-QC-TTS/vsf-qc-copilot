@@ -105,5 +105,7 @@ export type ApiError = {
   status: number;
   code: string;
   message: string;
+  title?: string;
+  detail?: string;
   errors?: ApiFieldError[];
 };

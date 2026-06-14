@@ -52,6 +52,7 @@ function truncate(text: string, maxLength = 200): string {
 
 export default function RequirementsPage() {
   const t = useTranslations('requirements');
+  const tCommon = useTranslations('common');
   const { projectId } = useParams<{ projectId: string }>();
   const queryClient = useQueryClient();
 
@@ -171,6 +172,8 @@ export default function RequirementsPage() {
     <PageShell
       title={t('title')}
       description={t('description')}
+      backHref={`/projects/${projectId}`}
+      backLabel={tCommon('back')}
       actions={
         <Button onClick={() => setShowCreate((prev) => !prev)}>
           {showCreate ? (

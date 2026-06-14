@@ -115,6 +115,7 @@ function ProjectDetailSkeleton() {
 // ---------------------------------------------------------------------------
 export default function ProjectDetailPage() {
   const t = useTranslations('projects');
+  const tCommon = useTranslations('common');
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -162,7 +163,7 @@ export default function ProjectDetailPage() {
   // --- Loading state ---
   if (projectLoading) {
     return (
-      <PageShell title={t('overview')}>
+      <PageShell title={t('overview')} backHref="/projects" backLabel={tCommon('back')}>
         <ProjectDetailSkeleton />
       </PageShell>
     );
@@ -176,6 +177,8 @@ export default function ProjectDetailPage() {
     <PageShell
       title={project.name}
       description={t('overview')}
+      backHref="/projects"
+      backLabel={tCommon('back')}
       actions={
         project.status === 'ACTIVE' ? (
           <Button

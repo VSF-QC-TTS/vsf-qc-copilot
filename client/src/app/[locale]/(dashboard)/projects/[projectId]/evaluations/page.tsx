@@ -30,6 +30,7 @@ type EvaluationRunRow = {
   progress: number | null;
   createdAt: string;
 };
+const PAGE_SIZE = 10;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -55,15 +56,14 @@ export default function EvaluationsPage() {
   const projectId = params.projectId as string;
 
   const [page, setPage] = useState(0);
-  const pageSize = 20;
   const [dialogOpen, setDialogOpen] = useState(false);
 
   // Fetch evaluation runs
   const { data, isLoading } = useQuery({
-    queryKey: ['evaluation-runs', projectId, { page, size: pageSize }],
+    queryKey: ['evaluation-runs', projectId, { page, size: PAGE_SIZE }],
     queryFn: () =>
       apiClient.get<PageResponse<EvaluationRunRow>>(
-        `/api/v1/projects/${projectId}/evaluation-runs?page=${page}&size=${pageSize}&sort=createdAt,desc`,
+        `/api/v1/projects/${projectId}/evaluation-runs?page=${page}&size=${PAGE_SIZE}&sort=createdAt,desc`,
       ),
   });
 
@@ -145,6 +145,8 @@ export default function EvaluationsPage() {
   return (
     <PageShell
       title={t('title')}
+      backHref={`/projects/${projectId}`}
+      backLabel={tCommon('back')}
       actions={
         <Button onClick={() => setDialogOpen(true)}>
           <Plus weight="bold" />
@@ -157,7 +159,7 @@ export default function EvaluationsPage() {
         data={runs}
         totalItems={totalItems}
         pageIndex={page}
-        pageSize={pageSize}
+        pageSize={PAGE_SIZE}
         onPaginationChange={(nextPage) => setPage(nextPage)}
         loading={isLoading}
         onRowClick={handleRowClick}
@@ -173,11 +175,10 @@ export default function EvaluationsPage() {
       {totalItems > 0 && (
         <DataTablePagination
           pageIndex={page}
-          pageSize={pageSize}
+          pageSize={PAGE_SIZE}
           totalItems={totalItems}
           totalPages={totalPages}
           onPageChange={setPage}
-          onPageSizeChange={() => setPage(0)}
         />
       )}
 

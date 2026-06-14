@@ -8,7 +8,6 @@ import { type ColumnDef } from '@tanstack/react-table';
 import {
   Plus,
   PencilSimple,
-  ArrowLeft,
   Checks,
   Archive,
 } from '@phosphor-icons/react';
@@ -44,6 +43,7 @@ type VersionResponse = {
   createdAt: string;
   updatedAt: string;
 };
+const PAGE_SIZE = 10;
 
 // ---------------------------------------------------------------------------
 // Input styles
@@ -91,7 +91,6 @@ export default function RubricDetailPage({
 
   // Versions pagination
   const [vPage, setVPage] = useState(0);
-  const [vPageSize, setVPageSize] = useState(10);
 
   // Fetch rubric detail
   const { data: rubric } = useQuery({
@@ -102,10 +101,10 @@ export default function RubricDetailPage({
 
   // Fetch versions
   const { data: versionsData, isLoading: versionsLoading } = useQuery({
-    queryKey: ['rubric-versions', rubricId, { page: vPage, size: vPageSize }],
+    queryKey: ['rubric-versions', rubricId, { page: vPage, size: PAGE_SIZE }],
     queryFn: () =>
       apiClient.get<PageResponse<VersionResponse>>(
-        `/api/v1/rubrics/${rubricId}/versions?page=${vPage}&size=${vPageSize}`,
+        `/api/v1/rubrics/${rubricId}/versions?page=${vPage}&size=${PAGE_SIZE}`,
       ),
   });
 
@@ -310,12 +309,8 @@ export default function RubricDetailPage({
     <PageShell
       title={rubric?.name ?? t('title')}
       description={rubric?.description ?? undefined}
-      actions={
-        <Button variant="outline" onClick={() => router.push('/rubrics')}>
-          <ArrowLeft weight="bold" />
-          {tCommon('back')}
-        </Button>
-      }
+      backHref="/rubrics"
+      backLabel={tCommon('back')}
     >
       {/* Metadata edit section */}
       <div className="rounded-md border bg-card p-4">
@@ -404,10 +399,9 @@ export default function RubricDetailPage({
           data={versions}
           totalItems={totalVersions}
           pageIndex={vPage}
-          pageSize={vPageSize}
-          onPaginationChange={(nextPage, nextSize) => {
+          pageSize={PAGE_SIZE}
+          onPaginationChange={(nextPage) => {
             setVPage(nextPage);
-            setVPageSize(nextSize);
           }}
           loading={versionsLoading}
           onRowClick={handleVersionRowClick}
@@ -417,14 +411,10 @@ export default function RubricDetailPage({
         {totalVersions > 0 && (
           <DataTablePagination
             pageIndex={vPage}
-            pageSize={vPageSize}
+            pageSize={PAGE_SIZE}
             totalItems={totalVersions}
             totalPages={totalVersionPages}
             onPageChange={setVPage}
-            onPageSizeChange={(size) => {
-              setVPageSize(size);
-              setVPage(0);
-            }}
           />
         )}
       </div>

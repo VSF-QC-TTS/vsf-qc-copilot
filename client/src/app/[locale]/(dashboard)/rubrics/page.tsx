@@ -34,6 +34,7 @@ type RubricResponse = {
 // ---------------------------------------------------------------------------
 
 type TabValue = 'my' | 'templates';
+const PAGE_SIZE = 10;
 
 // ---------------------------------------------------------------------------
 // Date formatter
@@ -60,25 +61,24 @@ export default function RubricsPage() {
   // State
   const [activeTab, setActiveTab] = useState<TabValue>('my');
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   // Fetch my rubrics
   const { data: myData, isLoading: myLoading } = useQuery({
-    queryKey: ['rubrics', 'my', { page, size: pageSize }],
+    queryKey: ['rubrics', 'my', { page, size: PAGE_SIZE }],
     queryFn: () =>
       apiClient.get<PageResponse<RubricResponse>>(
-        `/api/v1/rubrics?page=${page}&size=${pageSize}`,
+        `/api/v1/rubrics?page=${page}&size=${PAGE_SIZE}`,
       ),
     enabled: activeTab === 'my',
   });
 
   // Fetch templates
   const { data: templateData, isLoading: templateLoading } = useQuery({
-    queryKey: ['rubrics', 'templates', { page, size: pageSize }],
+    queryKey: ['rubrics', 'templates', { page, size: PAGE_SIZE }],
     queryFn: () =>
       apiClient.get<PageResponse<RubricResponse>>(
-        `/api/v1/rubrics/templates?page=${page}&size=${pageSize}`,
+        `/api/v1/rubrics/templates?page=${page}&size=${PAGE_SIZE}`,
       ),
     enabled: activeTab === 'templates',
   });
@@ -190,9 +190,8 @@ export default function RubricsPage() {
     }
   };
 
-  const handlePaginationChange = (nextPage: number, nextSize: number) => {
+  const handlePaginationChange = (nextPage: number) => {
     setPage(nextPage);
-    setPageSize(nextSize);
   };
 
   const handleTabChange = (tab: TabValue) => {
@@ -240,7 +239,7 @@ export default function RubricsPage() {
         data={rubrics}
         totalItems={totalItems}
         pageIndex={page}
-        pageSize={pageSize}
+        pageSize={PAGE_SIZE}
         onPaginationChange={handlePaginationChange}
         loading={isLoading}
         onRowClick={activeTab === 'my' ? handleRowClick : undefined}
@@ -257,14 +256,10 @@ export default function RubricsPage() {
       {totalItems > 0 && (
         <DataTablePagination
           pageIndex={page}
-          pageSize={pageSize}
+          pageSize={PAGE_SIZE}
           totalItems={totalItems}
           totalPages={totalPages}
           onPageChange={setPage}
-          onPageSizeChange={(size) => {
-            setPageSize(size);
-            setPage(0);
-          }}
         />
       )}
 

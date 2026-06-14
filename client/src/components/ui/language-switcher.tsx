@@ -26,14 +26,13 @@ export function LanguageSwitcher() {
   return (
     <Button
       variant="ghost"
-      size="icon"
+      size="sm"
       onClick={handleSwitch}
+      className="gap-1.5 px-2"
       aria-label={`Switch to ${localeLabels[nextLocale]}`}
     >
       <Translate size={18} />
-      <span className="sr-only">
-        {localeLabels[nextLocale]}
-      </span>
+      <span className="text-xs font-semibold">{localeLabels[locale]}</span>
     </Button>
   );
 }

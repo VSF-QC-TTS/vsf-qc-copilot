@@ -5,9 +5,7 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
-import { ArrowLeft } from '@phosphor-icons/react';
 
-import { Button } from '@/components/ui/button';
 import { PageShell } from '@/components/layout/page-shell';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
@@ -18,7 +16,6 @@ import {
 } from '@/components/panels/result-detail-panel';
 import { apiClient } from '@/lib/api/client';
 import type { PageResponse } from '@/lib/api/types';
-import { useRouter } from '@/i18n/navigation';
 
 // ---------------------------------------------------------------------------
 // Filter constants
@@ -33,6 +30,7 @@ const QC_STATUS_OPTIONS = [
   'NEED_FIX',
   'IGNORED',
 ] as const;
+const PAGE_SIZE = 10;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -50,24 +48,22 @@ export default function ResultsPage() {
   const t = useTranslations('evaluations');
   const tDetail = useTranslations('resultDetail');
   const tCommon = useTranslations('common');
-  const router = useRouter();
   const params = useParams();
   const projectId = params.projectId as string;
   const runId = params.runId as string;
 
   const [page, setPage] = useState(0);
-  const pageSize = 20;
   const [judgeFilter, setJudgeFilter] = useState('');
   const [qcFilter, setQcFilter] = useState('');
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
 
   // Build query params
   const queryParams = useMemo(() => {
-    const parts = [`page=${page}`, `size=${pageSize}`];
+    const parts = [`page=${page}`, `size=${PAGE_SIZE}`];
     if (judgeFilter) parts.push(`judgeStatus=${judgeFilter}`);
     if (qcFilter) parts.push(`qcStatus=${qcFilter}`);
     return parts.join('&');
-  }, [page, pageSize, judgeFilter, qcFilter]);
+  }, [page, judgeFilter, qcFilter]);
 
   // Fetch results
   const { data, isLoading } = useQuery({
@@ -151,19 +147,8 @@ export default function ResultsPage() {
   return (
     <PageShell
       title={t('results')}
-      actions={
-        <Button
-          variant="outline"
-          onClick={() =>
-            router.push(
-              `/projects/${projectId}/evaluations/${runId}`,
-            )
-          }
-        >
-          <ArrowLeft weight="bold" />
-          {t('runDetail')}
-        </Button>
-      }
+      backHref={`/projects/${projectId}/evaluations/${runId}`}
+      backLabel={tCommon('back')}
     >
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
@@ -222,7 +207,7 @@ export default function ResultsPage() {
         data={results}
         totalItems={totalItems}
         pageIndex={page}
-        pageSize={pageSize}
+        pageSize={PAGE_SIZE}
         onPaginationChange={(nextPage) => setPage(nextPage)}
         loading={isLoading}
         onRowClick={handleRowClick}
@@ -232,11 +217,10 @@ export default function ResultsPage() {
       {totalItems > 0 && (
         <DataTablePagination
           pageIndex={page}
-          pageSize={pageSize}
+          pageSize={PAGE_SIZE}
           totalItems={totalItems}
           totalPages={totalPages}
           onPageChange={setPage}
-          onPageSizeChange={() => setPage(0)}
         />
       )}
 

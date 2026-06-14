@@ -22,6 +22,7 @@ import { useRouter } from '@/i18n/navigation';
 // ---------------------------------------------------------------------------
 
 type StatusFilter = 'ALL' | ProjectStatus;
+const PAGE_SIZE = 10;
 
 // ---------------------------------------------------------------------------
 // Date formatter
@@ -45,7 +46,6 @@ export default function ProjectsPage() {
 
   // State
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -53,10 +53,10 @@ export default function ProjectsPage() {
   const status = statusFilter === 'ALL' ? undefined : statusFilter;
 
   const { data, isLoading } = useQuery({
-    queryKey: ['projects', { page, size: pageSize, status }],
+    queryKey: ['projects', { page, size: PAGE_SIZE, status }],
     queryFn: () =>
       apiClient.get<PageResponse<ProjectResponse>>(
-        `/api/v1/projects?page=${page}&size=${pageSize}&sort=createdAt,desc${status ? '&status=' + status : ''}`,
+        `/api/v1/projects?page=${page}&size=${PAGE_SIZE}&sort=createdAt,desc${status ? '&status=' + status : ''}`,
       ),
   });
 
@@ -109,9 +109,8 @@ export default function ProjectsPage() {
     router.push(`/projects/${row.publicId}`);
   };
 
-  const handlePaginationChange = (nextPage: number, nextSize: number) => {
+  const handlePaginationChange = (nextPage: number) => {
     setPage(nextPage);
-    setPageSize(nextSize);
   };
 
   // Filter tabs
@@ -159,7 +158,7 @@ export default function ProjectsPage() {
         data={projects}
         totalItems={totalItems}
         pageIndex={page}
-        pageSize={pageSize}
+        pageSize={PAGE_SIZE}
         onPaginationChange={handlePaginationChange}
         loading={isLoading}
         onRowClick={handleRowClick}
@@ -176,14 +175,10 @@ export default function ProjectsPage() {
       {totalItems > 0 && (
         <DataTablePagination
           pageIndex={page}
-          pageSize={pageSize}
+          pageSize={PAGE_SIZE}
           totalItems={totalItems}
           totalPages={totalPages}
           onPageChange={setPage}
-          onPageSizeChange={(size) => {
-            setPageSize(size);
-            setPage(0);
-          }}
         />
       )}
 

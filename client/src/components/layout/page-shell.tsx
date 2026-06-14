@@ -1,12 +1,16 @@
 'use client';
 
+import { ArrowLeft } from '@phosphor-icons/react';
 import { motion, useReducedMotion, type Variants } from 'motion/react';
 
+import { Link } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
 
 interface PageShellProps {
   title: string;
   description?: string;
+  backHref?: string;
+  backLabel?: string;
   actions?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
@@ -41,7 +45,15 @@ const contentVariants: Variants = {
   },
 };
 
-export function PageShell({ title, description, actions, children, className }: PageShellProps) {
+export function PageShell({
+  title,
+  description,
+  backHref,
+  backLabel = 'Back',
+  actions,
+  children,
+  className,
+}: PageShellProps) {
   const shouldReduceMotion = useReducedMotion();
 
   return (
@@ -51,6 +63,17 @@ export function PageShell({ title, description, actions, children, className }: 
       initial={shouldReduceMotion ? false : 'hidden'}
       animate="show"
     >
+      {backHref && (
+        <motion.div variants={headerVariants}>
+          <Link
+            href={backHref}
+            className="inline-flex w-fit items-center gap-1.5 rounded-md px-1 py-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="size-4" weight="bold" />
+            {backLabel}
+          </Link>
+        </motion.div>
+      )}
       <motion.div
         className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
         variants={headerVariants}

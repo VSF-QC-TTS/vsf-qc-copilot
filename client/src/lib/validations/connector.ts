@@ -6,8 +6,8 @@ import { z } from 'zod';
 
 export const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
 export const AUTH_TYPES = ['NONE', 'BEARER', 'API_KEY', 'BASIC'] as const;
-export const BODY_TYPES = ['NONE', 'JSON', 'FORM', 'RAW'] as const;
-export const RESPONSE_FORMATS = ['JSON', 'TEXT', 'XML'] as const;
+export const BODY_TYPES = ['NONE', 'RAW_JSON', 'RAW_TEXT'] as const;
+export const RESPONSE_FORMATS = ['JSON', 'TEXT', 'SSE'] as const;
 
 // ---------------------------------------------------------------------------
 // Create / Edit Connector
@@ -24,7 +24,7 @@ export const createConnectorSchema = z.object({
   bodyTemplate: z.string().optional().or(z.literal('')),
   bodyTemplateText: z.string().optional().or(z.literal('')),
   responseFormat: z.enum(RESPONSE_FORMATS).optional(),
-  responseSelector: z.string().optional().or(z.literal('')),
+  responseSelector: z.string().trim().min(1, 'Response selector is required'),
   authType: z.enum(AUTH_TYPES).optional(),
   timeoutSeconds: z.coerce
     .number()

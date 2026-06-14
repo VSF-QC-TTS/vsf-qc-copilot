@@ -38,6 +38,8 @@
     "email": "Email",
     "password": "Password",
     "confirmPassword": "Confirm password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
     "displayName": "Display name",
     "forgotPassword": "Forgot password?",
     "resetPassword": "Reset password",
@@ -175,6 +177,7 @@
     "unauthorized": "You are not authorized.",
     "notFound": "Resource not found.",
     "validation": "Invalid data.",
+    "BAD_CREDENTIALS": "Invalid email or password.",
     "INVALID_CREDENTIALS": "Invalid email or password.",
     "EMAIL_ALREADY_EXISTS": "This email is already in use.",
     "USER_NOT_FOUND": "User not found.",
@@ -190,7 +193,15 @@
     "DATASET_NOT_DRAFT": "Dataset must be in Draft status.",
     "DATASET_NOT_APPROVED": "Dataset must be in Approved status.",
     "RUBRIC_VERSION_NOT_PUBLISHED": "Rubric version is not published.",
-    "TEST_CASE_LIMIT_EXCEEDED": "Test case limit of 100 has been reached."
+    "TEST_CASE_LIMIT_EXCEEDED": "Test case limit of 100 has been reached.",
+    "VALIDATION_ERROR": "The submitted data is invalid.",
+    "MISSING_PARAMETER": "A required parameter is missing.",
+    "HTTP_MESSAGE_NOT_READABLE": "The request JSON is invalid.",
+    "RESOURCE_NOT_FOUND": "The requested resource was not found.",
+    "METHOD_NOT_ALLOWED": "This request method is not supported.",
+    "UNSUPPORTED_MEDIA_TYPE": "This request format is not supported.",
+    "ACCESS_DENIED": "You do not have permission to perform this action.",
+    "INTERNAL_SERVER_ERROR": "The server encountered an error. Please try again later."
   },
   "projects": {
     "title": "Projects",
@@ -259,11 +270,13 @@
       "requestConfig": "Request Configuration",
       "bodyTemplate": "Body Template",
       "authentication": "Authentication",
-      "advanced": "Advanced Settings"
+      "advanced": "Advanced Settings",
+      "apiPayload": "API Payload"
     },
     "fields": {
       "name": "Name",
       "description": "Description",
+      "protocol": "Protocol",
       "method": "Method",
       "baseUrl": "Base URL",
       "path": "Path",
@@ -282,7 +295,26 @@
       "timeoutSeconds": "Timeout (seconds)",
       "retryCount": "Retry Count",
       "active": "Active",
-      "isStreaming": "Streaming"
+      "isStreaming": "Streaming",
+      "updatedAt": "Updated"
+    },
+    "curl": {
+      "title": "Import from cURL",
+      "description": "Paste a cURL request to prefill URL, method, headers, body, and authentication.",
+      "placeholder": "curl -X POST https://api.example.com/chat -H 'Authorization: Bearer sk-...' -H 'Content-Type: application/json' -d '{\"question\":\"{{question}}\"}'",
+      "apply": "Apply cURL",
+      "invalid": "Could not parse this cURL command."
+    },
+    "auth": {
+      "noneHelp": "This connector does not attach an authentication header or query parameter.",
+      "bearerToken": "Bearer token",
+      "apiKeyLocation": "API key location",
+      "apiKeyHeader": "Header",
+      "apiKeyQuery": "Query parameter",
+      "apiKeyName": "API key name",
+      "apiKeyValue": "API key value",
+      "basicUsername": "Username",
+      "basicPassword": "Password"
     },
     "placeholders": {
       "name": "Production chatbot API",
@@ -290,6 +322,7 @@
       "bodyTemplate": "{\"question\":\"{{question}}\"}"
     },
     "bodyTemplateHelp": "Use placeholders such as {{question}}, {{precondition}}, and {{metadata}}.",
+    "responseSelectorHelp": "Gemini generateContent uses $.candidates[0].content.parts[0].text.",
     "testRun": {
       "title": "Test Run",
       "question": "Sample question",
@@ -302,7 +335,8 @@
       "running": "Running...",
       "latency": "Latency",
       "extractedAnswer": "Extracted Answer",
-      "responseBody": "Response Body"
+      "responseBody": "Response Body",
+      "fullPayload": "Full Payload"
     },
     "testQuestion": "Sample question",
     "testPrecondition": "Precondition",

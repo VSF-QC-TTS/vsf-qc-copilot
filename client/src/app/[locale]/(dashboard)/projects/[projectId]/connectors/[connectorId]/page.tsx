@@ -7,7 +7,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  ArrowLeft,
   PencilSimple,
   FloppyDisk,
   Play,
@@ -20,10 +19,17 @@ import { Button } from '@/components/ui/button';
 import { PageShell } from '@/components/layout/page-shell';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { KeyValueEditor } from '@/components/connectors/key-value-editor';
+import {
+  AuthSettingsFields,
+  CurlImportPanel,
+  buildConnectorBodyPayload,
+  buildConnectorAuthPayload,
+  buildConnectorUrl,
+  type ParsedCurlConnector,
+} from '@/components/connectors/connector-form-helpers';
 import { Skeleton, SkeletonText } from '@/components/feedback/loading-skeleton';
 import { apiClient } from '@/lib/api/client';
-import type { ApiError } from '@/lib/api/types';
-import { getErrorMessageKey } from '@/lib/utils/error-messages';
+import { isApiError } from '@/lib/utils/error-messages';
 import {
   createConnectorSchema,
   testRunSchema,
@@ -34,7 +40,6 @@ import {
   BODY_TYPES,
   RESPONSE_FORMATS,
 } from '@/lib/validations/connector';
-import { useRouter } from '@/i18n/navigation';
 
 // ---------------------------------------------------------------------------
 // Shared styles
@@ -64,17 +69,17 @@ type ConnectorDetail = {
   method: string;
   baseUrl: string;
   path: string | null;
-  headers: Record<string, string> | null;
-  queryParams: Record<string, string> | null;
-  pathParams: Record<string, string> | null;
+  headers: Record<string, string | number | boolean> | null;
+  queryParams: Record<string, string | number | boolean> | null;
+  pathParams: Record<string, string | number | boolean> | null;
   bodyType: string | null;
-  bodyTemplate: string | null;
+  bodyTemplate: unknown;
   bodyTemplateText: string | null;
   responseFormat: string | null;
   responseSelector: string | null;
   authType: string | null;
-  authConfig: Record<string, string> | null;
-  secretRefs: string[] | null;
+  authConfig: Record<string, unknown> | null;
+  secretRefs: { secretKey: string; maskedValue: string }[] | null;
   timeoutSeconds: number;
   retryCount: number;
   active: boolean;
@@ -90,6 +95,28 @@ type TestRunResult = {
   extractedAnswer: string | null;
   error: string | null;
 };
+
+type JsonRecord = Record<string, unknown>;
+
+function toStringRecord(record: Record<string, unknown> | null): Record<string, string> {
+  if (!record) return {};
+  return Object.fromEntries(
+    Object.entries(record).map(([key, value]) => [
+      key,
+      typeof value === 'string' ? value : JSON.stringify(value),
+    ]),
+  );
+}
+
+function toEditableBodyTemplate(
+  bodyTemplate: unknown,
+  bodyTemplateText: string | null,
+): string {
+  if (bodyTemplateText) return bodyTemplateText;
+  if (!bodyTemplate) return '';
+  if (typeof bodyTemplate === 'string') return bodyTemplate;
+  return JSON.stringify(bodyTemplate, null, 2);
+}
 
 // ---------------------------------------------------------------------------
 // Section wrapper
@@ -137,6 +164,34 @@ function ReadOnlyField({
   );
 }
 
+function JsonBlock({ value }: { value: unknown }) {
+  const tCommon = useTranslations('common');
+  const isEmptyObject =
+    value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    Object.keys(value as JsonRecord).length === 0;
+
+  if (
+    value === null ||
+    value === undefined ||
+    value === '' ||
+    (Array.isArray(value) && value.length === 0) ||
+    isEmptyObject
+  ) {
+    return <p className="text-sm text-muted-foreground">{tCommon('notAvailable')}</p>;
+  }
+
+  const rendered =
+    typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+
+  return (
+    <pre className="max-h-96 overflow-auto rounded-md bg-muted p-3 font-mono text-xs">
+      {rendered}
+    </pre>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Detail skeleton
 // ---------------------------------------------------------------------------
@@ -170,7 +225,6 @@ export default function ConnectorDetailPage() {
   const t = useTranslations('connectors');
   const tCommon = useTranslations('common');
   const tErrors = useTranslations('errors');
-  const router = useRouter();
   const queryClient = useQueryClient();
   const params = useParams();
   const projectId = params.projectId as string;
@@ -178,14 +232,13 @@ export default function ConnectorDetailPage() {
 
   // State
   const [editing, setEditing] = React.useState(false);
-  const [serverError, setServerError] = React.useState<string | null>(null);
-
   // Extra fields for editing
   const [headers, setHeaders] = React.useState<Record<string, string>>({});
   const [queryParamsKv, setQueryParamsKv] = React.useState<Record<string, string>>({});
   const [pathParamsKv, setPathParamsKv] = React.useState<Record<string, string>>({});
   const [authConfigKv, setAuthConfigKv] = React.useState<Record<string, string>>({});
   const [secretValuesKv, setSecretValuesKv] = React.useState<Record<string, string>>({});
+  const [editorRevision, setEditorRevision] = React.useState(0);
 
   // Test run state
   const [testRunning, setTestRunning] = React.useState(false);
@@ -213,10 +266,10 @@ export default function ConnectorDetailPage() {
     let cancelled = false;
     queueMicrotask(() => {
       if (cancelled) return;
-      setHeaders(connector.headers ?? {});
-      setQueryParamsKv(connector.queryParams ?? {});
-      setPathParamsKv(connector.pathParams ?? {});
-      setAuthConfigKv(connector.authConfig ?? {});
+      setHeaders(toStringRecord(connector.headers));
+      setQueryParamsKv(toStringRecord(connector.queryParams));
+      setPathParamsKv(toStringRecord(connector.pathParams));
+      setAuthConfigKv(toStringRecord(connector.authConfig));
     });
 
     return () => {
@@ -232,6 +285,7 @@ export default function ConnectorDetailPage() {
     handleSubmit,
     reset,
     control,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<CreateConnectorFormValues>({
     resolver: zodResolver(createConnectorSchema),
@@ -244,7 +298,10 @@ export default function ConnectorDetailPage() {
           baseUrl: connector.baseUrl,
           path: connector.path ?? '',
           bodyType: (connector.bodyType as CreateConnectorFormValues['bodyType']) ?? 'NONE',
-          bodyTemplate: connector.bodyTemplate ?? '',
+          bodyTemplate: toEditableBodyTemplate(
+            connector.bodyTemplate,
+            connector.bodyTemplateText,
+          ),
           bodyTemplateText: connector.bodyTemplateText ?? '',
           responseFormat:
             (connector.responseFormat as CreateConnectorFormValues['responseFormat']) ?? 'JSON',
@@ -265,29 +322,32 @@ export default function ConnectorDetailPage() {
   const handleCancelEdit = () => {
     reset();
     if (connector) {
-      setHeaders(connector.headers ?? {});
-      setQueryParamsKv(connector.queryParams ?? {});
-      setPathParamsKv(connector.pathParams ?? {});
-      setAuthConfigKv(connector.authConfig ?? {});
+      setHeaders(toStringRecord(connector.headers));
+      setQueryParamsKv(toStringRecord(connector.queryParams));
+      setPathParamsKv(toStringRecord(connector.pathParams));
+      setAuthConfigKv(toStringRecord(connector.authConfig));
       setSecretValuesKv({});
+      setEditorRevision((revision) => revision + 1);
     }
-    setServerError(null);
     setEditing(false);
   };
 
   async function onSaveEdit(values: CreateConnectorFormValues) {
-    setServerError(null);
-
-    const payload = {
-      ...values,
+    const authPayload = buildConnectorAuthPayload({
       headers,
       queryParams: queryParamsKv,
       pathParams: pathParamsKv,
-      authConfig: authType !== 'NONE' ? authConfigKv : undefined,
-      secretValues:
-        authType !== 'NONE' && Object.keys(secretValuesKv).length > 0
-          ? secretValuesKv
-          : undefined,
+      authType,
+      authConfig: authConfigKv,
+      secretValues: secretValuesKv,
+    });
+
+    const payload = {
+      ...values,
+      protocol: values.protocol || 'HTTP',
+      url: buildConnectorUrl(values.baseUrl, values.path),
+      ...buildConnectorBodyPayload(values.bodyType, values.bodyTemplate),
+      ...authPayload,
     };
 
     try {
@@ -302,21 +362,8 @@ export default function ConnectorDetailPage() {
         queryKey: ['connectors', projectId],
       });
       setEditing(false);
-    } catch (error: unknown) {
-      if (
-        typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        'status' in error &&
-        'message' in error
-      ) {
-        const apiError = error as ApiError;
-        const messageKey = getErrorMessageKey(apiError);
-        const key = messageKey.replace(/^errors\./, '');
-        setServerError(tErrors(key));
-      } else {
-        setServerError(tErrors('network'));
-      }
+    } catch {
+      // apiClient emits a localized toast for normalized backend errors.
     }
   }
 
@@ -353,7 +400,7 @@ export default function ConnectorDetailPage() {
         error !== null &&
         'message' in error
       ) {
-        setTestError((error as ApiError).message);
+        setTestError(isApiError(error) ? error.message : tErrors('network'));
       } else {
         setTestError(tErrors('network'));
       }
@@ -362,8 +409,21 @@ export default function ConnectorDetailPage() {
     }
   }
 
-  const handleBack = () => {
-    router.push(`/projects/${projectId}/connectors`);
+  const handleApplyCurl = (parsed: ParsedCurlConnector) => {
+    setValue('method', parsed.method);
+    setValue('baseUrl', parsed.baseUrl);
+    setValue('path', parsed.path);
+    setValue('bodyType', parsed.bodyType);
+    setValue('bodyTemplate', parsed.bodyTemplate);
+    if (parsed.responseSelector) {
+      setValue('responseSelector', parsed.responseSelector);
+    }
+    setValue('authType', parsed.authType);
+    setHeaders(parsed.headers);
+    setQueryParamsKv(parsed.queryParams);
+    setAuthConfigKv(parsed.authConfig);
+    setSecretValuesKv(parsed.secretValues);
+    setEditorRevision((revision) => revision + 1);
   };
 
   // ---------------------------------------------------------------------------
@@ -371,7 +431,11 @@ export default function ConnectorDetailPage() {
   // ---------------------------------------------------------------------------
   if (isLoading) {
     return (
-      <PageShell title={t('connectorDetail')}>
+      <PageShell
+        title={t('connectorDetail')}
+        backHref={`/projects/${projectId}/connectors`}
+        backLabel={tCommon('back')}
+      >
         <ConnectorDetailSkeleton />
       </PageShell>
     );
@@ -388,12 +452,10 @@ export default function ConnectorDetailPage() {
     <PageShell
       title={connector.name}
       description={t('connectorDetail')}
+      backHref={`/projects/${projectId}/connectors`}
+      backLabel={tCommon('back')}
       actions={
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleBack}>
-            <ArrowLeft weight="bold" />
-            {tCommon('back')}
-          </Button>
           {!editing && (
             <Button onClick={() => setEditing(true)}>
               <PencilSimple weight="bold" />
@@ -409,11 +471,7 @@ export default function ConnectorDetailPage() {
       {editing ? (
         /* ---- EDIT FORM ---- */
         <form onSubmit={handleSubmit(onSaveEdit)} className="space-y-6">
-          {serverError && (
-            <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-              {serverError}
-            </div>
-          )}
+          <CurlImportPanel disabled={isSubmitting} onApply={handleApplyCurl} />
 
           {/* Basic Info */}
           <FormSection title={t('sections.basicInfo')}>
@@ -525,18 +583,21 @@ export default function ConnectorDetailPage() {
           {/* Request Config */}
           <FormSection title={t('sections.requestConfig')}>
             <KeyValueEditor
+              key={`headers-${editorRevision}`}
               label={t('fields.headers')}
               value={headers}
               onChange={setHeaders}
               disabled={isSubmitting}
             />
             <KeyValueEditor
+              key={`query-${editorRevision}`}
               label={t('fields.queryParams')}
               value={queryParamsKv}
               onChange={setQueryParamsKv}
               disabled={isSubmitting}
             />
             <KeyValueEditor
+              key={`path-${editorRevision}`}
               label={t('fields.pathParams')}
               value={pathParamsKv}
               onChange={setPathParamsKv}
@@ -611,43 +672,34 @@ export default function ConnectorDetailPage() {
               </select>
             </div>
 
-            {authType !== 'NONE' && (
-              <>
-                <KeyValueEditor
-                  label={t('fields.authConfig')}
-                  value={authConfigKv}
-                  onChange={setAuthConfigKv}
-                  disabled={isSubmitting}
-                />
-
-                {/* Show existing secret refs (read-only) */}
-                {connector.secretRefs && connector.secretRefs.length > 0 && (
-                  <div className="space-y-1">
-                    <span className="text-sm font-medium text-muted-foreground">
-                      {t('fields.existingSecrets')}
+            {authType !== 'NONE' && connector.secretRefs && connector.secretRefs.length > 0 && (
+              <div className="space-y-1">
+                <span className="text-sm font-medium text-muted-foreground">
+                  {t('fields.existingSecrets')}
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {connector.secretRefs.map((ref) => (
+                    <span
+                      key={ref.secretKey}
+                      className="inline-flex items-center rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+                    >
+                      {ref.secretKey}: {ref.maskedValue}
                     </span>
-                    <div className="flex flex-wrap gap-2">
-                      {connector.secretRefs.map((ref) => (
-                        <span
-                          key={ref}
-                          className="inline-flex items-center rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
-                        >
-                          ••••••• ({ref})
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <KeyValueEditor
-                  label={t('fields.newSecretValues')}
-                  value={secretValuesKv}
-                  onChange={setSecretValuesKv}
-                  disabled={isSubmitting}
-                  masked
-                />
-              </>
+                  ))}
+                </div>
+              </div>
             )}
+
+            <AuthSettingsFields
+              authType={authType}
+              authConfig={authConfigKv}
+              secretValues={secretValuesKv}
+              onAuthConfigChange={setAuthConfigKv}
+              onSecretValuesChange={setSecretValuesKv}
+              inputClassName={inputClassName}
+              selectClassName={selectClassName}
+              disabled={isSubmitting}
+            />
           </FormSection>
 
           {/* Advanced */}
@@ -685,9 +737,18 @@ export default function ConnectorDetailPage() {
                   id="edit-responseSelector"
                   type="text"
                   disabled={isSubmitting}
+                  placeholder="$.candidates[0].content.parts[0].text"
                   className={inputClassName}
                   {...register('responseSelector')}
                 />
+                <p className="text-xs text-muted-foreground">
+                  {t('responseSelectorHelp')}
+                </p>
+                {errors.responseSelector && (
+                  <p className="text-sm text-destructive">
+                    {errors.responseSelector.message}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -839,8 +900,20 @@ export default function ConnectorDetailPage() {
                 }
               />
               <ReadOnlyField
+                label={t('fields.protocol')}
+                value={connector.protocol}
+              />
+              <ReadOnlyField
                 label={t('fields.isStreaming')}
                 value={connector.isStreaming ? tCommon('yes') : tCommon('no')}
+              />
+              <ReadOnlyField
+                label={t('columns.createdAt')}
+                value={new Date(connector.createdAt).toLocaleString()}
+              />
+              <ReadOnlyField
+                label={t('fields.updatedAt')}
+                value={new Date(connector.updatedAt).toLocaleString()}
               />
             </div>
           </FormSection>
@@ -884,13 +957,49 @@ export default function ConnectorDetailPage() {
             </FormSection>
           )}
 
-          {/* Advanced (read-only) */}
-          <FormSection title={t('sections.advanced')}>
+          <FormSection title={t('sections.bodyTemplate')}>
             <div className="grid gap-4 sm:grid-cols-2">
+              <ReadOnlyField
+                label={t('fields.bodyType')}
+                value={connector.bodyType}
+              />
               <ReadOnlyField
                 label={t('fields.responseFormat')}
                 value={connector.responseFormat}
               />
+            </div>
+            <div className="space-y-1">
+              <span className="text-sm font-medium text-muted-foreground">
+                {t('fields.bodyTemplate')}
+              </span>
+              <JsonBlock value={connector.bodyTemplate ?? connector.bodyTemplateText} />
+            </div>
+          </FormSection>
+
+          <FormSection title={t('sections.authentication')}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <ReadOnlyField
+                label={t('fields.authType')}
+                value={connector.authType}
+              />
+              <div className="space-y-1">
+                <span className="text-sm font-medium text-muted-foreground">
+                  {t('fields.existingSecrets')}
+                </span>
+                <JsonBlock value={connector.secretRefs} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <span className="text-sm font-medium text-muted-foreground">
+                {t('fields.authConfig')}
+              </span>
+              <JsonBlock value={connector.authConfig} />
+            </div>
+          </FormSection>
+
+          {/* Advanced (read-only) */}
+          <FormSection title={t('sections.advanced')}>
+            <div className="grid gap-4 sm:grid-cols-2">
               <ReadOnlyField
                 label={t('fields.responseSelector')}
                 value={connector.responseSelector}
@@ -904,11 +1013,11 @@ export default function ConnectorDetailPage() {
                 label={t('fields.retryCount')}
                 value={connector.retryCount}
               />
-              <ReadOnlyField
-                label={t('fields.authType')}
-                value={connector.authType}
-              />
             </div>
+          </FormSection>
+
+          <FormSection title={t('sections.apiPayload')}>
+            <JsonBlock value={connector} />
           </FormSection>
         </div>
       )}
@@ -1041,6 +1150,13 @@ export default function ConnectorDetailPage() {
                 {testResult.error}
               </div>
             )}
+
+            <div className="space-y-1">
+              <span className="text-sm font-medium text-foreground">
+                {t('testRun.fullPayload')}
+              </span>
+              <JsonBlock value={testResult} />
+            </div>
           </div>
         )}
       </FormSection>

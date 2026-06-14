@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/lib/store/auth-store';
-import { refreshToken, getMe } from '@/lib/api/auth';
+import { refreshToken } from '@/lib/api/auth';
 import { setTokenGetter, setClearAuth, setOnRefreshed } from '@/lib/api/client';
 
 type AuthGuardProps = {
@@ -14,7 +14,7 @@ type AuthGuardProps = {
 export function AuthGuard({ children }: AuthGuardProps) {
   const t = useTranslations('common');
   const router = useRouter();
-  const { isAuthenticated, login, logout, setToken } = useAuthStore();
+  const { isAuthenticated, login, logout } = useAuthStore();
   const [status, setStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>(
     isAuthenticated ? 'authenticated' : 'loading'
   );
@@ -40,13 +40,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
         const refreshRes = await refreshToken();
         if (cancelled) return;
 
-        // Store token and fetch user profile
-        setToken(refreshRes.accessToken);
-
-        const user = await getMe();
-        if (cancelled) return;
-
-        login(refreshRes.accessToken, user);
+        login(refreshRes.accessToken, refreshRes.user);
         setStatus('authenticated');
       } catch {
         if (cancelled) return;

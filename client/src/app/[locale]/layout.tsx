@@ -3,6 +3,7 @@ import { setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import type { Locale } from "@/i18n/config";
+import { ApiErrorToaster } from "@/components/feedback/api-error-toaster";
 
 type Props = {
   children: React.ReactNode;
@@ -22,6 +23,7 @@ export default async function LocaleLayout({ children, params }: Props) {
   return (
     <NextIntlClientProvider locale={locale}>
       {children}
+      <ApiErrorToaster />
     </NextIntlClientProvider>
   );
 }

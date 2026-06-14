@@ -38,6 +38,7 @@ type DatasetResponse = {
 // ---------------------------------------------------------------------------
 
 type StatusFilter = 'ALL' | DatasetStatus;
+const PAGE_SIZE = 10;
 
 // ---------------------------------------------------------------------------
 // Date formatter
@@ -71,10 +72,10 @@ export default function DatasetsPage() {
   const status = statusFilter === 'ALL' ? undefined : statusFilter;
 
   const { data, isLoading } = useQuery({
-    queryKey: ['datasets', projectId, { page, status }],
+    queryKey: ['datasets', projectId, { page, size: PAGE_SIZE, status }],
     queryFn: () =>
       apiClient.get<PageResponse<DatasetResponse>>(
-        `/api/v1/projects/${projectId}/datasets?page=${page}&size=20${status ? '&status=' + status : ''}`,
+        `/api/v1/projects/${projectId}/datasets?page=${page}&size=${PAGE_SIZE}${status ? '&status=' + status : ''}`,
       ),
   });
 
@@ -153,6 +154,8 @@ export default function DatasetsPage() {
     <PageShell
       title={t('title')}
       description={t('description')}
+      backHref={`/projects/${projectId}`}
+      backLabel={tCommon('back')}
       actions={
         <Button onClick={() => setDialogOpen(true)}>
           <Plus weight="bold" />
@@ -187,7 +190,7 @@ export default function DatasetsPage() {
         data={datasets}
         totalItems={totalItems}
         pageIndex={page}
-        pageSize={20}
+        pageSize={PAGE_SIZE}
         onPaginationChange={handlePaginationChange}
         loading={isLoading}
         onRowClick={handleRowClick}
@@ -204,13 +207,10 @@ export default function DatasetsPage() {
       {totalItems > 0 && (
         <DataTablePagination
           pageIndex={page}
-          pageSize={20}
+          pageSize={PAGE_SIZE}
           totalItems={totalItems}
           totalPages={totalPages}
           onPageChange={setPage}
-          onPageSizeChange={() => {
-            // Fixed page size of 20 for datasets
-          }}
         />
       )}
 

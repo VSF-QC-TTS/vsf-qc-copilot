@@ -58,6 +58,7 @@ function truncate(text: string | null, max: number): string | null {
 const thClassName =
   'px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground';
 const tdClassName = 'px-4 py-3 text-sm text-foreground';
+const PAGE_SIZE = 10;
 
 // ---------------------------------------------------------------------------
 // Component
@@ -90,7 +91,7 @@ export function TestCaseTable({
     queryKey: ['test-cases', datasetId, page, statusFilter],
     queryFn: () =>
       apiClient.get<PageResponse<TestCaseRow>>(
-        `/api/v1/datasets/${datasetId}/test-cases?page=${page}&size=20&status=${statusFilter}`,
+        `/api/v1/datasets/${datasetId}/test-cases?page=${page}&size=${PAGE_SIZE}&status=${statusFilter}`,
       ),
   });
 

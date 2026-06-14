@@ -38,6 +38,8 @@
     "email": "Email",
     "password": "Mật khẩu",
     "confirmPassword": "Xác nhận mật khẩu",
+    "showPassword": "Hiện mật khẩu",
+    "hidePassword": "Ẩn mật khẩu",
     "displayName": "Tên hiển thị",
     "forgotPassword": "Quên mật khẩu?",
     "resetPassword": "Đặt lại mật khẩu",
@@ -175,6 +177,7 @@
     "unauthorized": "Bạn không có quyền truy cập.",
     "notFound": "Không tìm thấy tài nguyên.",
     "validation": "Dữ liệu không hợp lệ.",
+    "BAD_CREDENTIALS": "Email hoặc mật khẩu không đúng.",
     "INVALID_CREDENTIALS": "Email hoặc mật khẩu không đúng.",
     "EMAIL_ALREADY_EXISTS": "Email đã được sử dụng.",
     "USER_NOT_FOUND": "Không tìm thấy người dùng.",
@@ -190,7 +193,15 @@
     "DATASET_NOT_DRAFT": "Bộ dữ liệu phải ở trạng thái Nháp.",
     "DATASET_NOT_APPROVED": "Bộ dữ liệu phải ở trạng thái Đã duyệt.",
     "RUBRIC_VERSION_NOT_PUBLISHED": "Phiên bản tiêu chí chưa được xuất bản.",
-    "TEST_CASE_LIMIT_EXCEEDED": "Đã đạt giới hạn 100 test case."
+    "TEST_CASE_LIMIT_EXCEEDED": "Đã đạt giới hạn 100 test case.",
+    "VALIDATION_ERROR": "Dữ liệu không hợp lệ.",
+    "MISSING_PARAMETER": "Thiếu tham số bắt buộc.",
+    "HTTP_MESSAGE_NOT_READABLE": "Request JSON không hợp lệ.",
+    "RESOURCE_NOT_FOUND": "Không tìm thấy tài nguyên.",
+    "METHOD_NOT_ALLOWED": "Phương thức request không được hỗ trợ.",
+    "UNSUPPORTED_MEDIA_TYPE": "Định dạng request không được hỗ trợ.",
+    "ACCESS_DENIED": "Bạn không có quyền thực hiện thao tác này.",
+    "INTERNAL_SERVER_ERROR": "Máy chủ gặp lỗi. Vui lòng thử lại sau."
   },
   "projects": {
     "title": "Dự án",
@@ -259,11 +270,13 @@
       "requestConfig": "Cấu hình request",
       "bodyTemplate": "Mẫu body",
       "authentication": "Xác thực",
-      "advanced": "Cài đặt nâng cao"
+      "advanced": "Cài đặt nâng cao",
+      "apiPayload": "Payload API"
     },
     "fields": {
       "name": "Tên",
       "description": "Mô tả",
+      "protocol": "Giao thức",
       "method": "Phương thức",
       "baseUrl": "Base URL",
       "path": "Đường dẫn",
@@ -282,7 +295,26 @@
       "timeoutSeconds": "Timeout (giây)",
       "retryCount": "Số lần thử lại",
       "active": "Hoạt động",
-      "isStreaming": "Streaming"
+      "isStreaming": "Streaming",
+      "updatedAt": "Cập nhật"
+    },
+    "curl": {
+      "title": "Nhập từ cURL",
+      "description": "Dán lệnh cURL để tự điền URL, method, headers, body và xác thực.",
+      "placeholder": "curl -X POST https://api.example.com/chat -H 'Authorization: Bearer sk-...' -H 'Content-Type: application/json' -d '{\"question\":\"{{question}}\"}'",
+      "apply": "Áp dụng cURL",
+      "invalid": "Không parse được lệnh cURL này."
+    },
+    "auth": {
+      "noneHelp": "Connector này không gắn header hoặc query parameter xác thực.",
+      "bearerToken": "Bearer token",
+      "apiKeyLocation": "Vị trí API key",
+      "apiKeyHeader": "Header",
+      "apiKeyQuery": "Query parameter",
+      "apiKeyName": "Tên API key",
+      "apiKeyValue": "Giá trị API key",
+      "basicUsername": "Username",
+      "basicPassword": "Password"
     },
     "placeholders": {
       "name": "API chatbot production",
@@ -290,6 +322,7 @@
       "bodyTemplate": "{\"question\":\"{{question}}\"}"
     },
     "bodyTemplateHelp": "Dùng placeholder như {{question}}, {{precondition}} và {{metadata}}.",
+    "responseSelectorHelp": "Gemini generateContent dùng $.candidates[0].content.parts[0].text.",
     "testRun": {
       "title": "Chạy thử",
       "question": "Câu hỏi mẫu",
@@ -302,7 +335,8 @@
       "running": "Đang chạy...",
       "latency": "Độ trễ",
       "extractedAnswer": "Câu trả lời trích xuất",
-      "responseBody": "Response Body"
+      "responseBody": "Response Body",
+      "fullPayload": "Toàn bộ payload"
     },
     "testQuestion": "Câu hỏi mẫu",
     "testPrecondition": "Tiền điều kiện",

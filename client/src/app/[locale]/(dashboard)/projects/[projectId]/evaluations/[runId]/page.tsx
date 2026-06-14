@@ -5,7 +5,6 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import {
-  ArrowLeft,
   Table,
   Export,
   Clock,
@@ -72,6 +71,7 @@ function safePercent(count: number | null, total: number | null): string | null 
 
 export default function RunDetailPage() {
   const t = useTranslations('evaluations');
+  const tCommon = useTranslations('common');
   const router = useRouter();
   const params = useParams();
   const projectId = params.projectId as string;
@@ -114,17 +114,10 @@ export default function RunDetailPage() {
     <>
     <PageShell
       title={run?.name ?? t('runDetail')}
+      backHref={`/projects/${projectId}/evaluations`}
+      backLabel={tCommon('back')}
       actions={
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() =>
-              router.push(`/projects/${projectId}/evaluations`)
-            }
-          >
-            <ArrowLeft weight="bold" />
-            {t('title')}
-          </Button>
           <Button
             variant="outline"
             onClick={() =>

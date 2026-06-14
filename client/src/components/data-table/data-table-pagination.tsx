@@ -16,10 +16,8 @@ interface DataTablePaginationProps {
   totalItems: number;
   totalPages: number;
   onPageChange: (page: number) => void;
-  onPageSizeChange: (size: number) => void;
+  onPageSizeChange?: (size: number) => void;
 }
-
-const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
 export function DataTablePagination({
   pageIndex,
@@ -27,7 +25,6 @@ export function DataTablePagination({
   totalItems,
   totalPages,
   onPageChange,
-  onPageSizeChange,
 }: DataTablePaginationProps) {
   const t = useTranslations('table');
   const rangeStart = totalItems === 0 ? 0 : pageIndex * pageSize + 1;
@@ -36,10 +33,6 @@ export function DataTablePagination({
   const isFirstPage = pageIndex === 0;
   const isLastPage = pageIndex >= totalPages - 1;
 
-  const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onPageSizeChange(Number(e.target.value));
-  };
-
   return (
     <div className="flex flex-col items-center justify-between gap-4 px-2 py-4 sm:flex-row">
       <p className="text-sm text-muted-foreground">
@@ -47,27 +40,6 @@ export function DataTablePagination({
       </p>
 
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <label
-            htmlFor="page-size-select"
-            className="text-sm text-muted-foreground"
-          >
-            {t('rowsPerPage')}
-          </label>
-          <select
-            id="page-size-select"
-            value={pageSize}
-            onChange={handlePageSizeChange}
-            className="h-8 rounded-md border border-input bg-background px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            {PAGE_SIZE_OPTIONS.map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
-        </div>
-
         <div className="flex items-center gap-1">
           <Button
             variant="outline"

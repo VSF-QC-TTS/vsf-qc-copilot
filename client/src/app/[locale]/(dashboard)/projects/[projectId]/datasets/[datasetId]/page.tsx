@@ -127,7 +127,11 @@ export default function DatasetDetailPage() {
   // --- Loading state ---
   if (isLoading) {
     return (
-      <PageShell title={t('detail')}>
+      <PageShell
+        title={t('detail')}
+        backHref={`/projects/${projectId}/datasets`}
+        backLabel={tCommon('back')}
+      >
         <DatasetDetailSkeleton />
       </PageShell>
     );
@@ -147,6 +151,8 @@ export default function DatasetDetailPage() {
     <PageShell
       title={dataset.name}
       description={t('detail')}
+      backHref={`/projects/${projectId}/datasets`}
+      backLabel={tCommon('back')}
       actions={
         !isArchived ? (
           <div className="flex items-center gap-2">

@@ -34,8 +34,8 @@ import {
 // ---------------------------------------------------------------------------
 
 const localeLabels: Record<Locale, string> = {
-  vi: 'Tiếng Việt',
-  en: 'English',
+  vi: 'VI',
+  en: 'EN',
 };
 
 const roleLabels: Record<UserRole, string> = {
