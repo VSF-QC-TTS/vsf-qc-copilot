@@ -2,10 +2,10 @@
 
 import { useTranslations } from 'next-intl';
 import {
-  CaretDoubleLeft,
-  CaretDoubleRight,
-  CaretLeft,
-  CaretRight,
+  CaretDoubleLeftIcon,
+  CaretDoubleRightIcon,
+  CaretLeftIcon,
+  CaretRightIcon,
 } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -49,7 +49,7 @@ export function DataTablePagination({
             disabled={isFirstPage}
             aria-label={t('firstPage')}
           >
-            <CaretDoubleLeft className="size-4" />
+            <CaretDoubleLeftIcon className="size-4" />
           </Button>
           <Button
             variant="outline"
@@ -59,7 +59,7 @@ export function DataTablePagination({
             disabled={isFirstPage}
             aria-label={t('previousPage')}
           >
-            <CaretLeft className="size-4" />
+            <CaretLeftIcon className="size-4" />
           </Button>
 
           <span className="min-w-[5ch] text-center text-sm text-muted-foreground">
@@ -76,7 +76,7 @@ export function DataTablePagination({
             disabled={isLastPage}
             aria-label={t('nextPage')}
           >
-            <CaretRight className="size-4" />
+            <CaretRightIcon className="size-4" />
           </Button>
           <Button
             variant="outline"
@@ -86,7 +86,7 @@ export function DataTablePagination({
             disabled={isLastPage}
             aria-label={t('lastPage')}
           >
-            <CaretDoubleRight className="size-4" />
+            <CaretDoubleRightIcon className="size-4" />
           </Button>
         </div>
       </div>

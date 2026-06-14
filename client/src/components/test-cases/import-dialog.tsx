@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { useQueryClient } from '@tanstack/react-query';
-import { UploadSimple, File, X, CheckCircle, Warning } from '@phosphor-icons/react';
+import { UploadSimpleIcon, FileIcon, XIcon, CheckCircleIcon, WarningIcon } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -98,7 +98,7 @@ export function ImportDialog({
     };
   }, [open]);
 
-  /* ---- File validation ---- */
+  /* ---- FileIcon validation ---- */
   function validateFile(f: File): string | null {
     if (!ACCEPTED_TYPES.includes(f.type) && !f.name.match(/\.(xlsx|csv)$/i)) {
       return t('importInvalidType');
@@ -229,7 +229,7 @@ export function ImportDialog({
           {result && (
             <div className="space-y-2">
               <div className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                <CheckCircle className="size-4 shrink-0" />
+                <CheckCircleIcon className="size-4 shrink-0" />
                 {t('importSuccess', {
                   imported: result.importedCount,
                   skipped: result.skippedCount,
@@ -245,7 +245,7 @@ export function ImportDialog({
                   <ul className="space-y-1 text-xs text-destructive">
                     {result.errors.map((err, i) => (
                       <li key={i} className="flex items-start gap-1.5">
-                        <Warning className="mt-0.5 size-3 shrink-0" />
+                        <WarningIcon className="mt-0.5 size-3 shrink-0" />
                         {t('importRowError', {
                           row: err.row,
                           message: err.message,
@@ -273,7 +273,7 @@ export function ImportDialog({
                     : 'border-muted-foreground/25 hover:border-primary/50',
                 )}
               >
-                <UploadSimple className="size-8 text-muted-foreground" />
+                <UploadSimpleIcon className="size-8 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">
                   {t('importDropzone')}
                 </p>
@@ -295,7 +295,7 @@ export function ImportDialog({
               {/* Selected file */}
               {file && (
                 <div className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2">
-                  <File className="size-4 text-muted-foreground" />
+                  <FileIcon className="size-4 text-muted-foreground" />
                   <span className="flex-1 truncate text-sm">{file.name}</span>
                   <span className="text-xs text-muted-foreground">
                     {(file.size / 1024).toFixed(1)} KB
@@ -305,7 +305,7 @@ export function ImportDialog({
                     onClick={() => setFile(null)}
                     className="rounded p-0.5 text-muted-foreground hover:text-foreground"
                   >
-                    <X className="size-3.5" />
+                    <XIcon className="size-3.5" />
                   </button>
                 </div>
               )}

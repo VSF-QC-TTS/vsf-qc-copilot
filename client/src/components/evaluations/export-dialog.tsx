@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { useMutation } from '@tanstack/react-query';
-import { DownloadSimple, X } from '@phosphor-icons/react';
+import { DownloadSimpleIcon, XIcon } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -207,7 +207,7 @@ export function ExportDialog({
             onClick={() => onOpenChange(false)}
             disabled={isSubmitting}
           >
-            <X className="size-4" />
+            <XIcon className="size-4" />
           </Button>
         </div>
 
@@ -232,7 +232,7 @@ export function ExportDialog({
                 'hover:bg-primary/90 transition-colors',
               )}
             >
-              <DownloadSimple className="size-4" weight="bold" />
+              <DownloadSimpleIcon className="size-4" weight="bold" />
               {t('download')}
             </a>
           </div>

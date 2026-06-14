@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
-import { Check, X } from "@phosphor-icons/react";
+import { CheckIcon, XIcon } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -90,7 +90,7 @@ export default function RegisterPage() {
   if (isSuccess) {
     return (
       <div className="flex flex-col items-center gap-4 text-center">
-        <Check size={48} weight="bold" className="text-primary" />
+        <CheckIcon size={48} weight="bold" className="text-primary" />
         <p className="text-lg font-medium">{t("registerSuccess")}</p>
         <Link
           href="/login"
@@ -221,9 +221,9 @@ export default function RegisterPage() {
               {requirements.map((req) => (
                 <li key={req.label} className="flex items-center gap-2 text-sm">
                   {req.met ? (
-                    <Check size={16} weight="bold" className="text-green-600" />
+                    <CheckIcon size={16} weight="bold" className="text-green-600" />
                   ) : (
-                    <X
+                    <XIcon
                       size={16}
                       weight="bold"
                       className="text-muted-foreground"

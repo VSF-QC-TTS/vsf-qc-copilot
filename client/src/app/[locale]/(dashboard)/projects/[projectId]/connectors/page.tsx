@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
-import { Plus } from '@phosphor-icons/react';
+import { PlusIcon } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -173,7 +173,7 @@ export default function ConnectorsPage() {
       backLabel={tCommon('back')}
       actions={
         <Button onClick={handleCreate}>
-          <Plus weight="bold" />
+          <PlusIcon weight="bold" />
           {t('createConnector')}
         </Button>
       }
@@ -191,7 +191,7 @@ export default function ConnectorsPage() {
         emptyMessage={t('noConnectors')}
         emptyAction={
           <Button onClick={handleCreate}>
-            <Plus weight="bold" />
+            <PlusIcon weight="bold" />
             {t('createConnector')}
           </Button>
         }

@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle, Archive } from '@phosphor-icons/react';
+import { CheckCircleIcon, ArchiveIcon } from '@phosphor-icons/react';
 
 import { apiClient } from '@/lib/api/client';
 import type { DatasetStatus } from '@/lib/api/types';
@@ -26,8 +26,6 @@ type DatasetDetailResponse = {
   status: DatasetStatus;
   testCaseCount: number;
   activeTestCaseCount: number;
-  requirementTitle: string | null;
-  requirementPublicId: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -113,7 +111,7 @@ export default function DatasetDetailPage() {
     },
   });
 
-  // --- Archive mutation ---
+  // --- ArchiveIcon mutation ---
   const archiveMutation = useMutation({
     mutationFn: () =>
       apiClient.patch('/api/v1/datasets/' + datasetId, { status: 'ARCHIVED' }),
@@ -161,7 +159,7 @@ export default function DatasetDetailPage() {
                 disabled={!canApprove}
                 onClick={() => setApproveOpen(true)}
               >
-                <CheckCircle className="mr-2 size-4" weight="bold" />
+                <CheckCircleIcon className="mr-2 size-4" weight="bold" />
                 {t('approve')}
               </Button>
             )}
@@ -170,7 +168,7 @@ export default function DatasetDetailPage() {
                 variant="outline"
                 onClick={() => setArchiveOpen(true)}
               >
-                <Archive className="mr-2 size-4" weight="bold" />
+                <ArchiveIcon className="mr-2 size-4" weight="bold" />
                 {t('archive')}
               </Button>
             )}
@@ -191,12 +189,6 @@ export default function DatasetDetailPage() {
         )}
 
         <div className="grid gap-4 sm:grid-cols-2 text-sm text-muted-foreground">
-          <div>
-            <span className="font-medium text-foreground">
-              {t('columns.requirement')}:
-            </span>{' '}
-            {dataset.requirementTitle ?? tCommon('notAvailable')}
-          </div>
           <div>
             <span className="font-medium text-foreground">
               {t('columns.testCaseCount')}:
@@ -233,7 +225,6 @@ export default function DatasetDetailPage() {
         <TestCaseTable
           datasetId={datasetId as string}
           datasetStatus={dataset.status}
-          projectId={projectId as string}
         />
       </section>
 
@@ -248,7 +239,7 @@ export default function DatasetDetailPage() {
         onConfirm={() => approveMutation.mutate()}
       />
 
-      {/* ---- Archive confirm dialog ---- */}
+      {/* ---- ArchiveIcon confirm dialog ---- */}
       <ConfirmDialog
         open={archiveOpen}
         onOpenChange={setArchiveOpen}

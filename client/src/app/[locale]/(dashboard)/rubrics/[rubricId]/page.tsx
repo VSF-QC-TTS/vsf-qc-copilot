@@ -6,10 +6,10 @@ import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
 import {
-  Plus,
-  PencilSimple,
-  Checks,
-  Archive,
+  PlusIcon,
+  PencilSimpleIcon,
+  ChecksIcon,
+  ArchiveIcon,
 } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -186,7 +186,7 @@ export default function RubricDetailPage({
     },
   });
 
-  // Archive version
+  // ArchiveIcon version
   const archiveMutation = useMutation({
     mutationFn: (versionId: string) =>
       apiClient.patch<VersionResponse>(
@@ -271,7 +271,7 @@ export default function RubricDetailPage({
                   disabled={publishMutation.isPending}
                   onClick={(e) => handlePublish(e, v.publicId, v.criteriaCount)}
                 >
-                  <Checks weight="bold" className="mr-1 size-4" />
+                  <ChecksIcon weight="bold" className="mr-1 size-4" />
                   {t('publish')}
                 </Button>
               )}
@@ -282,7 +282,7 @@ export default function RubricDetailPage({
                   disabled={archiveMutation.isPending}
                   onClick={(e) => handleArchive(e, v.publicId)}
                 >
-                  <Archive weight="bold" className="mr-1 size-4" />
+                  <ArchiveIcon weight="bold" className="mr-1 size-4" />
                   {t('archive')}
                 </Button>
               )}
@@ -367,7 +367,7 @@ export default function RubricDetailPage({
               </p>
             </div>
             <Button variant="outline" size="sm" onClick={startEdit}>
-              <PencilSimple weight="bold" className="mr-1 size-4" />
+              <PencilSimpleIcon weight="bold" className="mr-1 size-4" />
               {tCommon('edit')}
             </Button>
           </div>
@@ -383,7 +383,7 @@ export default function RubricDetailPage({
             disabled={createVersionMutation.isPending}
             onClick={() => createVersionMutation.mutate()}
           >
-            <Plus weight="bold" />
+            <PlusIcon weight="bold" />
             {t('createVersion')}
           </Button>
         </div>

@@ -5,9 +5,9 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Table,
-  Export,
-  Clock,
+  TableIcon,
+  ExportIcon,
+  ClockIcon,
 } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -126,12 +126,12 @@ export default function RunDetailPage() {
               )
             }
           >
-            <Table weight="bold" />
+            <TableIcon weight="bold" />
             {t('results')}
           </Button>
-          {/* Export (Epic 11) */}
+          {/* ExportIcon (Epic 11) */}
           <Button variant="outline" onClick={() => setExportOpen(true)}>
-            <Export weight="bold" />
+            <ExportIcon weight="bold" />
             {t('export')}
           </Button>
         </div>
@@ -188,7 +188,7 @@ export default function RunDetailPage() {
                 key={evt.publicId}
                 className="flex items-start gap-3 rounded-md border p-3"
               >
-                <Clock
+                <ClockIcon
                   className="mt-0.5 size-4 shrink-0 text-muted-foreground"
                   weight="duotone"
                 />
@@ -210,7 +210,7 @@ export default function RunDetailPage() {
       </div>
     </PageShell>
 
-      {/* Export dialog */}
+      {/* ExportIcon dialog */}
       <ExportDialog
         runPublicId={runId}
         open={exportOpen}

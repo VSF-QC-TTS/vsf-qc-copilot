@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
-import { Plus } from '@phosphor-icons/react';
+import { PlusIcon } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -126,7 +126,7 @@ export default function ProjectsPage() {
       description={t('description')}
       actions={
         <Button onClick={() => setDialogOpen(true)}>
-          <Plus weight="bold" />
+          <PlusIcon weight="bold" />
           {t('createProject')}
         </Button>
       }
@@ -165,7 +165,7 @@ export default function ProjectsPage() {
         emptyMessage={t('noProjects')}
         emptyAction={
           <Button onClick={() => setDialogOpen(true)}>
-            <Plus weight="bold" />
+            <PlusIcon weight="bold" />
             {t('createProject')}
           </Button>
         }

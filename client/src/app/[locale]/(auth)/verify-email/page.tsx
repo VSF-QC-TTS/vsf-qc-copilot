@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Check, CircleNotch, XCircle } from '@phosphor-icons/react';
+import { CheckIcon, CircleNotchIcon, XCircleIcon } from '@phosphor-icons/react';
 
 import { Link } from '@/i18n/navigation';
 import { verifyEmail } from '@/lib/api/auth';
@@ -32,7 +32,7 @@ function VerifyEmailContent() {
   if (state === 'missing-token') {
     return (
       <div className="flex flex-col items-center gap-4 text-center">
-        <XCircle size={48} weight="bold" className="text-destructive" />
+        <XCircleIcon size={48} weight="bold" className="text-destructive" />
         <p className="text-sm text-destructive">
           {t('verifyEmailMissingToken')}
         </p>
@@ -43,7 +43,7 @@ function VerifyEmailContent() {
   if (state === 'loading') {
     return (
       <div className="flex flex-col items-center gap-4 text-center">
-        <CircleNotch
+        <CircleNotchIcon
           size={48}
           weight="bold"
           className="animate-spin text-primary"
@@ -56,7 +56,7 @@ function VerifyEmailContent() {
   if (state === 'success') {
     return (
       <div className="flex flex-col items-center gap-4 text-center">
-        <Check size={48} weight="bold" className="text-green-600" />
+        <CheckIcon size={48} weight="bold" className="text-green-600" />
         <p className="text-lg font-medium">{t('verifyEmailSuccess')}</p>
         <Link
           href="/login"
@@ -71,7 +71,7 @@ function VerifyEmailContent() {
   // state === 'error'
   return (
     <div className="flex flex-col items-center gap-4 text-center">
-      <XCircle size={48} weight="bold" className="text-destructive" />
+      <XCircleIcon size={48} weight="bold" className="text-destructive" />
       <p className="text-sm text-destructive">{t('verifyEmailFailed')}</p>
       <Link
         href="/login"
@@ -90,7 +90,7 @@ export default function VerifyEmailPage() {
     <Suspense
       fallback={
         <div className="flex flex-col items-center gap-4 text-center">
-          <CircleNotch
+          <CircleNotchIcon
             size={48}
             weight="bold"
             className="animate-spin text-primary"

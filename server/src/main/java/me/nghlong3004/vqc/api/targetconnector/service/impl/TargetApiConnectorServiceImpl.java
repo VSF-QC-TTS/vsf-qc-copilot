@@ -28,6 +28,7 @@ import me.nghlong3004.vqc.api.targetconnector.repository.TargetApiConnectorRepos
 import me.nghlong3004.vqc.api.targetconnector.request.CreateConnectorFromCurlRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateTargetApiConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.TestTargetConnectorRequest;
+import me.nghlong3004.vqc.api.targetconnector.request.UpdateConnectorFromCurlRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.UpdateTargetApiConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.response.CreateConnectorFromCurlResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorListItemResponse;
@@ -333,6 +334,118 @@ public class TargetApiConnectorServiceImpl implements TargetApiConnectorService 
         clientResult.rawResponse(),
         extractedAnswer,
         clientResult.latencyMs());
+  }
+
+  @Override
+  @Transactional
+  public CreateConnectorFromCurlResponse updateConnectorFromCurl(
+      UUID connectorPublicId, UpdateConnectorFromCurlRequest request, String username) {
+    TargetApiConnector connector = findConnector(connectorPublicId, username);
+
+    // 1. Parse cURL if provided
+    CurlParseResult parsed = null;
+    SecretDetectionResult secretResult = null;
+    AuthType authType = null;
+    BodyType bodyType = null;
+    Map<String, Object> bodyTemplate = null;
+    String bodyTemplateText = null;
+    Map<String, Object> sanitizedHeaders = null;
+    Map<String, Object> rawHeaders = null;
+
+    if (request.rawCurl() != null) {
+      parsed = curlParser.parse(request.rawCurl());
+      secretResult = connectorSecretDetector.detect(parsed.headers());
+      authType = detectAuthType(parsed.headers());
+      bodyType = parsed.isJsonBody() ? BodyType.RAW_JSON : (parsed.bodyRaw() != null ? BodyType.RAW_TEXT : BodyType.NONE);
+      bodyTemplate = parsed.bodyJson();
+      bodyTemplateText = parsed.isJsonBody() ? null : parsed.bodyRaw();
+      sanitizedHeaders = new LinkedHashMap<>(secretResult.sanitizedHeaders());
+      rawHeaders = new LinkedHashMap<>(parsed.headers());
+    }
+
+    // 2. Build timeout/retry
+    int timeoutSeconds = request.timeoutSeconds() != null ? request.timeoutSeconds() : connector.getTimeoutSeconds();
+    int retryCount = request.retryCount() != null ? request.retryCount() : connector.getRetryCount();
+
+    TargetConnectorClientResult clientResult = null;
+    String responseSelector = request.responseSelector() != null ? request.responseSelector().trim() : connector.getResponseSelector();
+
+    // 3. If cURL is provided, test-call the target API
+    if (parsed != null) {
+      TargetConnectorClientRequest clientRequest =
+          new TargetConnectorClientRequest(
+              parsed.method(),
+              parsed.url(),
+              rawHeaders,
+              parsed.isJsonBody() ? parsed.bodyJson() : parsed.bodyRaw());
+
+      try {
+        clientResult = targetConnectorClient.execute(clientRequest, timeoutSeconds, retryCount);
+      } catch (Exception ex) {
+        log.warn("cURL test-call failed for URL {}: {}", parsed.url(), ex.getMessage());
+        throw new ResourceException(ErrorCode.TARGET_CONNECTOR_TEST_FAILED);
+      }
+
+      if (request.responseSelector() == null) {
+        responseSelector = responseSelectorDetector.detect(clientResult.rawResponse());
+      }
+    }
+
+    // 4. Update connector fields
+    if (request.name() != null) {
+      connector.setName(request.name().trim());
+    }
+    if (request.description() != null) {
+      connector.setDescription(trimToNull(request.description()));
+    }
+    if (request.active() != null) {
+      connector.setActive(request.active());
+    }
+    connector.setTimeoutSeconds(timeoutSeconds);
+    connector.setRetryCount(retryCount);
+    connector.setResponseSelector(responseSelector);
+
+    if (parsed != null) {
+      connector.setRawCurl(request.rawCurl());
+      connector.setProtocol(ConnectorProtocol.HTTP);
+      connector.setMethod(parsed.method());
+      connector.setUrl(parsed.url());
+      connector.setHeaders(sanitizedHeaders);
+      connector.setBodyType(bodyType);
+      connector.setBodyTemplate(bodyTemplate);
+      connector.setBodyTemplateText(bodyTemplateText);
+      connector.setAuthType(authType);
+      connector.setSecretRefs(secretRefs(secretResult.secretValues()));
+    }
+
+    TargetApiConnector saved = targetApiConnectorRepository.save(connector);
+    
+    if (parsed != null && secretResult != null) {
+      connectorSecretService.saveSecrets(saved, secretResult.secretValues());
+    }
+
+    // 5. Build response
+    TargetApiConnectorResponse connectorResponse = targetApiConnectorMapper.toResponse(saved);
+
+    TargetConnectorRequestPreview preview = null;
+    String extractedAnswer = null;
+    Map<String, Object> rawResponse = null;
+    Long latencyMs = null;
+
+    if (clientResult != null && parsed != null) {
+      preview = new TargetConnectorRequestPreview(
+          parsed.method(), parsed.url(), maskHeaders(rawHeaders), parsed.isJsonBody() ? parsed.bodyJson() : parsed.bodyRaw());
+      rawResponse = clientResult.rawResponse();
+      extractedAnswer = extractAnswer(rawResponse, responseSelector);
+      latencyMs = clientResult.latencyMs();
+    }
+
+    return new CreateConnectorFromCurlResponse(
+        connectorResponse,
+        preview,
+        rawResponse,
+        extractedAnswer,
+        latencyMs);
   }
 
   private AuthType detectAuthType(Map<String, String> headers) {

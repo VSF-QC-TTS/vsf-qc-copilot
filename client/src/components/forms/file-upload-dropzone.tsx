@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { UploadSimple } from "@phosphor-icons/react";
+import { UploadSimpleIcon } from "@phosphor-icons/react";
 
 import { cn } from "@/lib/utils";
 
@@ -164,7 +164,7 @@ export function FileUploadDropzone({
           disabled && "pointer-events-none opacity-50",
         )}
       >
-        <UploadSimple
+        <UploadSimpleIcon
           size={32}
           weight="duotone"
           className="text-muted-foreground"

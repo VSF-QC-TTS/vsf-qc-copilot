@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Lightning } from '@phosphor-icons/react';
+import { LightningIcon } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -377,7 +377,7 @@ export function StartEvaluationDialog({
                 disabled={isSubmitting}
                 onClick={handleQuickEvaluate}
               >
-                <Lightning weight="bold" />
+                <LightningIcon weight="bold" />
                 {t('quickEvaluate')}
               </Button>
 

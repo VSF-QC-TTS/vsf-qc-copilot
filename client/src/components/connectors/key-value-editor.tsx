@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Plus, Minus } from '@phosphor-icons/react';
+import { PlusIcon, MinusIcon } from '@phosphor-icons/react';
 import { useTranslations } from 'next-intl';
 
 import { cn } from '@/lib/utils';
@@ -136,7 +136,7 @@ export function KeyValueEditor({
               onClick={() => removeRow(row.id)}
               aria-label={t('remove')}
             >
-              <Minus size={16} weight="bold" />
+              <MinusIcon size={16} weight="bold" />
             </Button>
           </div>
         ))}
@@ -149,7 +149,7 @@ export function KeyValueEditor({
         disabled={disabled}
         onClick={addRow}
       >
-        <Plus size={16} weight="bold" />
+        <PlusIcon size={16} weight="bold" />
         {t('add')}
       </Button>
     </div>

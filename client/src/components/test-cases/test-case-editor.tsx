@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
 import { useQueryClient } from '@tanstack/react-query';
-import { X, TrashSimple } from '@phosphor-icons/react';
+import { XIcon, TrashSimpleIcon } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -245,7 +245,7 @@ export function TestCaseEditor({
             onClick={onClose}
             className="rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
           >
-            <X className="size-5" />
+            <XIcon className="size-5" />
           </button>
         </div>
 
@@ -383,7 +383,7 @@ export function TestCaseEditor({
                     disabled={isSubmitting}
                     onClick={() => setConfirmDeleteOpen(true)}
                   >
-                    <TrashSimple className="mr-1.5 size-4" />
+                    <TrashSimpleIcon className="mr-1.5 size-4" />
                     {tCommon('delete')}
                   </Button>
                 )}

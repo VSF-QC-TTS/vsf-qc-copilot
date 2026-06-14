@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
-import { Plus } from '@phosphor-icons/react';
+import { PlusIcon } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,6 @@ type DatasetResponse = {
   description: string | null;
   status: DatasetStatus;
   testCaseCount: number;
-  requirementTitle: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -58,7 +57,6 @@ function formatDate(iso: string): string {
 
 export default function DatasetsPage() {
   const t = useTranslations('datasets');
-  const tCommon = useTranslations('common');
   const router = useRouter();
   const params = useParams();
   const projectId = params.projectId as string;
@@ -109,16 +107,7 @@ export default function DatasetsPage() {
           </span>
         ),
       },
-      {
-        accessorKey: 'requirementTitle',
-        header: t('columns.requirement'),
-        size: 200,
-        cell: ({ row }) => (
-          <span className="text-muted-foreground truncate max-w-[180px] inline-block">
-            {row.original.requirementTitle ?? tCommon('notAvailable')}
-          </span>
-        ),
-      },
+
       {
         accessorKey: 'createdAt',
         header: t('columns.createdAt'),
@@ -130,7 +119,7 @@ export default function DatasetsPage() {
         ),
       },
     ],
-    [t, tCommon],
+    [t],
   );
 
   // Handlers
@@ -155,10 +144,10 @@ export default function DatasetsPage() {
       title={t('title')}
       description={t('description')}
       backHref={`/projects/${projectId}`}
-      backLabel={tCommon('back')}
+      backLabel={t('back', { fallback: 'Back' })}
       actions={
         <Button onClick={() => setDialogOpen(true)}>
-          <Plus weight="bold" />
+          <PlusIcon weight="bold" />
           {t('createDataset')}
         </Button>
       }
@@ -197,7 +186,7 @@ export default function DatasetsPage() {
         emptyMessage={t('noDatasets')}
         emptyAction={
           <Button onClick={() => setDialogOpen(true)}>
-            <Plus weight="bold" />
+            <PlusIcon weight="bold" />
             {t('createDataset')}
           </Button>
         }

@@ -2,11 +2,11 @@
 
 import { cn } from "@/lib/utils";
 import {
-  CircleNotch,
-  CheckCircle,
-  XCircle,
-  Clock,
-  Prohibit,
+  CircleNotchIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ClockIcon,
+  ProhibitIcon,
 } from "@phosphor-icons/react";
 import type { JobStatus } from "@/lib/api/types";
 
@@ -76,21 +76,21 @@ export function JobProgress({
 function StatusIcon({ status }: { status: JobStatus }) {
   switch (status) {
     case "PENDING":
-      return <Clock size={18} className="text-muted-foreground" />;
+      return <ClockIcon size={18} className="text-muted-foreground" />;
     case "RUNNING":
       return (
-        <CircleNotch size={18} className="animate-spin text-primary" />
+        <CircleNotchIcon size={18} className="animate-spin text-primary" />
       );
     case "COMPLETED":
       return (
-        <CheckCircle size={18} weight="fill" className="text-emerald-500" />
+        <CheckCircleIcon size={18} weight="fill" className="text-emerald-500" />
       );
     case "FAILED":
-      return <XCircle size={18} weight="fill" className="text-destructive" />;
+      return <XCircleIcon size={18} weight="fill" className="text-destructive" />;
     case "CANCELLED":
-      return <Prohibit size={18} className="text-muted-foreground" />;
+      return <ProhibitIcon size={18} className="text-muted-foreground" />;
     default:
-      return <Clock size={18} className="text-muted-foreground" />;
+      return <ClockIcon size={18} className="text-muted-foreground" />;
   }
 }
 

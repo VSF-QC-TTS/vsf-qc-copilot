@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft } from '@phosphor-icons/react';
+import { ArrowLeftIcon } from '@phosphor-icons/react';
 import { motion, useReducedMotion, type Variants } from 'motion/react';
 
 import { Link } from '@/i18n/navigation';
@@ -69,7 +69,7 @@ export function PageShell({
             href={backHref}
             className="inline-flex w-fit items-center gap-1.5 rounded-md px-1 py-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
-            <ArrowLeft className="size-4" weight="bold" />
+            <ArrowLeftIcon className="size-4" weight="bold" />
             {backLabel}
           </Link>
         </motion.div>

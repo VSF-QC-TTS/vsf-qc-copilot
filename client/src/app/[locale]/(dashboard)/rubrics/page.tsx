@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
-import { Plus, Copy, ListChecks } from '@phosphor-icons/react';
+import { PlusIcon, CopyIcon, ListChecksIcon } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -172,7 +172,7 @@ export default function RubricsPage() {
             disabled={cloneMutation.isPending}
             onClick={(e) => handleClone(e, row.original.publicId)}
           >
-            <Copy weight="bold" className="mr-1 size-4" />
+            <CopyIcon weight="bold" className="mr-1 size-4" />
             {t('clone')}
           </Button>
         ),
@@ -210,7 +210,7 @@ export default function RubricsPage() {
       title={t('title')}
       actions={
         <Button onClick={() => setDialogOpen(true)}>
-          <Plus weight="bold" />
+          <PlusIcon weight="bold" />
           {t('createRubric')}
         </Button>
       }
@@ -246,7 +246,7 @@ export default function RubricsPage() {
         emptyMessage={t('noRubrics')}
         emptyAction={
           <Button onClick={() => setDialogOpen(true)}>
-            <ListChecks weight="bold" />
+            <ListChecksIcon weight="bold" />
             {t('createRubric')}
           </Button>
         }

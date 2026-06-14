@@ -4,14 +4,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
-  House,
-  Briefcase,
-  ListChecks,
-  Gear,
-  CaretLeft,
-  CaretRight,
-  List,
-  X,
+  HouseIcon,
+  BriefcaseIcon,
+  ListChecksIcon,
+  GearIcon,
+  CaretLeftIcon,
+  CaretRightIcon,
+  ListIcon,
+  XIcon,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useSidebarStore } from '@/lib/store/sidebar-store';
@@ -19,10 +19,10 @@ import { Button } from '@/components/ui/button';
 import { APP_MONOGRAM, APP_NAME } from '@/lib/branding';
 
 const items = [
-  { key: 'dashboard', href: '/dashboard', icon: House },
-  { key: 'projects', href: '/projects', icon: Briefcase },
-  { key: 'rubrics', href: '/rubrics', icon: ListChecks },
-  { key: 'settings', href: '/settings', icon: Gear },
+  { key: 'dashboard', href: '/dashboard', icon: HouseIcon },
+  { key: 'projects', href: '/projects', icon: BriefcaseIcon },
+  { key: 'rubrics', href: '/rubrics', icon: ListChecksIcon },
+  { key: 'settings', href: '/settings', icon: GearIcon },
 ] as const;
 
 export function Sidebar() {
@@ -80,7 +80,7 @@ export function Sidebar() {
           className={cn('w-full', isCollapsed ? 'justify-center' : 'justify-start gap-2')}
           aria-label={isCollapsed ? tSidebar('expand') : tSidebar('collapse')}
         >
-          {isCollapsed ? <CaretRight size={16} /> : <CaretLeft size={16} />}
+          {isCollapsed ? <CaretRightIcon size={16} /> : <CaretLeftIcon size={16} />}
           {!isCollapsed && <span>{tSidebar('collapse')}</span>}
         </Button>
       </div>
@@ -120,7 +120,7 @@ export function Sidebar() {
                 onClick={() => setMobileOpen(false)}
                 aria-label={tSidebar('collapse')}
               >
-                <X size={20} />
+                <XIcon size={20} />
               </Button>
             </div>
             {navContent}
@@ -136,7 +136,7 @@ export function Sidebar() {
         onClick={() => setMobileOpen(true)}
         aria-label={tSidebar('expand')}
       >
-        <List size={24} />
+        <ListIcon size={24} />
       </Button>
     </>
   );

@@ -11,9 +11,9 @@ export const createTestCaseSchema = z.object({
 });
 
 export const generateTestCasesSchema = z.object({
-  requirementPublicId: z.string().min(1, 'Requirement is required'),
+  prompt: z.string().min(1, 'Prompt is required').max(8000),
   count: z.coerce.number().int().min(5).max(100),
-  additionalPrompt: z.string().max(2000).optional().or(z.literal('')),
+  additionalPrompt: z.string().max(4000).optional().or(z.literal('')),
 });
 
 export type CreateTestCaseFormValues = z.input<typeof createTestCaseSchema>;

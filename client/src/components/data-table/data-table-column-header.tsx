@@ -1,7 +1,7 @@
 'use client';
 
 import type { Column } from '@tanstack/react-table';
-import { ArrowDown, ArrowUp, ArrowsDownUp } from '@phosphor-icons/react';
+import { ArrowDownIcon, ArrowUpIcon, ArrowsDownUpIcon } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -42,11 +42,11 @@ export function DataTableColumnHeader<TData, TValue>({
     >
       <span>{title}</span>
       {sorted === 'asc' ? (
-        <ArrowUp className="ml-1 size-4" />
+        <ArrowUpIcon className="ml-1 size-4" />
       ) : sorted === 'desc' ? (
-        <ArrowDown className="ml-1 size-4" />
+        <ArrowDownIcon className="ml-1 size-4" />
       ) : (
-        <ArrowsDownUp className="ml-1 size-4 text-muted-foreground/50" />
+        <ArrowsDownUpIcon className="ml-1 size-4 text-muted-foreground/50" />
       )}
     </Button>
   );

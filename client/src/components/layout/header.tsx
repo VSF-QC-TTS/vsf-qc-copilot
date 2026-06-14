@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { SignOut, GearSix, List } from '@phosphor-icons/react';
+import { SignOutIcon, GearSixIcon, ListIcon } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/lib/store/auth-store';
@@ -64,7 +64,7 @@ export function Header() {
         onClick={() => useSidebarStore.getState().setMobileOpen(true)}
         aria-label={t('menu')}
       >
-        <List size={24} />
+        <ListIcon size={24} />
       </Button>
 
       {/* Breadcrumb placeholder */}
@@ -115,7 +115,7 @@ export function Header() {
                 onClick={() => setMenuOpen(false)}
                 className="flex items-center gap-2 rounded-sm px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
               >
-                <GearSix size={16} />
+                <GearSixIcon size={16} />
                 {t('settings')}
               </Link>
 
@@ -126,7 +126,7 @@ export function Header() {
                 onClick={handleLogout}
                 className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
               >
-                <SignOut size={16} />
+                <SignOutIcon size={16} />
                 {t('logout')}
               </button>
             </div>

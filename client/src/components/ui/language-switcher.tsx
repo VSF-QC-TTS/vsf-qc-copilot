@@ -2,7 +2,7 @@
 
 import { useLocale } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
-import { Translate } from "@phosphor-icons/react";
+import { TranslateIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import type { Locale } from "@/i18n/config";
 import { locales } from "@/i18n/config";
@@ -31,7 +31,7 @@ export function LanguageSwitcher() {
       className="gap-1.5 px-2"
       aria-label={`Switch to ${localeLabels[nextLocale]}`}
     >
-      <Translate size={18} />
+      <TranslateIcon size={18} />
       <span className="text-xs font-semibold">{localeLabels[locale]}</span>
     </Button>
   );

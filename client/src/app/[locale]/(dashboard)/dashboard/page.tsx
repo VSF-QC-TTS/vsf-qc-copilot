@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
-import { Briefcase } from '@phosphor-icons/react';
+import { BriefcaseIcon } from '@phosphor-icons/react';
 
 import { Link } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
@@ -35,7 +35,7 @@ export default function DashboardPage() {
         <MetricCard
           label={t('totalProjects')}
           value={totalProjects}
-          icon={<Briefcase weight="duotone" />}
+          icon={<BriefcaseIcon weight="duotone" />}
           loading={isLoading}
         />
       </div>
@@ -45,7 +45,7 @@ export default function DashboardPage() {
         <EmptyState
           title={t('createFirstProject')}
           description={t('createFirstProjectDesc')}
-          icon={<Briefcase size={48} weight="duotone" />}
+          icon={<BriefcaseIcon size={48} weight="duotone" />}
           action={
             <Button asChild>
               <Link href="/projects">{t('createFirstProject')}</Link>

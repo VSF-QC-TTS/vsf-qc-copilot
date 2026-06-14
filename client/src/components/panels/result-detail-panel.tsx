@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { X, CaretLeft, CaretRight } from '@phosphor-icons/react';
+import { XIcon, CaretLeftIcon, CaretRightIcon } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -152,7 +152,7 @@ export function ResultDetailPanel({
               onClick={() => onPrev?.()}
               aria-label={t('prevResult')}
             >
-              <CaretLeft className="size-4" />
+              <CaretLeftIcon className="size-4" />
             </Button>
             <Button
               variant="ghost"
@@ -162,7 +162,7 @@ export function ResultDetailPanel({
               onClick={() => onNext?.()}
               aria-label={t('nextResult')}
             >
-              <CaretRight className="size-4" />
+              <CaretRightIcon className="size-4" />
             </Button>
           </div>
           <Button
@@ -171,7 +171,7 @@ export function ResultDetailPanel({
             className="size-8"
             onClick={onClose}
           >
-            <X className="size-4" />
+            <XIcon className="size-4" />
           </Button>
         </div>
 

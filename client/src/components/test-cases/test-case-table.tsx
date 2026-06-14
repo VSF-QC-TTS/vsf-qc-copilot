@@ -10,11 +10,11 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { apiClient } from '@/lib/api/client';
 import type { PageResponse, TestCaseStatus } from '@/lib/api/types';
 import {
-  Plus,
-  UploadSimple,
-  Robot,
-  CaretLeft,
-  CaretRight,
+  PlusIcon,
+  UploadSimpleIcon,
+  RobotIcon,
+  CaretLeftIcon,
+  CaretRightIcon,
 } from '@phosphor-icons/react';
 
 import { TestCaseEditor } from './test-case-editor';
@@ -39,7 +39,6 @@ type TestCaseRow = {
 interface TestCaseTableProps {
   datasetId: string;
   datasetStatus: string;
-  projectId: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -67,7 +66,6 @@ const PAGE_SIZE = 10;
 export function TestCaseTable({
   datasetId,
   datasetStatus,
-  projectId,
 }: TestCaseTableProps) {
   const t = useTranslations('testCases');
   const tCommon = useTranslations('common');
@@ -137,7 +135,7 @@ export function TestCaseTable({
         {isDraft && (
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handleCreate}>
-              <Plus className="mr-1.5 size-4" />
+              <PlusIcon className="mr-1.5 size-4" />
               {t('create')}
             </Button>
             <Button
@@ -145,7 +143,7 @@ export function TestCaseTable({
               size="sm"
               onClick={() => setImportOpen(true)}
             >
-              <UploadSimple className="mr-1.5 size-4" />
+              <UploadSimpleIcon className="mr-1.5 size-4" />
               {t('import')}
             </Button>
             <Button
@@ -153,7 +151,7 @@ export function TestCaseTable({
               size="sm"
               onClick={() => setGenerateOpen(true)}
             >
-              <Robot className="mr-1.5 size-4" />
+              <RobotIcon className="mr-1.5 size-4" />
               {t('aiGenerate')}
             </Button>
           </div>
@@ -237,7 +235,7 @@ export function TestCaseTable({
               disabled={page === 0}
               onClick={() => setPage((p) => p - 1)}
             >
-              <CaretLeft className="size-4" />
+              <CaretLeftIcon className="size-4" />
             </Button>
             <Button
               variant="outline"
@@ -245,7 +243,7 @@ export function TestCaseTable({
               disabled={page >= data.totalPages - 1}
               onClick={() => setPage((p) => p + 1)}
             >
-              <CaretRight className="size-4" />
+              <CaretRightIcon className="size-4" />
             </Button>
           </div>
         </div>
@@ -270,7 +268,6 @@ export function TestCaseTable({
       {/* AI Generate dialog */}
       <AIGenerateDialog
         datasetId={datasetId}
-        projectId={projectId}
         open={generateOpen}
         onOpenChange={setGenerateOpen}
       />

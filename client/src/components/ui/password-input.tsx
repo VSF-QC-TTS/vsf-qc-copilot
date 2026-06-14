@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Eye, EyeSlash } from "@phosphor-icons/react";
+import { EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
 
 import { cn } from "@/lib/utils";
 
@@ -22,7 +22,7 @@ export function PasswordInput({
 }: PasswordInputProps) {
   const [isVisible, setIsVisible] = React.useState(false);
   const label = isVisible ? hidePasswordLabel : showPasswordLabel;
-  const Icon = isVisible ? EyeSlash : Eye;
+  const Icon = isVisible ? EyeSlashIcon : EyeIcon;
 
   return (
     <div className="relative">

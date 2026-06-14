@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
-import { Plus } from '@phosphor-icons/react';
+import { PlusIcon } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { PageShell } from '@/components/layout/page-shell';
@@ -149,7 +149,7 @@ export default function EvaluationsPage() {
       backLabel={tCommon('back')}
       actions={
         <Button onClick={() => setDialogOpen(true)}>
-          <Plus weight="bold" />
+          <PlusIcon weight="bold" />
           {t('startEvaluation')}
         </Button>
       }
@@ -166,7 +166,7 @@ export default function EvaluationsPage() {
         emptyMessage={t('noEvaluations')}
         emptyAction={
           <Button onClick={() => setDialogOpen(true)}>
-            <Plus weight="bold" />
+            <PlusIcon weight="bold" />
             {t('startEvaluation')}
           </Button>
         }

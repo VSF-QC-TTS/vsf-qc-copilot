@@ -14,6 +14,7 @@ import me.nghlong3004.vqc.api.exception.ErrorResponse;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateConnectorFromCurlRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateTargetApiConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.TestTargetConnectorRequest;
+import me.nghlong3004.vqc.api.targetconnector.request.UpdateConnectorFromCurlRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.UpdateTargetApiConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.response.CreateConnectorFromCurlResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorPageResponse;
@@ -29,6 +30,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -262,6 +264,58 @@ public class TargetApiConnectorController {
       @Valid @RequestBody UpdateTargetApiConnectorRequest request,
       Principal principal) {
     return targetApiConnectorService.updateConnector(
+        connectorPublicId, request, principal.getName());
+  }
+
+  @Operation(
+      summary = "Update connector from cURL",
+      description = "Parses a new raw cURL command, test-calls the target API, and updates the connector only on success.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Connector updated and test call succeeded",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = CreateConnectorFromCurlResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Validation failed or cURL parse error",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Authentication is required",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Connector not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "422",
+        description = "Target API call failed",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @PutMapping(
+      value = "/api/v1/target-api-connectors/{connectorPublicId}/from-curl",
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  public CreateConnectorFromCurlResponse updateConnectorFromCurl(
+      @PathVariable UUID connectorPublicId,
+      @Valid @RequestBody UpdateConnectorFromCurlRequest request,
+      Principal principal) {
+    return targetApiConnectorService.updateConnectorFromCurl(
         connectorPublicId, request, principal.getName());
   }
 

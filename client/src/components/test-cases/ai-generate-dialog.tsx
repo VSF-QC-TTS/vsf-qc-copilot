@@ -4,19 +4,19 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import {
-  Robot,
-  CheckCircle,
-  XCircle,
-  CircleNotch,
-  Hourglass,
+  RobotIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  CircleNotchIcon,
+  HourglassIcon,
 } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api/client';
-import type { ApiError, PageResponse } from '@/lib/api/types';
+import type { ApiError } from '@/lib/api/types';
 import { getErrorMessageKey } from '@/lib/utils/error-messages';
 import {
   generateTestCasesSchema,
@@ -28,15 +28,9 @@ import { useJobProgress } from '@/hooks/use-job-progress';
 // Types
 // ---------------------------------------------------------------------------
 
-type RequirementRow = {
-  publicId: string;
-  title: string;
-  status: string;
-};
 
 interface AIGenerateDialogProps {
   datasetId: string;
-  projectId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -48,8 +42,6 @@ interface AIGenerateDialogProps {
 const inputClassName =
   'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
-const selectClassName =
-  'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
 const textareaClassName =
   'flex min-h-[80px] w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
@@ -60,7 +52,6 @@ const textareaClassName =
 
 export function AIGenerateDialog({
   datasetId,
-  projectId,
   open,
   onOpenChange,
 }: AIGenerateDialogProps) {
@@ -80,23 +71,12 @@ export function AIGenerateDialog({
   } = useForm<GenerateTestCasesFormValues>({
     resolver: zodResolver(generateTestCasesSchema),
     defaultValues: {
-      requirementPublicId: '',
+      prompt: '',
       count: 10,
       additionalPrompt: '',
     },
   });
 
-  // ---------- Fetch requirements ----------
-  const { data: requirementsData } = useQuery<PageResponse<RequirementRow>>({
-    queryKey: ['requirements', projectId, 'active'],
-    queryFn: () =>
-      apiClient.get<PageResponse<RequirementRow>>(
-        `/api/v1/projects/${projectId}/requirements?page=0&size=50&status=ACTIVE`,
-      ),
-    enabled: open,
-  });
-
-  const requirements = requirementsData?.items ?? [];
 
   // ---------- Job progress ----------
   const {
@@ -211,7 +191,7 @@ export function AIGenerateDialog({
         )}
       >
         <div className="flex items-center gap-2">
-          <Robot className="size-5 text-primary" />
+          <RobotIcon className="size-5 text-primary" />
           <h2
             id="ai-generate-title"
             className="text-lg font-semibold text-card-foreground"
@@ -234,35 +214,29 @@ export function AIGenerateDialog({
               onSubmit={handleSubmit(onSubmit)}
               className="space-y-4"
             >
-              {/* Requirement select */}
+              {/* Prompt text area */}
               <div className="space-y-2">
                 <label
-                  htmlFor="gen-requirement"
+                  htmlFor="gen-prompt"
                   className="text-sm font-medium leading-none text-foreground"
                 >
-                  {t('aiFieldRequirement')}{' '}
+                  {t('aiFieldPrompt')}{' '}
                   <span className="text-destructive">*</span>
                 </label>
-                <select
-                  id="gen-requirement"
+                <textarea
+                  id="gen-prompt"
                   disabled={isSubmitting}
+                  placeholder={t('aiFieldPromptPlaceholder')}
                   className={cn(
-                    selectClassName,
-                    errors.requirementPublicId &&
+                    textareaClassName,
+                    errors.prompt &&
                       'border-destructive focus-visible:ring-destructive',
                   )}
-                  {...register('requirementPublicId')}
-                >
-                  <option value="">{t('aiFieldRequirementPlaceholder')}</option>
-                  {requirements.map((req) => (
-                    <option key={req.publicId} value={req.publicId}>
-                      {req.title}
-                    </option>
-                  ))}
-                </select>
-                {errors.requirementPublicId && (
+                  {...register('prompt')}
+                />
+                {errors.prompt && (
                   <p className="text-sm text-destructive">
-                    {errors.requirementPublicId.message}
+                    {errors.prompt.message}
                   </p>
                 )}
               </div>
@@ -302,15 +276,15 @@ export function AIGenerateDialog({
               {/* Additional prompt */}
               <div className="space-y-2">
                 <label
-                  htmlFor="gen-prompt"
+                  htmlFor="gen-additional-prompt"
                   className="text-sm font-medium leading-none text-foreground"
                 >
-                  {t('aiFieldPrompt')}
+                  {t('aiFieldAdditionalPrompt')}
                 </label>
                 <textarea
-                  id="gen-prompt"
+                  id="gen-additional-prompt"
                   disabled={isSubmitting}
-                  placeholder={t('aiFieldPromptPlaceholder')}
+                  placeholder={t('aiFieldAdditionalPromptPlaceholder')}
                   className={cn(
                     textareaClassName,
                     errors.additionalPrompt &&
@@ -348,7 +322,7 @@ export function AIGenerateDialog({
               {/* PENDING */}
               {job?.status === 'PENDING' && (
                 <div className="flex items-center gap-3 rounded-md border bg-muted/50 px-4 py-4">
-                  <Hourglass className="size-5 animate-pulse text-amber-500" />
+                  <HourglassIcon className="size-5 animate-pulse text-amber-500" />
                   <div>
                     <p className="text-sm font-medium">{t('jobPending')}</p>
                     <p className="text-xs text-muted-foreground">
@@ -362,7 +336,7 @@ export function AIGenerateDialog({
               {job?.status === 'RUNNING' && (
                 <div className="space-y-2 rounded-md border bg-muted/50 px-4 py-4">
                   <div className="flex items-center gap-3">
-                    <CircleNotch className="size-5 animate-spin text-primary" />
+                    <CircleNotchIcon className="size-5 animate-spin text-primary" />
                     <div>
                       <p className="text-sm font-medium">{t('jobRunning')}</p>
                       <p className="text-xs text-muted-foreground">
@@ -386,7 +360,7 @@ export function AIGenerateDialog({
               {/* COMPLETED */}
               {isCompleted && (
                 <div className="flex items-center gap-3 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-4 dark:border-emerald-800 dark:bg-emerald-950">
-                  <CheckCircle className="size-5 text-emerald-600 dark:text-emerald-400" />
+                  <CheckCircleIcon className="size-5 text-emerald-600 dark:text-emerald-400" />
                   <div>
                     <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
                       {t('jobCompleted')}
@@ -401,7 +375,7 @@ export function AIGenerateDialog({
               {/* FAILED */}
               {isFailed && (
                 <div className="flex items-center gap-3 rounded-md border border-destructive/50 bg-destructive/10 px-4 py-4">
-                  <XCircle className="size-5 text-destructive" />
+                  <XCircleIcon className="size-5 text-destructive" />
                   <div>
                     <p className="text-sm font-medium text-destructive">
                       {t('jobFailed')}
@@ -418,7 +392,7 @@ export function AIGenerateDialog({
               {/* Loading / initial polling */}
               {!job && isPolling && (
                 <div className="flex items-center justify-center gap-2 py-4">
-                  <CircleNotch className="size-5 animate-spin text-muted-foreground" />
+                  <CircleNotchIcon className="size-5 animate-spin text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">
                     {tCommon('loading')}
                   </p>

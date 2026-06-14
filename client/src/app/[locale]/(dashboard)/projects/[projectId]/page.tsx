@@ -5,12 +5,11 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plugs,
-  ListBullets,
-  Database,
-  ListChecks,
-  ChartBar,
-  Archive,
+  PlugsIcon,
+  DatabaseIcon,
+  ListChecksIcon,
+  ChartBarIcon,
+  ArchiveIcon,
 } from '@phosphor-icons/react';
 
 import { Link, useRouter } from '@/i18n/navigation';
@@ -49,27 +48,23 @@ function useQuickLinks(projectId: string): QuickLink[] {
       {
         labelKey: 'connectors',
         href: `/projects/${projectId}/connectors`,
-        icon: Plugs,
+        icon: PlugsIcon,
       },
-      {
-        labelKey: 'requirements',
-        href: `/projects/${projectId}/requirements`,
-        icon: ListBullets,
-      },
+
       {
         labelKey: 'datasets',
         href: `/projects/${projectId}/datasets`,
-        icon: Database,
+        icon: DatabaseIcon,
       },
       {
         labelKey: 'rubrics',
         href: '/rubrics',
-        icon: ListChecks,
+        icon: ListChecksIcon,
       },
       {
         labelKey: 'evaluations',
         href: `/projects/${projectId}/evaluations`,
-        icon: ChartBar,
+        icon: ChartBarIcon,
       },
     ],
     [projectId],
@@ -147,7 +142,7 @@ export default function ProjectDetailPage() {
       ),
   });
 
-  // --- Archive mutation ---
+  // --- ArchiveIcon mutation ---
   const archiveMutation = useMutation({
     mutationFn: () => apiClient.del('/api/v1/projects/' + projectId),
     onSuccess: () => {
@@ -185,7 +180,7 @@ export default function ProjectDetailPage() {
             variant="outline"
             onClick={() => setArchiveOpen(true)}
           >
-            <Archive className="mr-2 size-4" weight="bold" />
+            <ArchiveIcon className="mr-2 size-4" weight="bold" />
             {t('archiveProject')}
           </Button>
         ) : undefined
@@ -260,7 +255,7 @@ export default function ProjectDetailPage() {
         ) : recentEvaluations.length === 0 ? (
           <EmptyState
             title={t('noEvaluations')}
-            icon={<ChartBar size={48} weight="duotone" />}
+            icon={<ChartBarIcon size={48} weight="duotone" />}
           />
         ) : (
           <div className="divide-y rounded-lg border bg-card">
@@ -284,7 +279,7 @@ export default function ProjectDetailPage() {
         )}
       </section>
 
-      {/* ---- Archive confirm dialog ---- */}
+      {/* ---- ArchiveIcon confirm dialog ---- */}
       <ConfirmDialog
         open={archiveOpen}
         onOpenChange={setArchiveOpen}

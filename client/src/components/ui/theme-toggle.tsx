@@ -2,7 +2,7 @@
 
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
-import { Sun, Moon, Desktop } from '@phosphor-icons/react';
+import { SunIcon, MoonIcon, DesktopIcon } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 
 export function ThemeToggle() {
@@ -17,7 +17,7 @@ export function ThemeToggle() {
   if (!mounted)
     return (
       <Button variant="ghost" size="icon" disabled>
-        <Sun size={18} />
+        <SunIcon size={18} />
       </Button>
     );
 
@@ -27,7 +27,7 @@ export function ThemeToggle() {
     else setTheme('light');
   };
 
-  const Icon = theme === 'dark' ? Moon : theme === 'system' ? Desktop : Sun;
+  const Icon = theme === 'dark' ? MoonIcon : theme === 'system' ? DesktopIcon : SunIcon;
   const label =
     theme === 'dark'
       ? 'Dark mode'

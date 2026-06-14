@@ -5,14 +5,14 @@ import { useLocale } from 'next-intl';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import {
-  User,
-  Envelope,
-  Shield,
-  Clock,
-  Translate,
-  Sun,
-  Moon,
-  Desktop,
+  UserIcon,
+  EnvelopeIcon,
+  ShieldIcon,
+  ClockIcon,
+  TranslateIcon,
+  SunIcon,
+  MoonIcon,
+  DesktopIcon,
 } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
@@ -69,9 +69,9 @@ const themeOptions: {
   icon: React.ElementType;
   labelKey: string;
 }[] = [
-  { value: 'light', icon: Sun, labelKey: 'themeLight' },
-  { value: 'dark', icon: Moon, labelKey: 'themeDark' },
-  { value: 'system', icon: Desktop, labelKey: 'themeSystem' },
+  { value: 'light', icon: SunIcon, labelKey: 'themeLight' },
+  { value: 'dark', icon: MoonIcon, labelKey: 'themeDark' },
+  { value: 'system', icon: DesktopIcon, labelKey: 'themeSystem' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -122,7 +122,7 @@ export default function SettingsPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             {/* Display Name */}
             <div className="flex items-start gap-3">
-              <User size={20} className="mt-0.5 shrink-0 text-muted-foreground" />
+              <UserIcon size={20} className="mt-0.5 shrink-0 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">{t('displayName')}</p>
                 <p className="font-medium">{user.displayName}</p>
@@ -131,7 +131,7 @@ export default function SettingsPage() {
 
             {/* Email */}
             <div className="flex items-start gap-3">
-              <Envelope size={20} className="mt-0.5 shrink-0 text-muted-foreground" />
+              <EnvelopeIcon size={20} className="mt-0.5 shrink-0 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">{t('email')}</p>
                 <p className="font-medium">{user.email}</p>
@@ -140,7 +140,7 @@ export default function SettingsPage() {
 
             {/* Role */}
             <div className="flex items-start gap-3">
-              <Shield size={20} className="mt-0.5 shrink-0 text-muted-foreground" />
+              <ShieldIcon size={20} className="mt-0.5 shrink-0 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">{t('role')}</p>
                 <p className="font-medium">{roleLabels[user.role]}</p>
@@ -158,7 +158,7 @@ export default function SettingsPage() {
 
             {/* Last Login */}
             <div className="flex items-start gap-3 sm:col-span-2">
-              <Clock size={20} className="mt-0.5 shrink-0 text-muted-foreground" />
+              <ClockIcon size={20} className="mt-0.5 shrink-0 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">{t('lastLogin')}</p>
                 <p className="font-medium">
@@ -175,7 +175,7 @@ export default function SettingsPage() {
       {/* Language card */}
       <div className="rounded-lg border bg-card p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Translate size={20} className="text-muted-foreground" />
+          <TranslateIcon size={20} className="text-muted-foreground" />
           <h2 className="text-lg font-semibold">{t('language')}</h2>
         </div>
         <div className="flex items-center gap-2">
@@ -198,7 +198,7 @@ export default function SettingsPage() {
       {/* Theme card */}
       <div className="rounded-lg border bg-card p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Sun size={20} className="text-muted-foreground" />
+          <SunIcon size={20} className="text-muted-foreground" />
           <h2 className="text-lg font-semibold">{t('theme')}</h2>
         </div>
         <div className="flex items-center gap-2">

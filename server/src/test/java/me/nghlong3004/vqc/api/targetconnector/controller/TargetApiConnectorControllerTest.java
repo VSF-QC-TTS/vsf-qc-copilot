@@ -21,6 +21,7 @@ import me.nghlong3004.vqc.api.targetconnector.enums.ResponseFormat;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateConnectorFromCurlRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateTargetApiConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.TestTargetConnectorRequest;
+import me.nghlong3004.vqc.api.targetconnector.request.UpdateConnectorFromCurlRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.UpdateTargetApiConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.response.CreateConnectorFromCurlResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.SecretRefResponse;
@@ -503,6 +504,14 @@ class TargetApiConnectorControllerTest {
     public CreateConnectorFromCurlResponse createConnectorFromCurl(
         UUID projectPublicId, CreateConnectorFromCurlRequest request, String username) {
       RecordingTargetApiConnectorService.projectPublicId = projectPublicId;
+      RecordingTargetApiConnectorService.username = username;
+      return null;
+    }
+
+    @Override
+    public CreateConnectorFromCurlResponse updateConnectorFromCurl(
+        UUID connectorPublicId, UpdateConnectorFromCurlRequest request, String username) {
+      RecordingTargetApiConnectorService.connectorPublicId = connectorPublicId;
       RecordingTargetApiConnectorService.username = username;
       return null;
     }

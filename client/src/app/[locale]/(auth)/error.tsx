@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { ArrowClockwise, WarningCircle } from '@phosphor-icons/react';
+import { ArrowClockwiseIcon, WarningCircleIcon } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 
@@ -23,7 +23,7 @@ export default function AuthError({ error, reset }: ErrorProps) {
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
       <div className="w-full max-w-md space-y-6 rounded-lg border bg-card p-8">
         <div className="flex flex-col items-center gap-3">
-          <WarningCircle size={48} className="text-destructive" />
+          <WarningCircleIcon size={48} className="text-destructive" />
           <h2 className="text-xl font-semibold">{t('generic')}</h2>
         </div>
 
@@ -35,7 +35,7 @@ export default function AuthError({ error, reset }: ErrorProps) {
         )}
 
         <Button onClick={reset} className="w-full">
-          <ArrowClockwise size={16} weight="bold" className="mr-2" />
+          <ArrowClockwiseIcon size={16} weight="bold" className="mr-2" />
           {tCommon('retry')}
         </Button>
       </div>

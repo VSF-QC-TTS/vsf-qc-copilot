@@ -4,12 +4,12 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api/client';
-import type { ApiError, PageResponse } from '@/lib/api/types';
+import type { ApiError } from '@/lib/api/types';
 import { getErrorMessageKey } from '@/lib/utils/error-messages';
 import {
   createDatasetSchema,
@@ -27,14 +27,6 @@ interface CreateDatasetDialogProps {
   projectId: string;
 }
 
-// ---------------------------------------------------------------------------
-// Requirement type (minimal, just for the select)
-// ---------------------------------------------------------------------------
-
-type RequirementOption = {
-  publicId: string;
-  title: string;
-};
 
 // ---------------------------------------------------------------------------
 // Shared input styles (matches login page pattern)
@@ -45,9 +37,6 @@ const inputClassName =
 
 const textareaClassName =
   'flex min-h-[80px] w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
-
-const selectClassName =
-  'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
 // ---------------------------------------------------------------------------
 // Component
@@ -76,21 +65,9 @@ export function CreateDatasetDialog({
     defaultValues: {
       name: '',
       description: '',
-      requirementPublicId: '',
     },
   });
 
-  // --- Fetch active requirements for select ---
-  const { data: requirementsData } = useQuery({
-    queryKey: ['requirements', projectId, 'active'],
-    queryFn: () =>
-      apiClient.get<PageResponse<RequirementOption>>(
-        '/api/v1/projects/' + projectId + '/requirements?page=0&size=50&status=ACTIVE',
-      ),
-    enabled: open,
-  });
-
-  const requirements = requirementsData?.items ?? [];
 
   /* ---- Close helper: resets form + error ---- */
   const handleClose = React.useCallback(
@@ -251,28 +228,6 @@ export function CreateDatasetDialog({
             )}
           </div>
 
-          {/* Requirement select field */}
-          <div className="space-y-2">
-            <label
-              htmlFor="dataset-requirement"
-              className="text-sm font-medium leading-none text-foreground"
-            >
-              {t('linkedRequirement')}
-            </label>
-            <select
-              id="dataset-requirement"
-              disabled={isSubmitting}
-              className={selectClassName}
-              {...register('requirementPublicId')}
-            >
-              <option value="">{t('noRequirement')}</option>
-              {requirements.map((req) => (
-                <option key={req.publicId} value={req.publicId}>
-                  {req.title}
-                </option>
-              ))}
-            </select>
-          </div>
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-2">

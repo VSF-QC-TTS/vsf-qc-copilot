@@ -5,6 +5,7 @@ import me.nghlong3004.vqc.api.targetconnector.entity.TargetApiConnector;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateConnectorFromCurlRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateTargetApiConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.TestTargetConnectorRequest;
+import me.nghlong3004.vqc.api.targetconnector.request.UpdateConnectorFromCurlRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.UpdateTargetApiConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.response.CreateConnectorFromCurlResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorPageResponse;
@@ -82,4 +83,7 @@ public interface TargetApiConnectorService {
    */
   CreateConnectorFromCurlResponse createConnectorFromCurl(
       UUID projectPublicId, CreateConnectorFromCurlRequest request, String username);
+
+  CreateConnectorFromCurlResponse updateConnectorFromCurl(
+      UUID connectorPublicId, UpdateConnectorFromCurlRequest request, String username);
 }

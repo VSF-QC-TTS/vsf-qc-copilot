@@ -2,43 +2,30 @@
 
 import * as React from 'react';
 import { useParams } from 'next/navigation';
-import { useForm, Controller, useWatch } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  PencilSimple,
-  FloppyDisk,
-  Play,
-  SpinnerGap,
-  X,
+  PencilSimpleIcon,
+  FloppyDiskIcon,
+  PlayIcon,
+  SpinnerGapIcon,
+  XIcon,
 } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { PageShell } from '@/components/layout/page-shell';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { KeyValueEditor } from '@/components/connectors/key-value-editor';
-import {
-  AuthSettingsFields,
-  CurlImportPanel,
-  buildConnectorBodyPayload,
-  buildConnectorAuthPayload,
-  buildConnectorUrl,
-  type ParsedCurlConnector,
-} from '@/components/connectors/connector-form-helpers';
 import { Skeleton, SkeletonText } from '@/components/feedback/loading-skeleton';
 import { apiClient } from '@/lib/api/client';
 import { isApiError } from '@/lib/utils/error-messages';
 import {
-  createConnectorSchema,
+  createConnectorFromCurlSchema,
   testRunSchema,
-  type CreateConnectorFormValues,
+  type CreateConnectorFromCurlFormValues,
   type TestRunFormValues,
-  HTTP_METHODS,
-  AUTH_TYPES,
-  BODY_TYPES,
-  RESPONSE_FORMATS,
 } from '@/lib/validations/connector';
 
 // ---------------------------------------------------------------------------
@@ -51,11 +38,6 @@ const inputClassName =
 const textareaClassName =
   'flex min-h-[80px] w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
-const selectClassName =
-  'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
-
-const checkboxClassName =
-  'size-4 rounded border border-input bg-background text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
 // ---------------------------------------------------------------------------
 // Connector response type (detail)
@@ -65,6 +47,7 @@ type ConnectorDetail = {
   publicId: string;
   name: string;
   description: string | null;
+  rawCurl: string | null;
   protocol: string | null;
   method: string;
   baseUrl: string;
@@ -97,26 +80,6 @@ type TestRunResult = {
 };
 
 type JsonRecord = Record<string, unknown>;
-
-function toStringRecord(record: Record<string, unknown> | null): Record<string, string> {
-  if (!record) return {};
-  return Object.fromEntries(
-    Object.entries(record).map(([key, value]) => [
-      key,
-      typeof value === 'string' ? value : JSON.stringify(value),
-    ]),
-  );
-}
-
-function toEditableBodyTemplate(
-  bodyTemplate: unknown,
-  bodyTemplateText: string | null,
-): string {
-  if (bodyTemplateText) return bodyTemplateText;
-  if (!bodyTemplate) return '';
-  if (typeof bodyTemplate === 'string') return bodyTemplate;
-  return JSON.stringify(bodyTemplate, null, 2);
-}
 
 // ---------------------------------------------------------------------------
 // Section wrapper
@@ -232,13 +195,6 @@ export default function ConnectorDetailPage() {
 
   // State
   const [editing, setEditing] = React.useState(false);
-  // Extra fields for editing
-  const [headers, setHeaders] = React.useState<Record<string, string>>({});
-  const [queryParamsKv, setQueryParamsKv] = React.useState<Record<string, string>>({});
-  const [pathParamsKv, setPathParamsKv] = React.useState<Record<string, string>>({});
-  const [authConfigKv, setAuthConfigKv] = React.useState<Record<string, string>>({});
-  const [secretValuesKv, setSecretValuesKv] = React.useState<Record<string, string>>({});
-  const [editorRevision, setEditorRevision] = React.useState(0);
 
   // Test run state
   const [testRunning, setTestRunning] = React.useState(false);
@@ -259,24 +215,6 @@ export default function ConnectorDetailPage() {
       ),
   });
 
-  // Populate KV editors when connector loads
-  React.useEffect(() => {
-    if (!connector) return;
-
-    let cancelled = false;
-    queueMicrotask(() => {
-      if (cancelled) return;
-      setHeaders(toStringRecord(connector.headers));
-      setQueryParamsKv(toStringRecord(connector.queryParams));
-      setPathParamsKv(toStringRecord(connector.pathParams));
-      setAuthConfigKv(toStringRecord(connector.authConfig));
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [connector]);
-
   // ---------------------------------------------------------------------------
   // Edit form
   // ---------------------------------------------------------------------------
@@ -284,76 +222,31 @@ export default function ConnectorDetailPage() {
     register,
     handleSubmit,
     reset,
-    control,
-    setValue,
     formState: { errors, isSubmitting },
-  } = useForm<CreateConnectorFormValues>({
-    resolver: zodResolver(createConnectorSchema),
+  } = useForm<CreateConnectorFromCurlFormValues>({
+    resolver: zodResolver(createConnectorFromCurlSchema),
     values: connector
       ? {
           name: connector.name,
           description: connector.description ?? '',
-          protocol: connector.protocol ?? '',
-          method: connector.method as CreateConnectorFormValues['method'],
-          baseUrl: connector.baseUrl,
-          path: connector.path ?? '',
-          bodyType: (connector.bodyType as CreateConnectorFormValues['bodyType']) ?? 'NONE',
-          bodyTemplate: toEditableBodyTemplate(
-            connector.bodyTemplate,
-            connector.bodyTemplateText,
-          ),
-          bodyTemplateText: connector.bodyTemplateText ?? '',
-          responseFormat:
-            (connector.responseFormat as CreateConnectorFormValues['responseFormat']) ?? 'JSON',
+          rawCurl: connector.rawCurl ?? '',
           responseSelector: connector.responseSelector ?? '',
-          authType:
-            (connector.authType as CreateConnectorFormValues['authType']) ?? 'NONE',
           timeoutSeconds: connector.timeoutSeconds,
           retryCount: connector.retryCount,
-          active: connector.active,
-          isStreaming: connector.isStreaming,
         }
       : undefined,
   });
 
-  const authType = useWatch({ control, name: 'authType' });
-  const bodyType = useWatch({ control, name: 'bodyType' });
-
   const handleCancelEdit = () => {
     reset();
-    if (connector) {
-      setHeaders(toStringRecord(connector.headers));
-      setQueryParamsKv(toStringRecord(connector.queryParams));
-      setPathParamsKv(toStringRecord(connector.pathParams));
-      setAuthConfigKv(toStringRecord(connector.authConfig));
-      setSecretValuesKv({});
-      setEditorRevision((revision) => revision + 1);
-    }
     setEditing(false);
   };
 
-  async function onSaveEdit(values: CreateConnectorFormValues) {
-    const authPayload = buildConnectorAuthPayload({
-      headers,
-      queryParams: queryParamsKv,
-      pathParams: pathParamsKv,
-      authType,
-      authConfig: authConfigKv,
-      secretValues: secretValuesKv,
-    });
-
-    const payload = {
-      ...values,
-      protocol: values.protocol || 'HTTP',
-      url: buildConnectorUrl(values.baseUrl, values.path),
-      ...buildConnectorBodyPayload(values.bodyType, values.bodyTemplate),
-      ...authPayload,
-    };
-
+  async function onSaveEdit(values: CreateConnectorFromCurlFormValues) {
     try {
-      await apiClient.patch(
-        '/api/v1/target-api-connectors/' + connectorId,
-        payload,
+      await apiClient.put(
+        `/api/v1/target-api-connectors/${connectorId}/from-curl`,
+        values,
       );
       await queryClient.invalidateQueries({
         queryKey: ['connector', connectorId],
@@ -409,23 +302,6 @@ export default function ConnectorDetailPage() {
     }
   }
 
-  const handleApplyCurl = (parsed: ParsedCurlConnector) => {
-    setValue('method', parsed.method);
-    setValue('baseUrl', parsed.baseUrl);
-    setValue('path', parsed.path);
-    setValue('bodyType', parsed.bodyType);
-    setValue('bodyTemplate', parsed.bodyTemplate);
-    if (parsed.responseSelector) {
-      setValue('responseSelector', parsed.responseSelector);
-    }
-    setValue('authType', parsed.authType);
-    setHeaders(parsed.headers);
-    setQueryParamsKv(parsed.queryParams);
-    setAuthConfigKv(parsed.authConfig);
-    setSecretValuesKv(parsed.secretValues);
-    setEditorRevision((revision) => revision + 1);
-  };
-
   // ---------------------------------------------------------------------------
   // Loading
   // ---------------------------------------------------------------------------
@@ -458,7 +334,7 @@ export default function ConnectorDetailPage() {
         <div className="flex items-center gap-2">
           {!editing && (
             <Button onClick={() => setEditing(true)}>
-              <PencilSimple weight="bold" />
+              <PencilSimpleIcon weight="bold" />
               {tCommon('edit')}
             </Button>
           )}
@@ -471,8 +347,6 @@ export default function ConnectorDetailPage() {
       {editing ? (
         /* ---- EDIT FORM ---- */
         <form onSubmit={handleSubmit(onSaveEdit)} className="space-y-6">
-          <CurlImportPanel disabled={isSubmitting} onApply={handleApplyCurl} />
-
           {/* Basic Info */}
           <FormSection title={t('sections.basicInfo')}>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -503,6 +377,32 @@ export default function ConnectorDetailPage() {
 
               <div className="space-y-2 sm:col-span-2">
                 <label
+                  htmlFor="edit-rawCurl"
+                  className="text-sm font-medium leading-none text-foreground"
+                >
+                  {t('rawCurl')}
+                </label>
+                <textarea
+                  id="edit-rawCurl"
+                  disabled={isSubmitting}
+                  rows={5}
+                  className={cn(
+                    textareaClassName,
+                    'font-mono text-xs',
+                    errors.rawCurl &&
+                      'border-destructive focus-visible:ring-destructive',
+                  )}
+                  {...register('rawCurl')}
+                />
+                {errors.rawCurl && (
+                  <p className="text-sm text-destructive">
+                    {errors.rawCurl.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <label
                   htmlFor="edit-description"
                   className="text-sm font-medium leading-none text-foreground"
                 >
@@ -515,217 +415,12 @@ export default function ConnectorDetailPage() {
                   {...register('description')}
                 />
               </div>
-
-              <div className="space-y-2">
-                <label
-                  htmlFor="edit-method"
-                  className="text-sm font-medium leading-none text-foreground"
-                >
-                  {t('fields.method')}
-                </label>
-                <select
-                  id="edit-method"
-                  disabled={isSubmitting}
-                  className={selectClassName}
-                  {...register('method')}
-                >
-                  {HTTP_METHODS.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <label
-                  htmlFor="edit-baseUrl"
-                  className="text-sm font-medium leading-none text-foreground"
-                >
-                  {t('fields.baseUrl')}
-                </label>
-                <input
-                  id="edit-baseUrl"
-                  type="url"
-                  disabled={isSubmitting}
-                  className={cn(
-                    inputClassName,
-                    errors.baseUrl &&
-                      'border-destructive focus-visible:ring-destructive',
-                  )}
-                  {...register('baseUrl')}
-                />
-                {errors.baseUrl && (
-                  <p className="text-sm text-destructive">
-                    {errors.baseUrl.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2 sm:col-span-2">
-                <label
-                  htmlFor="edit-path"
-                  className="text-sm font-medium leading-none text-foreground"
-                >
-                  {t('fields.path')}
-                </label>
-                <input
-                  id="edit-path"
-                  type="text"
-                  disabled={isSubmitting}
-                  className={inputClassName}
-                  {...register('path')}
-                />
-              </div>
             </div>
-          </FormSection>
-
-          {/* Request Config */}
-          <FormSection title={t('sections.requestConfig')}>
-            <KeyValueEditor
-              key={`headers-${editorRevision}`}
-              label={t('fields.headers')}
-              value={headers}
-              onChange={setHeaders}
-              disabled={isSubmitting}
-            />
-            <KeyValueEditor
-              key={`query-${editorRevision}`}
-              label={t('fields.queryParams')}
-              value={queryParamsKv}
-              onChange={setQueryParamsKv}
-              disabled={isSubmitting}
-            />
-            <KeyValueEditor
-              key={`path-${editorRevision}`}
-              label={t('fields.pathParams')}
-              value={pathParamsKv}
-              onChange={setPathParamsKv}
-              disabled={isSubmitting}
-            />
-          </FormSection>
-
-          {/* Body Template */}
-          <FormSection title={t('sections.bodyTemplate')}>
-            <div className="space-y-2">
-              <label
-                htmlFor="edit-bodyType"
-                className="text-sm font-medium leading-none text-foreground"
-              >
-                {t('fields.bodyType')}
-              </label>
-              <select
-                id="edit-bodyType"
-                disabled={isSubmitting}
-                className={selectClassName}
-                {...register('bodyType')}
-              >
-                {BODY_TYPES.map((bt) => (
-                  <option key={bt} value={bt}>
-                    {bt}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {bodyType !== 'NONE' && (
-              <div className="space-y-2">
-                <label
-                  htmlFor="edit-bodyTemplate"
-                  className="text-sm font-medium leading-none text-foreground"
-                >
-                  {t('fields.bodyTemplate')}
-                </label>
-                <textarea
-                  id="edit-bodyTemplate"
-                  disabled={isSubmitting}
-                  rows={6}
-                  className={cn(textareaClassName, 'font-mono text-xs')}
-                  {...register('bodyTemplate')}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {t('bodyTemplateHelp')}
-                </p>
-              </div>
-            )}
-          </FormSection>
-
-          {/* Authentication */}
-          <FormSection title={t('sections.authentication')}>
-            <div className="space-y-2">
-              <label
-                htmlFor="edit-authType"
-                className="text-sm font-medium leading-none text-foreground"
-              >
-                {t('fields.authType')}
-              </label>
-              <select
-                id="edit-authType"
-                disabled={isSubmitting}
-                className={selectClassName}
-                {...register('authType')}
-              >
-                {AUTH_TYPES.map((at) => (
-                  <option key={at} value={at}>
-                    {at}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {authType !== 'NONE' && connector.secretRefs && connector.secretRefs.length > 0 && (
-              <div className="space-y-1">
-                <span className="text-sm font-medium text-muted-foreground">
-                  {t('fields.existingSecrets')}
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  {connector.secretRefs.map((ref) => (
-                    <span
-                      key={ref.secretKey}
-                      className="inline-flex items-center rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
-                    >
-                      {ref.secretKey}: {ref.maskedValue}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <AuthSettingsFields
-              authType={authType}
-              authConfig={authConfigKv}
-              secretValues={secretValuesKv}
-              onAuthConfigChange={setAuthConfigKv}
-              onSecretValuesChange={setSecretValuesKv}
-              inputClassName={inputClassName}
-              selectClassName={selectClassName}
-              disabled={isSubmitting}
-            />
           </FormSection>
 
           {/* Advanced */}
           <FormSection title={t('sections.advanced')}>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label
-                  htmlFor="edit-responseFormat"
-                  className="text-sm font-medium leading-none text-foreground"
-                >
-                  {t('fields.responseFormat')}
-                </label>
-                <select
-                  id="edit-responseFormat"
-                  disabled={isSubmitting}
-                  className={selectClassName}
-                  {...register('responseFormat')}
-                >
-                  {RESPONSE_FORMATS.map((rf) => (
-                    <option key={rf} value={rf}>
-                      {rf}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
               <div className="space-y-2">
                 <label
                   htmlFor="edit-responseSelector"
@@ -795,211 +490,158 @@ export default function ConnectorDetailPage() {
                 />
               </div>
 
-              <div className="flex items-center gap-2 sm:col-span-2">
-                <Controller
-                  control={control}
-                  name="active"
-                  render={({ field }) => (
-                    <input
-                      id="edit-active"
-                      type="checkbox"
-                      disabled={isSubmitting}
-                      checked={field.value}
-                      onChange={field.onChange}
-                      className={checkboxClassName}
-                    />
-                  )}
-                />
-                <label
-                  htmlFor="edit-active"
-                  className="text-sm font-medium leading-none text-foreground"
-                >
-                  {t('fields.active')}
-                </label>
-              </div>
-
-              <div className="flex items-center gap-2 sm:col-span-2">
-                <Controller
-                  control={control}
-                  name="isStreaming"
-                  render={({ field }) => (
-                    <input
-                      id="edit-streaming"
-                      type="checkbox"
-                      disabled={isSubmitting}
-                      checked={field.value}
-                      onChange={field.onChange}
-                      className={checkboxClassName}
-                    />
-                  )}
-                />
-                <label
-                  htmlFor="edit-streaming"
-                  className="text-sm font-medium leading-none text-foreground"
-                >
-                  {t('fields.isStreaming')}
-                </label>
-              </div>
             </div>
           </FormSection>
 
-          {/* Edit actions */}
-          <div className="flex justify-end gap-3">
+          <div className="flex justify-end gap-3 pt-4">
             <Button
               type="button"
               variant="outline"
               disabled={isSubmitting}
               onClick={handleCancelEdit}
             >
-              <X weight="bold" />
               {tCommon('cancel')}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              <FloppyDisk weight="bold" />
-              {isSubmitting ? t('saving') : tCommon('save')}
+              <FloppyDiskIcon weight="bold" />
+              {tCommon('save')}
             </Button>
           </div>
         </form>
       ) : (
         /* ---- READ MODE ---- */
         <div className="space-y-6">
-          {/* Basic Info */}
-          <FormSection title={t('sections.basicInfo')}>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <ReadOnlyField
-                label={t('fields.name')}
-                value={connector.name}
-              />
-              <ReadOnlyField
-                label={t('fields.method')}
-                value={connector.method}
-              />
-              <ReadOnlyField
-                label={t('fields.baseUrl')}
-                value={connector.baseUrl}
-                mono
-              />
-              <ReadOnlyField
-                label={t('fields.path')}
-                value={connector.path}
-                mono
-              />
-              <div className="sm:col-span-2">
+          <div className="grid gap-6 md:grid-cols-2">
+            <FormSection title={t('sections.basicInfo')}>
+              <div className="grid gap-4">
+                <ReadOnlyField label={t('fields.name')} value={connector.name} />
                 <ReadOnlyField
                   label={t('fields.description')}
                   value={connector.description}
                 />
-              </div>
-              <ReadOnlyField
-                label={t('columns.status')}
-                value={
-                  <StatusBadge
-                    status={connector.active ? 'ACTIVE' : 'INACTIVE'}
-                    size="sm"
+                <ReadOnlyField
+                  label={t('fields.status')}
+                  value={
+                    <StatusBadge
+                      status={connector.active ? 'ACTIVE' : 'INACTIVE'}
+                    />
+                  }
+                />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <ReadOnlyField
+                    label={t('fields.method')}
+                    value={connector.method}
+                    mono
                   />
-                }
-              />
-              <ReadOnlyField
-                label={t('fields.protocol')}
-                value={connector.protocol}
-              />
-              <ReadOnlyField
-                label={t('fields.isStreaming')}
-                value={connector.isStreaming ? tCommon('yes') : tCommon('no')}
-              />
-              <ReadOnlyField
-                label={t('columns.createdAt')}
-                value={new Date(connector.createdAt).toLocaleString()}
-              />
-              <ReadOnlyField
-                label={t('fields.updatedAt')}
-                value={new Date(connector.updatedAt).toLocaleString()}
-              />
-            </div>
-          </FormSection>
-
-          {/* Request Config (read-only) */}
-          {(connector.headers || connector.queryParams || connector.pathParams) && (
-            <FormSection title={t('sections.requestConfig')}>
-              {connector.headers &&
-                Object.keys(connector.headers).length > 0 && (
-                  <div className="space-y-1">
-                    <span className="text-sm font-medium text-muted-foreground">
-                      {t('fields.headers')}
-                    </span>
-                    <pre className="overflow-auto rounded-md bg-muted p-3 text-xs">
-                      {JSON.stringify(connector.headers, null, 2)}
-                    </pre>
+                  <ReadOnlyField
+                    label={t('fields.protocol')}
+                    value={connector.protocol}
+                    mono
+                  />
+                  <div className="sm:col-span-2">
+                    <ReadOnlyField
+                      label={t('fields.url')}
+                      value={connector.baseUrl + (connector.path ?? '')}
+                      mono
+                    />
                   </div>
-                )}
-              {connector.queryParams &&
-                Object.keys(connector.queryParams).length > 0 && (
-                  <div className="space-y-1">
-                    <span className="text-sm font-medium text-muted-foreground">
-                      {t('fields.queryParams')}
-                    </span>
-                    <pre className="overflow-auto rounded-md bg-muted p-3 text-xs">
-                      {JSON.stringify(connector.queryParams, null, 2)}
-                    </pre>
-                  </div>
-                )}
-              {connector.pathParams &&
-                Object.keys(connector.pathParams).length > 0 && (
-                  <div className="space-y-1">
-                    <span className="text-sm font-medium text-muted-foreground">
-                      {t('fields.pathParams')}
-                    </span>
-                    <pre className="overflow-auto rounded-md bg-muted p-3 text-xs">
-                      {JSON.stringify(connector.pathParams, null, 2)}
-                    </pre>
-                  </div>
-                )}
+                </div>
+              </div>
             </FormSection>
-          )}
 
-          <FormSection title={t('sections.bodyTemplate')}>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <ReadOnlyField
-                label={t('fields.bodyType')}
-                value={connector.bodyType}
-              />
+            <FormSection title={t('sections.authentication')}>
+              <div className="grid gap-4">
+                <ReadOnlyField
+                  label={t('fields.authType')}
+                  value={connector.authType}
+                  mono
+                />
+                {connector.secretRefs && connector.secretRefs.length > 0 && (
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {t('fields.secrets')}
+                    </span>
+                    <div className="flex flex-col gap-2">
+                      {connector.secretRefs.map((ref) => (
+                        <div
+                          key={ref.secretKey}
+                          className="flex items-center gap-2 font-mono text-xs"
+                        >
+                          <span className="font-semibold text-foreground">
+                            {ref.secretKey}
+                          </span>
+                          <span className="text-muted-foreground">
+                            {ref.maskedValue}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {connector.authConfig && Object.keys(connector.authConfig).length > 0 && (
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {t('fields.authConfig')}
+                    </span>
+                    <JsonBlock value={connector.authConfig} />
+                  </div>
+                )}
+              </div>
+            </FormSection>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <FormSection title={t('sections.requestConfig')}>
+              <div className="grid gap-4">
+                <div className="space-y-1">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {t('fields.headers')}
+                  </span>
+                  <JsonBlock value={connector.headers} />
+                </div>
+                <div className="space-y-1">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {t('fields.queryParams')}
+                  </span>
+                  <JsonBlock value={connector.queryParams} />
+                </div>
+              </div>
+            </FormSection>
+
+            <FormSection title={t('sections.bodyTemplate')}>
+              <div className="grid gap-4">
+                <ReadOnlyField
+                  label={t('fields.bodyType')}
+                  value={connector.bodyType}
+                  mono
+                />
+                <div className="space-y-1">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {t('fields.bodyTemplate')}
+                  </span>
+                  {connector.bodyType === 'RAW_JSON' ? (
+                    <JsonBlock value={connector.bodyTemplate} />
+                  ) : connector.bodyTemplateText ? (
+                    <pre className="max-h-96 overflow-auto rounded-md bg-muted p-3 font-mono text-xs">
+                      {connector.bodyTemplateText}
+                    </pre>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      {tCommon('notAvailable')}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </FormSection>
+          </div>
+
+          <FormSection title={t('sections.advanced')}>
+            <div className="grid gap-4 sm:grid-cols-3">
               <ReadOnlyField
                 label={t('fields.responseFormat')}
                 value={connector.responseFormat}
+                mono
               />
-            </div>
-            <div className="space-y-1">
-              <span className="text-sm font-medium text-muted-foreground">
-                {t('fields.bodyTemplate')}
-              </span>
-              <JsonBlock value={connector.bodyTemplate ?? connector.bodyTemplateText} />
-            </div>
-          </FormSection>
-
-          <FormSection title={t('sections.authentication')}>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <ReadOnlyField
-                label={t('fields.authType')}
-                value={connector.authType}
-              />
-              <div className="space-y-1">
-                <span className="text-sm font-medium text-muted-foreground">
-                  {t('fields.existingSecrets')}
-                </span>
-                <JsonBlock value={connector.secretRefs} />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <span className="text-sm font-medium text-muted-foreground">
-                {t('fields.authConfig')}
-              </span>
-              <JsonBlock value={connector.authConfig} />
-            </div>
-          </FormSection>
-
-          {/* Advanced (read-only) */}
-          <FormSection title={t('sections.advanced')}>
-            <div className="grid gap-4 sm:grid-cols-2">
               <ReadOnlyField
                 label={t('fields.responseSelector')}
                 value={connector.responseSelector}
@@ -1013,153 +655,192 @@ export default function ConnectorDetailPage() {
                 label={t('fields.retryCount')}
                 value={connector.retryCount}
               />
+              <ReadOnlyField
+                label={t('fields.isStreaming')}
+                value={connector.isStreaming ? 'Yes' : 'No'}
+              />
             </div>
-          </FormSection>
-
-          <FormSection title={t('sections.apiPayload')}>
-            <JsonBlock value={connector} />
           </FormSection>
         </div>
       )}
 
       {/* ================================================================ */}
-      {/* Test Run (04.03) — always visible, below detail/edit */}
+      {/* TEST RUN SECTION */}
       {/* ================================================================ */}
-      <FormSection title={t('testRun.title')}>
-        <form
-          onSubmit={testForm.handleSubmit(onTestRun)}
-          className="space-y-4"
-        >
-          {/* Question */}
-          <div className="space-y-2">
-            <label
-              htmlFor="test-question"
-              className="text-sm font-medium leading-none text-foreground"
+      <div className="mt-8">
+        <h3 className="mb-4 text-lg font-semibold tracking-tight">
+          {t('testRun.title')}
+        </h3>
+        <p className="mb-6 text-sm text-muted-foreground">
+          {t('testRun.description')}
+        </p>
+
+        <div className="grid gap-8 lg:grid-cols-2">
+          {/* Form Side */}
+          <div className="rounded-lg border bg-card p-6">
+            <form
+              onSubmit={testForm.handleSubmit(onTestRun)}
+              className="space-y-4"
             >
-              {t('testRun.question')}
-            </label>
-            <textarea
-              id="test-question"
-              disabled={testRunning}
-              rows={3}
-              placeholder={t('testRun.questionPlaceholder')}
-              className={cn(
-                textareaClassName,
-                testForm.formState.errors.question &&
-                  'border-destructive focus-visible:ring-destructive',
-              )}
-              {...testForm.register('question')}
-            />
-            {testForm.formState.errors.question && (
-              <p className="text-sm text-destructive">
-                {testForm.formState.errors.question.message}
-              </p>
-            )}
-          </div>
-
-          {/* Precondition */}
-          <div className="space-y-2">
-            <label
-              htmlFor="test-precondition"
-              className="text-sm font-medium leading-none text-foreground"
-            >
-              {t('testRun.precondition')}
-            </label>
-            <input
-              id="test-precondition"
-              type="text"
-              disabled={testRunning}
-              placeholder={t('testRun.preconditionPlaceholder')}
-              className={inputClassName}
-              {...testForm.register('precondition')}
-            />
-          </div>
-
-          {/* Metadata */}
-          <div className="space-y-2">
-            <label
-              htmlFor="test-metadata"
-              className="text-sm font-medium leading-none text-foreground"
-            >
-              {t('testRun.metadata')}
-            </label>
-            <textarea
-              id="test-metadata"
-              disabled={testRunning}
-              rows={2}
-              placeholder={t('testRun.metadataPlaceholder')}
-              className={textareaClassName}
-              {...testForm.register('metadata')}
-            />
-          </div>
-
-          {/* Run button */}
-          <Button type="submit" disabled={testRunning}>
-            {testRunning ? (
-              <SpinnerGap className="animate-spin" weight="bold" />
-            ) : (
-              <Play weight="bold" />
-            )}
-            {testRunning ? t('testRun.running') : t('testRun.run')}
-          </Button>
-        </form>
-
-        {/* Test run results */}
-        {testError && (
-          <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-            {testError}
-          </div>
-        )}
-
-        {testResult && (
-          <div className="space-y-4 rounded-lg border bg-muted/30 p-4">
-            <div className="flex items-center gap-4">
-              <StatusBadge status={testResult.status} size="sm" />
-              <span className="text-sm text-muted-foreground">
-                {t('testRun.latency')}: {testResult.latencyMs}ms
-              </span>
-            </div>
-
-            {/* Extracted answer */}
-            {testResult.extractedAnswer && (
-              <div className="space-y-1">
-                <span className="text-sm font-medium text-foreground">
-                  {t('testRun.extractedAnswer')}
-                </span>
-                <div className="rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm dark:border-emerald-800 dark:bg-emerald-950">
-                  {testResult.extractedAnswer}
-                </div>
+              <div className="space-y-2">
+                <label
+                  htmlFor="tr-question"
+                  className="text-sm font-medium leading-none text-foreground"
+                >
+                  {t('testRun.question')}
+                </label>
+                <textarea
+                  id="tr-question"
+                  disabled={testRunning}
+                  placeholder={t('testRun.questionPlaceholder')}
+                  rows={3}
+                  className={cn(
+                    textareaClassName,
+                    testForm.formState.errors.question &&
+                      'border-destructive focus-visible:ring-destructive',
+                  )}
+                  {...testForm.register('question')}
+                />
+                {testForm.formState.errors.question && (
+                  <p className="text-sm text-destructive">
+                    {testForm.formState.errors.question.message}
+                  </p>
+                )}
               </div>
-            )}
 
-            {/* Response body */}
-            {testResult.responseBody && (
-              <div className="space-y-1">
-                <span className="text-sm font-medium text-foreground">
-                  {t('testRun.responseBody')}
-                </span>
-                <pre className="max-h-80 overflow-auto rounded-md bg-muted p-3 text-xs font-mono">
-                  {testResult.responseBody}
+              <div className="space-y-2">
+                <label
+                  htmlFor="tr-precondition"
+                  className="text-sm font-medium leading-none text-foreground"
+                >
+                  {t('testRun.precondition')}
+                </label>
+                <textarea
+                  id="tr-precondition"
+                  disabled={testRunning}
+                  placeholder={t('testRun.preconditionPlaceholder')}
+                  rows={2}
+                  className={textareaClassName}
+                  {...testForm.register('precondition')}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="tr-metadata"
+                  className="text-sm font-medium leading-none text-foreground"
+                >
+                  {t('testRun.metadata')}
+                </label>
+                <textarea
+                  id="tr-metadata"
+                  disabled={testRunning}
+                  placeholder={t('testRun.metadataPlaceholder')}
+                  rows={2}
+                  className={textareaClassName}
+                  {...testForm.register('metadata')}
+                />
+              </div>
+
+              <div className="pt-2">
+                <Button type="submit" disabled={testRunning} className="w-full">
+                  {testRunning ? (
+                    <SpinnerGapIcon className="animate-spin" weight="bold" />
+                  ) : (
+                    <PlayIcon weight="fill" />
+                  )}
+                  {testRunning ? t('testRun.running') : t('testRun.runButton')}
+                </Button>
+              </div>
+            </form>
+          </div>
+
+          {/* Result Side */}
+          <div className="rounded-lg border bg-muted/50 p-6">
+            {testRunning ? (
+              <div className="flex h-full min-h-[200px] flex-col items-center justify-center space-y-4 text-muted-foreground">
+                <SpinnerGapIcon className="size-8 animate-spin" />
+                <p className="text-sm">{t('testRun.running')}</p>
+              </div>
+            ) : testError ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-destructive">
+                  <XIcon className="size-5" weight="bold" />
+                  <h4 className="font-medium">{t('testRun.error')}</h4>
+                </div>
+                <pre className="whitespace-pre-wrap rounded-md bg-destructive/10 p-4 font-mono text-sm text-destructive">
+                  {testError}
                 </pre>
               </div>
-            )}
+            ) : testResult ? (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium">
+                    {t('testRun.result')}
+                  </h4>
+                  <StatusBadge
+                    status={testResult.error ? 'FAILED' : 'COMPLETED'}
+                  />
+                </div>
 
-            {/* Error from test run */}
-            {testResult.error && (
-              <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                {testResult.error}
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {t('testRun.latency')}
+                    </span>
+                    <p className="text-sm font-medium">
+                      {testResult.latencyMs}ms
+                    </p>
+                  </div>
+
+                  {testResult.error && (
+                    <div className="space-y-1.5">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {t('testRun.errorDetails')}
+                      </span>
+                      <pre className="whitespace-pre-wrap rounded-md border border-destructive/20 bg-destructive/10 p-3 font-mono text-xs text-destructive">
+                        {testResult.error}
+                      </pre>
+                    </div>
+                  )}
+
+                  <div className="space-y-1.5">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {t('testRun.extractedAnswer')}
+                    </span>
+                    {testResult.extractedAnswer ? (
+                      <div className="rounded-md border bg-background p-3 text-sm">
+                        {testResult.extractedAnswer}
+                      </div>
+                    ) : (
+                      <p className="text-sm italic text-muted-foreground">
+                        {t('testRun.noAnswer')}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {t('testRun.rawResponse')}
+                    </span>
+                    <pre className="max-h-96 overflow-auto rounded-md border bg-background p-3 font-mono text-xs">
+                      {typeof testResult.responseBody === 'string'
+                        ? testResult.responseBody
+                        : JSON.stringify(testResult.responseBody, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex h-full min-h-[200px] items-center justify-center">
+                <p className="text-center text-sm text-muted-foreground">
+                  {t('testRun.emptyState')}
+                </p>
               </div>
             )}
-
-            <div className="space-y-1">
-              <span className="text-sm font-medium text-foreground">
-                {t('testRun.fullPayload')}
-              </span>
-              <JsonBlock value={testResult} />
-            </div>
           </div>
-        )}
-      </FormSection>
+        </div>
+      </div>
     </PageShell>
   );
 }

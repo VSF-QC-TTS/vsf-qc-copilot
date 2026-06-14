@@ -7,11 +7,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus,
-  PencilSimple,
-  Trash,
-  X,
-  Warning,
+  PlusIcon,
+  PencilSimpleIcon,
+  TrashIcon,
+  XIcon,
+  WarningIcon,
 } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
@@ -170,7 +170,7 @@ export default function VersionDetailPage({
         <h2 className="text-lg font-semibold">{t('criteria')}</h2>
         {isDraft && (
           <Button size="sm" onClick={openCreate}>
-            <Plus weight="bold" />
+            <PlusIcon weight="bold" />
             {t('addCriterion')}
           </Button>
         )}
@@ -182,7 +182,7 @@ export default function VersionDetailPage({
           <p className="text-muted-foreground">{t('noRubrics')}</p>
           {isDraft && (
             <Button className="mt-4" onClick={openCreate}>
-              <Plus weight="bold" />
+              <PlusIcon weight="bold" />
               {t('addCriterion')}
             </Button>
           )}
@@ -206,7 +206,7 @@ export default function VersionDetailPage({
                       <span className="font-medium">{criterion.name}</span>
                       {criterion.isCritical && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:bg-red-950 dark:text-red-300">
-                          <Warning weight="bold" className="size-3" />
+                          <WarningIcon weight="bold" className="size-3" />
                           {t('isCritical')}
                         </span>
                       )}
@@ -236,7 +236,7 @@ export default function VersionDetailPage({
                         className="size-8"
                         onClick={() => openEdit(criterion)}
                       >
-                        <PencilSimple weight="bold" className="size-4" />
+                        <PencilSimpleIcon weight="bold" className="size-4" />
                       </Button>
                       {deleteConfirmId === criterion.publicId ? (
                         <div className="flex items-center gap-1">
@@ -265,7 +265,7 @@ export default function VersionDetailPage({
                             setDeleteConfirmId(criterion.publicId)
                           }
                         >
-                          <Trash weight="bold" className="size-4" />
+                          <TrashIcon weight="bold" className="size-4" />
                         </Button>
                       )}
                     </div>
@@ -430,7 +430,7 @@ function CriteriaEditorPanel({
             className="size-8"
             onClick={onClose}
           >
-            <X weight="bold" className="size-4" />
+            <XIcon weight="bold" className="size-4" />
           </Button>
         </div>
 

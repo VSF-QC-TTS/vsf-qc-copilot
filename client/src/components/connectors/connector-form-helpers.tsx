@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { MagicWand } from '@phosphor-icons/react';
+import { MagicWandIcon } from '@phosphor-icons/react';
 import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
@@ -415,7 +415,7 @@ export function CurlImportPanel({ disabled = false, onApply }: CurlImportPanelPr
       />
       {error && <p className="text-sm text-destructive">{error}</p>}
       <Button type="button" variant="outline" disabled={disabled || !raw.trim()} onClick={handleApply}>
-        <MagicWand weight="bold" />
+        <MagicWandIcon weight="bold" />
         {t('curl.apply')}
       </Button>
     </section>

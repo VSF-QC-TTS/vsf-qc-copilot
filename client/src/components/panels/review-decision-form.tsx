@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { PencilSimple } from '@phosphor-icons/react';
+import { PencilSimpleIcon } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -220,7 +220,7 @@ export function ReviewDecisionForm({ resultPublicId }: ReviewDecisionFormProps) 
             className="h-7 gap-1 text-xs"
             onClick={() => setIsEditing(true)}
           >
-            <PencilSimple className="size-3.5" />
+            <PencilSimpleIcon className="size-3.5" />
             {t('editReview')}
           </Button>
         </div>
