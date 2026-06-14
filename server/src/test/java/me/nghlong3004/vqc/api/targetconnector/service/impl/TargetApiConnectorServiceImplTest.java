@@ -14,9 +14,13 @@ import me.nghlong3004.vqc.api.project.repository.ProjectRepository;
 import me.nghlong3004.vqc.api.targetconnector.client.TargetConnectorClient;
 import me.nghlong3004.vqc.api.targetconnector.client.TargetConnectorClientRequest;
 import me.nghlong3004.vqc.api.targetconnector.client.TargetConnectorClientResult;
+import me.nghlong3004.vqc.api.targetconnector.curl.ConnectorSecretDetector;
+import me.nghlong3004.vqc.api.targetconnector.curl.CurlParser;
+import me.nghlong3004.vqc.api.targetconnector.curl.ResponseSelectorDetector;
 import me.nghlong3004.vqc.api.targetconnector.entity.TargetApiConnector;
 import me.nghlong3004.vqc.api.targetconnector.enums.AuthType;
 import me.nghlong3004.vqc.api.targetconnector.enums.BodyType;
+import me.nghlong3004.vqc.api.targetconnector.enums.ConnectorProtocol;
 import me.nghlong3004.vqc.api.targetconnector.enums.HttpMethodType;
 import me.nghlong3004.vqc.api.targetconnector.enums.ResponseFormat;
 import me.nghlong3004.vqc.api.targetconnector.mapper.TargetApiConnectorMapper;
@@ -51,7 +55,7 @@ class TargetApiConnectorServiceImplTest {
     AtomicReference<TargetApiConnector> savedConnector = new AtomicReference<>();
     TargetApiConnectorResponse mappedResponse =
         new TargetApiConnectorResponse(
-            null, project.getPublicId(), "Mock Health Chatbot", null, HttpMethodType.POST, null,
+            null, project.getPublicId(), "Mock Health Chatbot", null, ConnectorProtocol.HTTP, HttpMethodType.POST, null,
             null, "http://localhost:8080/mock-chatbot/chat", Map.of(), Map.of(), Map.of(),
             BodyType.RAW_JSON, Map.of(), null, AuthType.BEARER, Map.of(), java.util.List.of(),
             ResponseFormat.JSON, "$.answer", false, null, null, 60, 1, true, null, null);
@@ -62,7 +66,10 @@ class TargetApiConnectorServiceImplTest {
             userRepository(Optional.of(creator), lookedUpUsername),
             mapper(mappedResponse),
             ignoredClient(),
-            noOpSecretService());
+            noOpSecretService(),
+            ignoredCurlParser(),
+            new ConnectorSecretDetector(),
+            new ResponseSelectorDetector());
 
     var response =
         service.createConnector(
@@ -100,7 +107,10 @@ class TargetApiConnectorServiceImplTest {
             userRepository(Optional.of(creator), new AtomicReference<>()),
             mapper(null),
             ignoredClient(),
-            noOpSecretService());
+            noOpSecretService(),
+            ignoredCurlParser(),
+            new ConnectorSecretDetector(),
+            new ResponseSelectorDetector());
 
     assertThatThrownBy(() -> service.createConnector(UUID.randomUUID(), request(), "qc.demo@example.com"))
         .isInstanceOf(ResourceException.class)
@@ -140,7 +150,10 @@ class TargetApiConnectorServiceImplTest {
             userRepository(Optional.of(creator), lookedUpUsername),
             mapper(null, itemResponse),
             ignoredClient(),
-            noOpSecretService());
+            noOpSecretService(),
+            ignoredCurlParser(),
+            new ConnectorSecretDetector(),
+            new ResponseSelectorDetector());
 
     TargetApiConnectorPageResponse response =
         service.listConnectors(project.getPublicId(), PageRequest.of(0, 20), " QC.Demo@Example.COM ");
@@ -165,7 +178,7 @@ class TargetApiConnectorServiceImplTest {
     AtomicReference<ConnectorLookup> connectorLookup = new AtomicReference<>();
     TargetApiConnectorResponse mappedResponse =
         new TargetApiConnectorResponse(
-            connector.getPublicId(), null, "Mock Health Chatbot", null, HttpMethodType.POST, null,
+            connector.getPublicId(), null, "Mock Health Chatbot", null, ConnectorProtocol.HTTP, HttpMethodType.POST, null,
             null, "http://localhost:8080/mock-chatbot/chat", Map.of(), Map.of(), Map.of(),
             BodyType.RAW_JSON, Map.of(), null, AuthType.NONE, Map.of(), java.util.List.of(),
             ResponseFormat.JSON, "$.answer", false, null, null, 60, 1, true, null, null);
@@ -177,7 +190,10 @@ class TargetApiConnectorServiceImplTest {
             userRepository(Optional.of(creator), lookedUpUsername),
             mapper(mappedResponse),
             ignoredClient(),
-            noOpSecretService());
+            noOpSecretService(),
+            ignoredCurlParser(),
+            new ConnectorSecretDetector(),
+            new ResponseSelectorDetector());
 
     TargetApiConnectorResponse response =
         service.getConnector(connector.getPublicId(), " QC.Demo@Example.COM ");
@@ -199,7 +215,10 @@ class TargetApiConnectorServiceImplTest {
             userRepository(Optional.of(creator), new AtomicReference<>()),
             mapper(null),
             ignoredClient(),
-            noOpSecretService());
+            noOpSecretService(),
+            ignoredCurlParser(),
+            new ConnectorSecretDetector(),
+            new ResponseSelectorDetector());
 
     assertThatThrownBy(() -> service.getConnector(UUID.randomUUID(), "qc.demo@example.com"))
         .isInstanceOf(ResourceException.class)
@@ -218,7 +237,7 @@ class TargetApiConnectorServiceImplTest {
     AtomicReference<TargetApiConnector> savedConnector = new AtomicReference<>();
     TargetApiConnectorResponse mappedResponse =
         new TargetApiConnectorResponse(
-            connector.getPublicId(), null, "Mock Health Chatbot v2", null, HttpMethodType.POST, null,
+            connector.getPublicId(), null, "Mock Health Chatbot v2", null, ConnectorProtocol.HTTP, HttpMethodType.POST, null,
             null, "http://localhost:8080/mock-chatbot/chat", Map.of(), Map.of(), Map.of(),
             BodyType.RAW_JSON, Map.of(), null, AuthType.BEARER, Map.of(), java.util.List.of(),
             ResponseFormat.JSON, "$.answer", false, null, null, 90, 2, false, null, null);
@@ -230,7 +249,10 @@ class TargetApiConnectorServiceImplTest {
             userRepository(Optional.of(creator), new AtomicReference<>()),
             mapper(mappedResponse),
             ignoredClient(),
-            noOpSecretService());
+            noOpSecretService(),
+            ignoredCurlParser(),
+            new ConnectorSecretDetector(),
+            new ResponseSelectorDetector());
 
     TargetApiConnectorResponse response =
         service.updateConnector(
@@ -302,7 +324,10 @@ class TargetApiConnectorServiceImplTest {
             userRepository(Optional.of(creator), new AtomicReference<>()),
             mapper(null),
             client(clientRequest),
-            secretServiceWithSecrets(Map.of("CHATBOT_API_TOKEN", "real-token-value")));
+            secretServiceWithSecrets(Map.of("CHATBOT_API_TOKEN", "real-token-value")),
+            ignoredCurlParser(),
+            new ConnectorSecretDetector(),
+            new ResponseSelectorDetector());
 
     TestTargetConnectorResponse response =
         service.testConnector(
@@ -466,6 +491,10 @@ class TargetApiConnectorServiceImplTest {
         return itemResponse;
       }
     };
+  }
+
+  private CurlParser ignoredCurlParser() {
+    return new CurlParser(new com.fasterxml.jackson.databind.ObjectMapper());
   }
 
   private TargetConnectorClient ignoredClient() {

@@ -55,6 +55,7 @@ class TargetApiConnectorMapperTest {
     assertThat(response.publicId()).isEqualTo(connector.getPublicId());
     assertThat(response.projectPublicId()).isEqualTo(project.getPublicId());
     assertThat(response.name()).isEqualTo("Mock Health Chatbot");
+    assertThat(response.protocol()).isEqualTo(me.nghlong3004.vqc.api.targetconnector.enums.ConnectorProtocol.HTTP);
     assertThat(response.method()).isEqualTo(HttpMethodType.POST);
     assertThat(response.headers()).containsEntry("Authorization", "Bearer {{secret:CHATBOT_API_TOKEN}}");
     assertThat(response.authConfig()).containsEntry("tokenRef", "{{secret:CHATBOT_API_TOKEN}}");

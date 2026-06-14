@@ -2,9 +2,11 @@ package me.nghlong3004.vqc.api.targetconnector.service;
 
 import java.util.UUID;
 import me.nghlong3004.vqc.api.targetconnector.entity.TargetApiConnector;
+import me.nghlong3004.vqc.api.targetconnector.request.CreateConnectorFromCurlRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateTargetApiConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.TestTargetConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.UpdateTargetApiConnectorRequest;
+import me.nghlong3004.vqc.api.targetconnector.response.CreateConnectorFromCurlResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorPageResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TestTargetConnectorResponse;
@@ -68,4 +70,16 @@ public interface TargetApiConnectorService {
    */
   TestTargetConnectorResponse testConnector(
       UUID connectorPublicId, TestTargetConnectorRequest request, String username);
+
+  /**
+   * Creates a {@link TargetApiConnector} by parsing a raw cURL command, auto-calling the target
+   * API for verification, and saving the connector only on success.
+   *
+   * @param projectPublicId public project identifier
+   * @param request validated create-from-cURL request
+   * @param username normalized or raw username from the authenticated principal
+   * @return public {@link CreateConnectorFromCurlResponse} with connector detail and test result
+   */
+  CreateConnectorFromCurlResponse createConnectorFromCurl(
+      UUID projectPublicId, CreateConnectorFromCurlRequest request, String username);
 }

@@ -83,6 +83,14 @@ public enum ErrorCode {
       HttpStatus.NOT_FOUND.value(),
       "TARGET_CONNECTOR_NOT_FOUND",
       "No target connector found with the provided ID."),
+  CURL_PARSE_ERROR(
+      HttpStatus.BAD_REQUEST.value(),
+      "CURL_PARSE_ERROR",
+      "Failed to parse the provided cURL command."),
+  TARGET_CONNECTOR_TEST_FAILED(
+      422,
+      "TARGET_CONNECTOR_TEST_FAILED",
+      "The target API call failed. Please verify your cURL command and try again."),
   REQUIREMENT_NOT_FOUND(
       HttpStatus.NOT_FOUND.value(),
       "REQUIREMENT_NOT_FOUND",

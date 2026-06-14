@@ -11,9 +11,11 @@ import java.security.Principal;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import me.nghlong3004.vqc.api.exception.ErrorResponse;
+import me.nghlong3004.vqc.api.targetconnector.request.CreateConnectorFromCurlRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateTargetApiConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.TestTargetConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.UpdateTargetApiConnectorRequest;
+import me.nghlong3004.vqc.api.targetconnector.response.CreateConnectorFromCurlResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorPageResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TestTargetConnectorResponse;
@@ -84,6 +86,61 @@ public class TargetApiConnectorController {
       @Valid @RequestBody CreateTargetApiConnectorRequest request,
       Principal principal) {
     return targetApiConnectorService.createConnector(projectPublicId, request, principal.getName());
+  }
+
+  @Operation(
+      summary = "Create connector from cURL",
+      description =
+          "Parses a raw cURL command, auto-detects method/URL/headers/body/auth, test-calls"
+              + " the target API, and saves the connector only on success.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "201",
+        description = "Connector created and test call succeeded",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = CreateConnectorFromCurlResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Validation failed or cURL parse error",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Authentication is required",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Project not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "422",
+        description = "Target API call failed",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @PostMapping(
+      value = "/api/v1/projects/{projectPublicId}/target-api-connectors/from-curl",
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  @ResponseStatus(HttpStatus.CREATED)
+  public CreateConnectorFromCurlResponse createConnectorFromCurl(
+      @PathVariable UUID projectPublicId,
+      @Valid @RequestBody CreateConnectorFromCurlRequest request,
+      Principal principal) {
+    return targetApiConnectorService.createConnectorFromCurl(
+        projectPublicId, request, principal.getName());
   }
 
   @Operation(summary = "List target connectors", description = "Lists connectors under a project.")

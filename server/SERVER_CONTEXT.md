@@ -115,6 +115,7 @@ Implemented API slices after auth:
   - `ConnectorSecretService` encrypts raw secret values with AES-256-GCM (`AesGcmEncryptor`) and persists them in `connector_secrets` table. Decryption is used at connector test-run time and evaluation time.
   - Test-run renders `{{question}}`, `{{precondition}}`, and `{{metadata}}`, resolves `{{secret:KEY}}` placeholders to real decrypted values before calling the configured API, and returns masked preview headers. Test-runs now work for authed connectors.
   - `RestClient.Builder` is provided by `ApplicationConfig`; `timeoutSeconds` is accepted but not yet wired into a per-request HTTP timeout.
+  - **Create from cURL**: `POST /api/v1/projects/{projectPublicId}/target-api-connectors/from-curl` accepts `{name, rawCurl}` (+ optional description/responseSelector/timeoutSeconds/retryCount). `CurlParser` extracts method/URL/headers/body. `ConnectorSecretDetector` auto-detects and masks sensitive headers with `{{secret:KEY}}` placeholders. Backend test-calls the target API; saves only on success (422 if test fails). `ResponseSelectorDetector` auto-guesses the response JSONPath selector from common keys. Minimal input: just `name` + `rawCurl`.
 - Requirements:
   - Create/list are nested under `/api/v1/projects/{projectPublicId}/requirements`.
   - Detail/update use `/api/v1/requirements/{requirementPublicId}`.
@@ -275,7 +276,7 @@ Focused tests:
 - OAuth focused suite:
   `rtk bash mvnw -Dtest=AuthProviderTest,OAuth2UserProfileExtractorTest,OAuth2UserProfileServiceTest,ProviderAwareOAuth2UserServiceTest,GithubEmailOAuth2UserEnricherTest,OAuth2LoginSuccessHandlerTest test`
 - Project/connector/mock focused suite:
-  `rtk bash mvnw -Dtest=ProjectControllerTest,ProjectServiceImplTest,ProjectMapperTest,MockChatbotControllerTest,MockChatbotServiceImplTest,TargetApiConnectorControllerTest,TargetApiConnectorServiceImplTest,TargetApiConnectorMapperTest test`
+  `rtk bash mvnw -Dtest=ProjectControllerTest,ProjectServiceImplTest,ProjectMapperTest,MockChatbotControllerTest,MockChatbotServiceImplTest,TargetApiConnectorControllerTest,TargetApiConnectorServiceImplTest,TargetApiConnectorMapperTest,CurlParserTest,ConnectorSecretDetectorTest,ResponseSelectorDetectorTest test`
 - Requirement focused suite:
   `rtk bash mvnw -Dtest=RequirementControllerTest,RequirementServiceImplTest,RequirementMapperTest test`
 - Dataset/test case focused suite:

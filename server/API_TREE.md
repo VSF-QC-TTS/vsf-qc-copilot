@@ -77,6 +77,8 @@ Auth
 |   |-- /{projectPublicId}/target-api-connectors [auth]
 |   |   |-- POST /
 |   |   |   `-- Tạo connector dưới project; secretValues chỉ được write
+|   |   |-- POST /from-curl
+|   |   |   `-- Parse raw cURL → auto-detect method/URL/headers/body/auth → test-call → save on success
 |   |   `-- GET /
 |   |       `-- List connector của project; pageable/sortable
 |   |
@@ -266,6 +268,8 @@ User
 4. GET  /api/v1/users/me
 5. POST /api/v1/projects
 6. POST /api/v1/projects/{projectPublicId}/target-api-connectors
+6b. POST /api/v1/projects/{projectPublicId}/target-api-connectors/from-curl
+    `-- alternative: paste raw cURL → auto-parse, test-call, save on success
 7. POST /api/v1/target-api-connectors/{connectorPublicId}/test-runs
 8. POST /api/v1/projects/{projectPublicId}/requirements
 9. POST /api/v1/projects/{projectPublicId}/datasets

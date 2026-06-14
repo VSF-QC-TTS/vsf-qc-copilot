@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import me.nghlong3004.vqc.api.exception.ErrorCode;
 import me.nghlong3004.vqc.api.exception.ResourceException;
 import me.nghlong3004.vqc.api.project.entity.Project;
@@ -12,6 +13,11 @@ import me.nghlong3004.vqc.api.project.repository.ProjectRepository;
 import me.nghlong3004.vqc.api.targetconnector.client.TargetConnectorClient;
 import me.nghlong3004.vqc.api.targetconnector.client.TargetConnectorClientRequest;
 import me.nghlong3004.vqc.api.targetconnector.client.TargetConnectorClientResult;
+import me.nghlong3004.vqc.api.targetconnector.curl.ConnectorSecretDetector;
+import me.nghlong3004.vqc.api.targetconnector.curl.CurlParseResult;
+import me.nghlong3004.vqc.api.targetconnector.curl.CurlParser;
+import me.nghlong3004.vqc.api.targetconnector.curl.ResponseSelectorDetector;
+import me.nghlong3004.vqc.api.targetconnector.curl.SecretDetectionResult;
 import me.nghlong3004.vqc.api.targetconnector.entity.TargetApiConnector;
 import me.nghlong3004.vqc.api.targetconnector.enums.AuthType;
 import me.nghlong3004.vqc.api.targetconnector.enums.BodyType;
@@ -19,9 +25,11 @@ import me.nghlong3004.vqc.api.targetconnector.enums.ConnectorProtocol;
 import me.nghlong3004.vqc.api.targetconnector.enums.ResponseFormat;
 import me.nghlong3004.vqc.api.targetconnector.mapper.TargetApiConnectorMapper;
 import me.nghlong3004.vqc.api.targetconnector.repository.TargetApiConnectorRepository;
+import me.nghlong3004.vqc.api.targetconnector.request.CreateConnectorFromCurlRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateTargetApiConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.TestTargetConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.UpdateTargetApiConnectorRequest;
+import me.nghlong3004.vqc.api.targetconnector.response.CreateConnectorFromCurlResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorListItemResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorPageResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorResponse;
@@ -40,6 +48,7 @@ import org.springframework.transaction.annotation.Transactional;
  * @author nghlong3004 (Long Nguyen Hoang)
  * @since 6/10/2026
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TargetApiConnectorServiceImpl implements TargetApiConnectorService {
@@ -50,6 +59,9 @@ public class TargetApiConnectorServiceImpl implements TargetApiConnectorService 
   private final TargetApiConnectorMapper targetApiConnectorMapper;
   private final TargetConnectorClient targetConnectorClient;
   private final ConnectorSecretService connectorSecretService;
+  private final CurlParser curlParser;
+  private final ConnectorSecretDetector connectorSecretDetector;
+  private final ResponseSelectorDetector responseSelectorDetector;
 
   @Override
   @Transactional
@@ -227,6 +239,123 @@ public class TargetApiConnectorServiceImpl implements TargetApiConnectorService 
         clientResult.rawResponse(),
         extractAnswer(clientResult.rawResponse(), connector.getResponseSelector()),
         clientResult.latencyMs());
+  }
+
+  @Override
+  @Transactional
+  public CreateConnectorFromCurlResponse createConnectorFromCurl(
+      UUID projectPublicId, CreateConnectorFromCurlRequest request, String username) {
+    User creator = findCreator(username);
+    Project project = findProject(projectPublicId, creator);
+
+    // 1. Parse cURL
+    CurlParseResult parsed = curlParser.parse(request.rawCurl());
+
+    // 2. Detect secrets in headers
+    SecretDetectionResult secretResult = connectorSecretDetector.detect(parsed.headers());
+
+    // 3. Determine auth type from headers
+    AuthType authType = detectAuthType(parsed.headers());
+
+    // 4. Build body fields
+    BodyType bodyType = parsed.isJsonBody() ? BodyType.RAW_JSON : (parsed.bodyRaw() != null ? BodyType.RAW_TEXT : BodyType.NONE);
+    Map<String, Object> bodyTemplate = parsed.bodyJson();
+    String bodyTemplateText = parsed.isJsonBody() ? null : parsed.bodyRaw();
+
+    // 5. Sanitize headers as Map<String, Object>
+    Map<String, Object> sanitizedHeaders = new LinkedHashMap<>(secretResult.sanitizedHeaders());
+
+    // 6. Build timeout/retry
+    int timeoutSeconds = defaultValue(request.timeoutSeconds(), 60);
+    int retryCount = defaultValue(request.retryCount(), 1);
+
+    // 7. Test-call the target API (using raw headers so secrets resolve)
+    Map<String, Object> rawHeaders = new LinkedHashMap<>(parsed.headers());
+    TargetConnectorClientRequest clientRequest =
+        new TargetConnectorClientRequest(
+            parsed.method(),
+            parsed.url(),
+            rawHeaders,
+            parsed.isJsonBody() ? parsed.bodyJson() : parsed.bodyRaw());
+
+    TargetConnectorClientResult clientResult;
+    try {
+      clientResult = targetConnectorClient.execute(clientRequest, timeoutSeconds, retryCount);
+    } catch (Exception ex) {
+      log.warn("cURL test-call failed for URL {}: {}", parsed.url(), ex.getMessage());
+      throw new ResourceException(ErrorCode.TARGET_CONNECTOR_TEST_FAILED);
+    }
+
+    // 8. Detect response selector
+    String responseSelector =
+        (request.responseSelector() != null && !request.responseSelector().isBlank())
+            ? request.responseSelector().trim()
+            : responseSelectorDetector.detect(clientResult.rawResponse());
+
+    // 9. Build and save connector
+    TargetApiConnector connector =
+        TargetApiConnector.builder()
+            .project(project)
+            .name(request.name().trim())
+            .description(trimToNull(request.description()))
+            .rawCurl(request.rawCurl())
+            .protocol(ConnectorProtocol.HTTP)
+            .method(parsed.method())
+            .url(parsed.url())
+            .headers(sanitizedHeaders)
+            .bodyType(bodyType)
+            .bodyTemplate(bodyTemplate)
+            .bodyTemplateText(bodyTemplateText)
+            .authType(authType)
+            .secretRefs(secretRefs(secretResult.secretValues()))
+            .responseFormat(ResponseFormat.JSON)
+            .responseSelector(responseSelector)
+            .streaming(false)
+            .timeoutSeconds(timeoutSeconds)
+            .retryCount(retryCount)
+            .active(true)
+            .createdBy(creator)
+            .build();
+    TargetApiConnector saved = targetApiConnectorRepository.save(connector);
+    connectorSecretService.saveSecrets(saved, secretResult.secretValues());
+
+    // 10. Build response
+    TargetApiConnectorResponse connectorResponse = targetApiConnectorMapper.toResponse(saved);
+    TargetConnectorRequestPreview preview =
+        new TargetConnectorRequestPreview(
+            parsed.method(), parsed.url(), maskHeaders(rawHeaders), clientRequest.body());
+    String extractedAnswer =
+        extractAnswer(clientResult.rawResponse(), responseSelector);
+
+    return new CreateConnectorFromCurlResponse(
+        connectorResponse,
+        preview,
+        clientResult.rawResponse(),
+        extractedAnswer,
+        clientResult.latencyMs());
+  }
+
+  private AuthType detectAuthType(Map<String, String> headers) {
+    if (headers == null) {
+      return AuthType.NONE;
+    }
+    for (Map.Entry<String, String> entry : headers.entrySet()) {
+      String name = entry.getKey().toLowerCase();
+      if (name.equals("authorization")) {
+        String value = entry.getValue().toLowerCase();
+        if (value.startsWith("bearer ")) {
+          return AuthType.BEARER;
+        }
+        if (value.startsWith("basic ")) {
+          return AuthType.BASIC;
+        }
+        return AuthType.CUSTOM_HEADER;
+      }
+      if (name.contains("api-key") || name.contains("apikey") || name.contains("x-api-key")) {
+        return AuthType.API_KEY;
+      }
+    }
+    return AuthType.NONE;
   }
 
   private TargetApiConnector findConnector(UUID connectorPublicId, String username) {

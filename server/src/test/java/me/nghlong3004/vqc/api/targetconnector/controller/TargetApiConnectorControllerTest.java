@@ -15,11 +15,14 @@ import java.util.UUID;
 import me.nghlong3004.vqc.api.exception.GlobalException;
 import me.nghlong3004.vqc.api.targetconnector.enums.AuthType;
 import me.nghlong3004.vqc.api.targetconnector.enums.BodyType;
+import me.nghlong3004.vqc.api.targetconnector.enums.ConnectorProtocol;
 import me.nghlong3004.vqc.api.targetconnector.enums.HttpMethodType;
 import me.nghlong3004.vqc.api.targetconnector.enums.ResponseFormat;
+import me.nghlong3004.vqc.api.targetconnector.request.CreateConnectorFromCurlRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateTargetApiConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.TestTargetConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.UpdateTargetApiConnectorRequest;
+import me.nghlong3004.vqc.api.targetconnector.response.CreateConnectorFromCurlResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.SecretRefResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorListItemResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorPageResponse;
@@ -73,6 +76,7 @@ class TargetApiConnectorControllerTest {
             UUID.fromString(PROJECT_ID),
             "Mock Health Chatbot",
             "Local mock chatbot for demo.",
+            ConnectorProtocol.HTTP,
             HttpMethodType.POST,
             "http://localhost:8080",
             "/mock-chatbot/chat",
@@ -221,6 +225,7 @@ class TargetApiConnectorControllerTest {
             UUID.fromString(PROJECT_ID),
             "Mock Health Chatbot",
             "Local mock chatbot for demo.",
+            ConnectorProtocol.HTTP,
             HttpMethodType.POST,
             "http://localhost:8080",
             "/mock-chatbot/chat",
@@ -282,6 +287,7 @@ class TargetApiConnectorControllerTest {
             UUID.fromString(PROJECT_ID),
             "Mock Health Chatbot v2",
             null,
+            ConnectorProtocol.HTTP,
             HttpMethodType.POST,
             "http://localhost:8080",
             "/mock-chatbot/chat",
@@ -491,6 +497,14 @@ class TargetApiConnectorControllerTest {
       RecordingTargetApiConnectorService.testRequest = request;
       RecordingTargetApiConnectorService.username = username;
       return testResponse;
+    }
+
+    @Override
+    public CreateConnectorFromCurlResponse createConnectorFromCurl(
+        UUID projectPublicId, CreateConnectorFromCurlRequest request, String username) {
+      RecordingTargetApiConnectorService.projectPublicId = projectPublicId;
+      RecordingTargetApiConnectorService.username = username;
+      return null;
     }
 
     private static void reset() {

@@ -27,6 +27,7 @@ public class TargetApiConnectorMapper {
         connector.getProject().getPublicId(),
         connector.getName(),
         connector.getDescription(),
+        connector.getProtocol(),
         connector.getMethod(),
         connector.getBaseUrl(),
         connector.getPath(),

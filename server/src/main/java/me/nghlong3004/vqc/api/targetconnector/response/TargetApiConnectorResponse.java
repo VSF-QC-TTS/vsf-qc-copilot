@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.UUID;
 import me.nghlong3004.vqc.api.targetconnector.enums.AuthType;
 import me.nghlong3004.vqc.api.targetconnector.enums.BodyType;
+import me.nghlong3004.vqc.api.targetconnector.enums.ConnectorProtocol;
 import me.nghlong3004.vqc.api.targetconnector.enums.HttpMethodType;
 import me.nghlong3004.vqc.api.targetconnector.enums.ResponseFormat;
 import me.nghlong3004.vqc.api.targetconnector.enums.StreamingType;
@@ -21,6 +22,7 @@ public record TargetApiConnectorResponse(
     @Schema(description = "Public project identifier.") UUID projectPublicId,
     @Schema(description = "Connector name.") String name,
     @Schema(description = "Connector description.", nullable = true) String description,
+    @Schema(description = "Connector protocol.", example = "HTTP") ConnectorProtocol protocol,
     @Schema(description = "HTTP method.", example = "POST") HttpMethodType method,
     @Schema(description = "Base URL.", nullable = true) String baseUrl,
     @Schema(description = "Request path.", nullable = true) String path,
