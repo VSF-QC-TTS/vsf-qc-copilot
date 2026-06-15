@@ -18,7 +18,7 @@ export const createConnectorSchema = z.object({
   description: z.string().max(1000, 'Description too long').optional().or(z.literal('')),
   protocol: z.string().optional().or(z.literal('')),
   method: z.enum(HTTP_METHODS, { message: 'HTTP method is required' }),
-  baseUrl: z.string().url('Must be a valid URL'),
+  baseUrl: z.url('Must be a valid URL'),
   path: z.string().optional().or(z.literal('')),
   bodyType: z.enum(BODY_TYPES).optional(),
   bodyTemplate: z.string().optional().or(z.literal('')),

@@ -196,7 +196,7 @@ export default function JudgeModelsPage() {
     }));
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: React.SyntheticEvent) {
     event.preventDefault();
     setServerError(null);
     createMutation.mutate(form);

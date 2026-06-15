@@ -5,7 +5,7 @@ export const loginSchema = z.object({
   email: z
     .string()
     .min(1, "Email is required")
-    .email("Invalid email address"),
+    .pipe(z.email("Invalid email address")),
   password: z
     .string()
     .min(1, "Password is required"),
@@ -19,7 +19,7 @@ export const registerSchema = z
     email: z
       .string()
       .min(1, "Email is required")
-      .email("Invalid email address"),
+      .pipe(z.email("Invalid email address")),
     fullName: z
       .string()
       .min(1, "Display name is required")
@@ -46,7 +46,7 @@ export const forgotPasswordSchema = z.object({
   email: z
     .string()
     .min(1, "Email is required")
-    .email("Invalid email address"),
+    .pipe(z.email("Invalid email address")),
 });
 
 export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;

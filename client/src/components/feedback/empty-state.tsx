@@ -1,5 +1,5 @@
 import * as React from "react";
-import { MagnifyingGlass } from "@phosphor-icons/react/dist/ssr";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/ssr";
 
 import { cn } from "@/lib/utils";
 
@@ -31,7 +31,7 @@ export function EmptyState({
       )}
     >
       <div className="text-muted-foreground/60">
-        {icon ?? <MagnifyingGlass size={48} weight="duotone" />}
+        {icon ?? <MagnifyingGlassIcon size={48} weight="duotone" />}
       </div>
 
       <div className="space-y-1">
