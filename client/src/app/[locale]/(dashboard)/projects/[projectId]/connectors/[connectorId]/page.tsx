@@ -21,6 +21,7 @@ import { PageShell } from '@/components/layout/page-shell';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Skeleton, SkeletonText } from '@/components/feedback/loading-skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { motion, AnimatePresence } from 'motion/react';
 import { apiClient } from '@/lib/api/client';
 import { isApiError } from '@/lib/utils/error-messages';
 import {
@@ -365,10 +366,19 @@ export default function ConnectorDetailPage() {
       {/* ================================================================ */}
       {/* Read mode / Edit mode */}
       {/* ================================================================ */}
-      {editing ? (
-        /* ---- EDIT FORM ---- */
-        <form onSubmit={handleSubmit(onSaveEdit)} className="space-y-6">
-          {/* Basic Info */}
+      <AnimatePresence mode="wait">
+        {editing ? (
+          /* ---- EDIT FORM ---- */
+          <motion.form
+            key="edit-form"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            onSubmit={handleSubmit(onSaveEdit)}
+            className="space-y-6"
+          >
+            {/* Basic Info */}
           <FormSection title={t('sections.basicInfo')}>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
@@ -533,11 +543,19 @@ export default function ConnectorDetailPage() {
               <FloppyDiskIcon weight="bold" />
               {tCommon('save')}
             </Button>
-          </div>
-        </form>
-      ) : (
-        /* ---- READ MODE ---- */
-        <Tabs defaultValue="overview" className="w-full space-y-6">
+            </div>
+          </motion.form>
+        ) : (
+          /* ---- READ MODE ---- */
+          <motion.div
+            key="read-mode"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="w-full"
+          >
+            <Tabs defaultValue="overview" className="w-full space-y-6">
           <TabsList className="w-full justify-start h-auto p-1 bg-muted/50 rounded-lg overflow-x-auto flex-nowrap">
             <TabsTrigger value="overview" className="rounded-md">Overview & Config</TabsTrigger>
             <TabsTrigger value="test" className="rounded-md">Test Run</TabsTrigger>
@@ -888,10 +906,12 @@ export default function ConnectorDetailPage() {
                   )}
                 </div>
               </div>
-            </div>
-          </TabsContent>
-        </Tabs>
-      )}
+              </div>
+            </TabsContent>
+          </Tabs>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </PageShell>
   );
 }
