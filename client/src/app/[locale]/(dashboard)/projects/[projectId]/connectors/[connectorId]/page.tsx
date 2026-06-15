@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { PageShell } from '@/components/layout/page-shell';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Skeleton, SkeletonText } from '@/components/feedback/loading-skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { apiClient } from '@/lib/api/client';
 import { isApiError } from '@/lib/utils/error-messages';
 import {
@@ -51,6 +52,7 @@ type ConnectorDetail = {
   rawCurl: string | null;
   protocol: string | null;
   method: string;
+  url: string;
   baseUrl: string;
   path: string | null;
   headers: Record<string, string | number | boolean> | null;
@@ -150,9 +152,27 @@ function JsonBlock({ value }: { value: unknown }) {
     typeof value === 'string' ? value : JSON.stringify(value, null, 2);
 
   return (
-    <pre className="max-h-96 overflow-auto rounded-md bg-muted p-3 font-mono text-xs">
+    <pre className="max-h-96 overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs">
       {rendered}
     </pre>
+  );
+}
+
+function MethodBadge({ method }: { method: string }) {
+  const colors: Record<string, string> = {
+    GET: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+    POST: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+    PUT: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
+    DELETE: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+    PATCH: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+  };
+  const m = method?.toUpperCase() || 'GET';
+  const color = colors[m] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+
+  return (
+    <span className={cn('px-2 py-0.5 rounded text-xs font-medium font-mono', color)}>
+      {m}
+    </span>
   );
 }
 
@@ -517,120 +537,169 @@ export default function ConnectorDetailPage() {
         </form>
       ) : (
         /* ---- READ MODE ---- */
-        <div className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            <FormSection title={t('sections.basicInfo')}>
-              <div className="grid gap-4">
-                <ReadOnlyField label={t('fields.name')} value={connector.name} />
-                <ReadOnlyField
-                  label={t('fields.description')}
-                  value={connector.description}
-                />
-                <ReadOnlyField
-                  label={t('fields.status')}
-                  value={
-                    <StatusBadge
-                      status={connector.active ? 'ACTIVE' : 'INACTIVE'}
-                    />
-                  }
-                />
-                <div className="grid gap-4 sm:grid-cols-2">
+        <Tabs defaultValue="overview" className="w-full space-y-6">
+          <TabsList className="w-full justify-start h-auto p-1 bg-muted/50 rounded-lg overflow-x-auto flex-nowrap">
+            <TabsTrigger value="overview" className="rounded-md">Overview & Config</TabsTrigger>
+            <TabsTrigger value="test" className="rounded-md">Test Run</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6 m-0 outline-none">
+            <div className="grid gap-6 lg:grid-cols-2">
+              <FormSection title={t('sections.basicInfo')}>
+                <div className="grid gap-4">
+                  <ReadOnlyField label={t('fields.name')} value={connector.name} />
                   <ReadOnlyField
-                    label={t('fields.method')}
-                    value={connector.method}
-                    mono
+                    label={t('fields.description')}
+                    value={connector.description}
                   />
                   <ReadOnlyField
-                    label={t('fields.protocol')}
-                    value={connector.protocol}
-                    mono
+                    label={t('fields.status')}
+                    value={
+                      <StatusBadge
+                        status={connector.active ? 'ACTIVE' : 'INACTIVE'}
+                      />
+                    }
                   />
-                  <div className="sm:col-span-2">
+                  <div className="grid gap-4 sm:grid-cols-2">
                     <ReadOnlyField
-                      label={t('fields.url')}
-                      value={connector.baseUrl + (connector.path ?? '')}
+                      label={t('fields.method')}
+                      value={<MethodBadge method={connector.method} />}
+                    />
+                    <ReadOnlyField
+                      label={t('fields.protocol')}
+                      value={connector.protocol}
                       mono
                     />
-                  </div>
-                </div>
-              </div>
-            </FormSection>
-
-            <FormSection title={t('sections.authentication')}>
-              <div className="grid gap-4">
-                <ReadOnlyField
-                  label={t('fields.authType')}
-                  value={connector.authType}
-                  mono
-                />
-                {connector.secretRefs && connector.secretRefs.length > 0 && (
-                  <div className="space-y-1">
-                    <span className="text-sm font-medium text-muted-foreground">
-                      {t('fields.secrets')}
-                    </span>
-                    <div className="flex flex-col gap-2">
-                      {connector.secretRefs.map((ref) => (
-                        <div
-                          key={ref.secretKey}
-                          className="flex items-center gap-2 font-mono text-xs"
-                        >
-                          <span className="font-semibold text-foreground">
-                            {ref.secretKey}
-                          </span>
-                          <span className="text-muted-foreground">
-                            {ref.maskedValue}
-                          </span>
-                        </div>
-                      ))}
+                    <div className="sm:col-span-2">
+                      <ReadOnlyField
+                        label={t('fields.url')}
+                        value={connector.url || (connector.baseUrl + (connector.path ?? ''))}
+                        mono
+                      />
                     </div>
                   </div>
-                )}
-                {connector.authConfig && Object.keys(connector.authConfig).length > 0 && (
+                </div>
+              </FormSection>
+
+              <FormSection title={t('sections.authentication')}>
+                <div className="grid gap-4">
+                  <ReadOnlyField
+                    label={t('fields.authType')}
+                    value={connector.authType}
+                    mono
+                  />
+                  {connector.secretRefs && connector.secretRefs.length > 0 && (
+                    <div className="space-y-1">
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {t('fields.secrets')}
+                      </span>
+                      <div className="flex flex-col gap-2 overflow-x-auto">
+                        {connector.secretRefs.map((ref) => (
+                          <div
+                            key={ref.secretKey}
+                            className="flex items-center gap-2 font-mono text-xs whitespace-nowrap"
+                          >
+                            <span className="font-semibold text-foreground">
+                              {ref.secretKey}
+                            </span>
+                            <span className="text-muted-foreground">
+                              {ref.maskedValue}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {connector.authConfig && Object.keys(connector.authConfig).length > 0 && (
+                    <div className="space-y-1">
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {t('fields.authConfig')}
+                      </span>
+                      <JsonBlock value={connector.authConfig} />
+                    </div>
+                  )}
+                </div>
+              </FormSection>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-2">
+              <FormSection title={t('sections.requestConfig')}>
+                <div className="grid gap-4">
                   <div className="space-y-1">
                     <span className="text-sm font-medium text-muted-foreground">
-                      {t('fields.authConfig')}
+                      {t('fields.headers')}
                     </span>
-                    <JsonBlock value={connector.authConfig} />
+                    <JsonBlock value={connector.headers} />
                   </div>
-                )}
-              </div>
-            </FormSection>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2">
-            <FormSection title={t('sections.requestConfig')}>
-              <div className="grid gap-4">
-                <div className="space-y-1">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    {t('fields.headers')}
-                  </span>
-                  <JsonBlock value={connector.headers} />
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {t('fields.queryParams')}
+                    </span>
+                    <JsonBlock value={connector.queryParams} />
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    {t('fields.queryParams')}
-                  </span>
-                  <JsonBlock value={connector.queryParams} />
-                </div>
-              </div>
-            </FormSection>
+              </FormSection>
 
-            <FormSection title={t('sections.bodyTemplate')}>
-              <div className="grid gap-4">
-                <ReadOnlyField
-                  label={t('fields.bodyType')}
-                  value={connector.bodyType}
-                  mono
-                />
+              <FormSection title={t('sections.bodyTemplate')}>
+                <div className="grid gap-4">
+                  <ReadOnlyField
+                    label={t('fields.bodyType')}
+                    value={connector.bodyType}
+                    mono
+                  />
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {t('fields.bodyTemplate')}
+                    </span>
+                    {connector.bodyType === 'RAW_JSON' ? (
+                      <JsonBlock value={connector.bodyTemplate} />
+                    ) : connector.bodyTemplateText ? (
+                      <pre className="max-h-96 overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs">
+                        {connector.bodyTemplateText}
+                      </pre>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        {tCommon('notAvailable')}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </FormSection>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-2">
+              <FormSection title={t('sections.advanced')}>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <ReadOnlyField
+                    label={t('fields.responseFormat')}
+                    value={connector.responseFormat}
+                    mono
+                  />
+                  <ReadOnlyField
+                    label={t('fields.responseSelector')}
+                    value={connector.responseSelector}
+                    mono
+                  />
+                  <ReadOnlyField
+                    label={t('fields.timeoutSeconds')}
+                    value={`${connector.timeoutSeconds}s`}
+                  />
+                  <ReadOnlyField
+                    label={t('fields.retryCount')}
+                    value={connector.retryCount}
+                  />
+                  <ReadOnlyField
+                    label={t('fields.isStreaming')}
+                    value={connector.isStreaming ? 'Yes' : 'No'}
+                  />
+                </div>
+              </FormSection>
+
+              <FormSection title={t('rawCurl')}>
                 <div className="space-y-1">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    {t('fields.bodyTemplate')}
-                  </span>
-                  {connector.bodyType === 'RAW_JSON' ? (
-                    <JsonBlock value={connector.bodyTemplate} />
-                  ) : connector.bodyTemplateText ? (
-                    <pre className="max-h-96 overflow-auto rounded-md bg-muted p-3 font-mono text-xs">
-                      {connector.bodyTemplateText}
+                  {connector.rawCurl ? (
+                    <pre className="max-h-96 overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs whitespace-pre-wrap break-all">
+                      {connector.rawCurl}
                     </pre>
                   ) : (
                     <p className="text-sm text-muted-foreground">
@@ -638,216 +707,191 @@ export default function ConnectorDetailPage() {
                     </p>
                   )}
                 </div>
-              </div>
-            </FormSection>
-          </div>
-
-          <FormSection title={t('sections.advanced')}>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <ReadOnlyField
-                label={t('fields.responseFormat')}
-                value={connector.responseFormat}
-                mono
-              />
-              <ReadOnlyField
-                label={t('fields.responseSelector')}
-                value={connector.responseSelector}
-                mono
-              />
-              <ReadOnlyField
-                label={t('fields.timeoutSeconds')}
-                value={`${connector.timeoutSeconds}s`}
-              />
-              <ReadOnlyField
-                label={t('fields.retryCount')}
-                value={connector.retryCount}
-              />
-              <ReadOnlyField
-                label={t('fields.isStreaming')}
-                value={connector.isStreaming ? 'Yes' : 'No'}
-              />
+              </FormSection>
             </div>
-          </FormSection>
-        </div>
-      )}
+          </TabsContent>
 
-      {/* ================================================================ */}
-      {/* TEST RUN SECTION */}
-      {/* ================================================================ */}
-      <div className="mt-8">
-        <h3 className="mb-4 text-lg font-semibold tracking-tight">
-          {t('testRun.title')}
-        </h3>
-        <p className="mb-6 text-sm text-muted-foreground">
-          {t('testRun.description')}
-        </p>
+          <TabsContent value="test" className="space-y-6 m-0 outline-none">
+            <div className="mt-2">
+              <h3 className="mb-4 text-lg font-semibold tracking-tight">
+                {t('testRun.title')}
+              </h3>
+              <p className="mb-6 text-sm text-muted-foreground">
+                {t('testRun.description')}
+              </p>
 
-        <div className="grid gap-8 lg:grid-cols-2">
-          {/* Form Side */}
-          <div className="rounded-lg border bg-card p-6">
-            <form
-              onSubmit={testForm.handleSubmit(onTestRun)}
-              className="space-y-4"
-            >
-              <div className="space-y-2">
-                <label
-                  htmlFor="tr-question"
-                  className="text-sm font-medium leading-none text-foreground"
-                >
-                  {t('testRun.question')}
-                </label>
-                <textarea
-                  id="tr-question"
-                  disabled={testRunning}
-                  placeholder={t('testRun.questionPlaceholder')}
-                  rows={3}
-                  className={cn(
-                    textareaClassName,
-                    testForm.formState.errors.question &&
-                      'border-destructive focus-visible:ring-destructive',
-                  )}
-                  {...testForm.register('question')}
-                />
-                {testForm.formState.errors.question && (
-                  <p className="text-sm text-destructive">
-                    {testForm.formState.errors.question.message}
-                  </p>
-                )}
-              </div>
+              <div className="grid gap-8 lg:grid-cols-2">
+                {/* Form Side */}
+                <div className="rounded-lg border bg-card p-6 shadow-sm">
+                  <form
+                    onSubmit={testForm.handleSubmit(onTestRun)}
+                    className="space-y-4"
+                  >
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="tr-question"
+                        className="text-sm font-medium leading-none text-foreground"
+                      >
+                        {t('testRun.question')}
+                      </label>
+                      <textarea
+                        id="tr-question"
+                        disabled={testRunning}
+                        placeholder={t('testRun.questionPlaceholder')}
+                        rows={3}
+                        className={cn(
+                          textareaClassName,
+                          testForm.formState.errors.question &&
+                            'border-destructive focus-visible:ring-destructive',
+                        )}
+                        {...testForm.register('question')}
+                      />
+                      {testForm.formState.errors.question && (
+                        <p className="text-sm text-destructive">
+                          {testForm.formState.errors.question.message}
+                        </p>
+                      )}
+                    </div>
 
-              <div className="space-y-2">
-                <label
-                  htmlFor="tr-precondition"
-                  className="text-sm font-medium leading-none text-foreground"
-                >
-                  {t('testRun.precondition')}
-                </label>
-                <textarea
-                  id="tr-precondition"
-                  disabled={testRunning}
-                  placeholder={t('testRun.preconditionPlaceholder')}
-                  rows={2}
-                  className={textareaClassName}
-                  {...testForm.register('precondition')}
-                />
-              </div>
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="tr-precondition"
+                        className="text-sm font-medium leading-none text-foreground"
+                      >
+                        {t('testRun.precondition')}
+                      </label>
+                      <textarea
+                        id="tr-precondition"
+                        disabled={testRunning}
+                        placeholder={t('testRun.preconditionPlaceholder')}
+                        rows={2}
+                        className={textareaClassName}
+                        {...testForm.register('precondition')}
+                      />
+                    </div>
 
-              <div className="space-y-2">
-                <label
-                  htmlFor="tr-metadata"
-                  className="text-sm font-medium leading-none text-foreground"
-                >
-                  {t('testRun.metadata')}
-                </label>
-                <textarea
-                  id="tr-metadata"
-                  disabled={testRunning}
-                  placeholder={t('testRun.metadataPlaceholder')}
-                  rows={2}
-                  className={textareaClassName}
-                  {...testForm.register('metadata')}
-                />
-              </div>
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="tr-metadata"
+                        className="text-sm font-medium leading-none text-foreground"
+                      >
+                        {t('testRun.metadata')}
+                      </label>
+                      <textarea
+                        id="tr-metadata"
+                        disabled={testRunning}
+                        placeholder={t('testRun.metadataPlaceholder')}
+                        rows={2}
+                        className={textareaClassName}
+                        {...testForm.register('metadata')}
+                      />
+                    </div>
 
-              <div className="pt-2">
-                <Button type="submit" disabled={testRunning} className="w-full">
+                    <div className="pt-2">
+                      <Button type="submit" disabled={testRunning} className="w-full shadow-sm hover:shadow-md transition-all">
+                        {testRunning ? (
+                          <SpinnerGapIcon className="animate-spin" weight="bold" />
+                        ) : (
+                          <PlayIcon weight="fill" />
+                        )}
+                        {testRunning ? t('testRun.running') : t('testRun.runButton')}
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Result Side */}
+                <div className="rounded-lg border bg-muted/30 p-6 shadow-inner backdrop-blur-sm">
                   {testRunning ? (
-                    <SpinnerGapIcon className="animate-spin" weight="bold" />
-                  ) : (
-                    <PlayIcon weight="fill" />
-                  )}
-                  {testRunning ? t('testRun.running') : t('testRun.runButton')}
-                </Button>
-              </div>
-            </form>
-          </div>
-
-          {/* Result Side */}
-          <div className="rounded-lg border bg-muted/50 p-6">
-            {testRunning ? (
-              <div className="flex h-full min-h-[200px] flex-col items-center justify-center space-y-4 text-muted-foreground">
-                <SpinnerGapIcon className="size-8 animate-spin" />
-                <p className="text-sm">{t('testRun.running')}</p>
-              </div>
-            ) : testError ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-destructive">
-                  <XIcon className="size-5" weight="bold" />
-                  <h4 className="font-medium">{t('testRun.error')}</h4>
-                </div>
-                <pre className="whitespace-pre-wrap rounded-md bg-destructive/10 p-4 font-mono text-sm text-destructive">
-                  {testError}
-                </pre>
-              </div>
-            ) : testResult ? (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium">
-                    {t('testRun.result')}
-                  </h4>
-                  <StatusBadge
-                    status={testResult.error ? 'FAILED' : 'COMPLETED'}
-                  />
-                </div>
-
-                <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {t('testRun.latency')}
-                    </span>
-                    <p className="text-sm font-medium">
-                      {testResult.latencyMs}ms
-                    </p>
-                  </div>
-
-                  {testResult.error && (
-                    <div className="space-y-1.5">
-                      <span className="text-xs font-medium text-muted-foreground">
-                        {t('testRun.errorDetails')}
-                      </span>
-                      <pre className="whitespace-pre-wrap rounded-md border border-destructive/20 bg-destructive/10 p-3 font-mono text-xs text-destructive">
-                        {testResult.error}
+                    <div className="flex h-full min-h-[200px] flex-col items-center justify-center space-y-4 text-muted-foreground">
+                      <SpinnerGapIcon className="size-8 animate-spin" />
+                      <p className="text-sm">{t('testRun.running')}</p>
+                    </div>
+                  ) : testError ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 text-destructive">
+                        <XIcon className="size-5" weight="bold" />
+                        <h4 className="font-medium">{t('testRun.error')}</h4>
+                      </div>
+                      <pre className="whitespace-pre-wrap rounded-md bg-destructive/10 p-4 font-mono text-sm text-destructive overflow-x-auto">
+                        {testError}
                       </pre>
                     </div>
-                  )}
-
-                  <div className="space-y-1.5">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {t('testRun.extractedAnswer')}
-                    </span>
-                    {testResult.extractedAnswer ? (
-                      <div className="rounded-md border bg-background p-3 text-sm">
-                        {testResult.extractedAnswer}
+                  ) : testResult ? (
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between border-b pb-4">
+                        <h4 className="font-medium">
+                          {t('testRun.result')}
+                        </h4>
+                        <StatusBadge
+                          status={testResult.error ? 'FAILED' : 'COMPLETED'}
+                        />
                       </div>
-                    ) : (
-                      <p className="text-sm italic text-muted-foreground">
-                        {t('testRun.noAnswer')}
-                      </p>
-                    )}
-                  </div>
 
-                  <div className="space-y-1.5">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {t('testRun.rawResponse')}
-                    </span>
-                    <pre className="max-h-96 overflow-auto rounded-md border bg-background p-3 font-mono text-xs">
-                      {typeof testResult.rawResponse === 'string'
-                        ? testResult.rawResponse
-                        : JSON.stringify(testResult.rawResponse, null, 2)}
-                    </pre>
-                  </div>
+                      <div className="space-y-5">
+                        <div className="space-y-1.5">
+                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            {t('testRun.latency')}
+                          </span>
+                          <p className="text-sm font-medium bg-background border px-3 py-1.5 rounded-md inline-block shadow-sm">
+                            {testResult.latencyMs}ms
+                          </p>
+                        </div>
+
+                        {testResult.error && (
+                          <div className="space-y-1.5">
+                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                              {t('testRun.errorDetails')}
+                            </span>
+                            <pre className="whitespace-pre-wrap rounded-md border border-destructive/20 bg-destructive/10 p-4 font-mono text-xs text-destructive overflow-x-auto">
+                              {testResult.error}
+                            </pre>
+                          </div>
+                        )}
+
+                        <div className="space-y-1.5">
+                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            {t('testRun.extractedAnswer')}
+                          </span>
+                          {testResult.extractedAnswer ? (
+                            <div className="rounded-md border bg-background p-4 text-sm shadow-sm leading-relaxed whitespace-pre-wrap">
+                              {testResult.extractedAnswer}
+                            </div>
+                          ) : (
+                            <p className="text-sm italic text-muted-foreground bg-background/50 border rounded-md p-4">
+                              {t('testRun.noAnswer')}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            {t('testRun.rawResponse')}
+                          </span>
+                          <pre className="max-h-96 overflow-x-auto rounded-md border bg-background p-4 font-mono text-xs shadow-sm">
+                            {typeof testResult.rawResponse === 'string'
+                              ? testResult.rawResponse
+                              : JSON.stringify(testResult.rawResponse, null, 2)}
+                          </pre>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex h-full min-h-[300px] flex-col items-center justify-center space-y-3">
+                      <div className="rounded-full bg-background p-4 shadow-sm">
+                        <PlayIcon className="size-6 text-muted-foreground/50" weight="duotone" />
+                      </div>
+                      <p className="text-center text-sm text-muted-foreground">
+                        {t('testRun.emptyState')}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
-            ) : (
-              <div className="flex h-full min-h-[200px] items-center justify-center">
-                <p className="text-center text-sm text-muted-foreground">
-                  {t('testRun.emptyState')}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+      )}
     </PageShell>
   );
 }
