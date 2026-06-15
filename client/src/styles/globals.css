@@ -100,37 +100,37 @@
  * Deep zinc backgrounds with electric-blue accent.
  */
 .dark {
-  --background: 240 10% 3.9%;
-  --foreground: 0 0% 98%;
-  --card: 240 10% 3.9%;
-  --card-foreground: 0 0% 98%;
-  --popover: 240 10% 3.9%;
-  --popover-foreground: 0 0% 98%;
+  --background: 222 47% 4%;
+  --foreground: 210 40% 98%;
+  --card: 222 47% 8%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222 47% 8%;
+  --popover-foreground: 210 40% 98%;
   --primary: 214 95% 60%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 240 3.7% 15.9%;
-  --secondary-foreground: 0 0% 98%;
-  --muted: 240 3.7% 15.9%;
-  --muted-foreground: 240 5% 64.9%;
+  --secondary: 222 20% 12%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 222 20% 12%;
+  --muted-foreground: 217 15% 65%;
   --accent: 214 30% 15%;
   --accent-foreground: 214 95% 60%;
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 0 0% 98%;
-  --border: 240 3.7% 15.9%;
-  --input: 240 3.7% 15.9%;
+  --border: 222 20% 14%;
+  --input: 222 20% 14%;
   --ring: 214 95% 60%;
   --chart-1: 220 70% 50%;
   --chart-2: 160 60% 45%;
   --chart-3: 30 80% 55%;
   --chart-4: 280 65% 60%;
   --chart-5: 340 75% 55%;
-  --sidebar: 240 5.9% 10%;
-  --sidebar-foreground: 240 4.8% 95.9%;
+  --sidebar: 222 47% 6%;
+  --sidebar-foreground: 217 15% 85%;
   --sidebar-primary: 214 95% 60%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 214 30% 15%;
   --sidebar-accent-foreground: 214 95% 60%;
-  --sidebar-border: 240 3.7% 15.9%;
+  --sidebar-border: 222 20% 12%;
   --sidebar-ring: 214 95% 60%;
 }
 
