@@ -83,11 +83,19 @@ export default function EvaluationsPage() {
       {
         accessorKey: 'name',
         header: t('columns.name'),
-        cell: ({ row }) => (
-          <span className="font-medium">
-            {row.original.publicId}
-          </span>
-        ),
+        cell: ({ row }) => {
+          const runNumber = totalItems - (page * PAGE_SIZE) - row.index;
+          return (
+            <div className="flex flex-col">
+              <span className="font-medium text-foreground">
+                {t('runNumber', { number: runNumber })}
+              </span>
+              <span className="text-[10px] text-muted-foreground font-mono">
+                {row.original.publicId.slice(0, 8)}
+              </span>
+            </div>
+          );
+        },
       },
       {
         accessorKey: 'status',
@@ -141,7 +149,7 @@ export default function EvaluationsPage() {
         ),
       },
     ],
-    [t, tCommon],
+    [t, tCommon, totalItems, page],
   );
 
   const handleRowClick = (row: EvaluationRunRow) => {

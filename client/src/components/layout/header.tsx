@@ -109,6 +109,9 @@ export function Header() {
         })}
       </div>
 
+      {/* Mobile spacer to push controls to the right */}
+      <div className="flex-1 md:hidden" />
+
       {/* Right side controls */}
       <div className="flex items-center gap-1 pr-4">
         <LanguageSwitcher />

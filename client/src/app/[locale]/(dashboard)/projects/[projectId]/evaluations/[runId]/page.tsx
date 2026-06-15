@@ -19,6 +19,18 @@ import { useJobProgress } from '@/hooks/use-job-progress';
 import { apiClient } from '@/lib/api/client';
 import { useRouter } from '@/i18n/navigation';
 import { ExportDialog } from '@/components/evaluations/export-dialog';
+import type { PageResponse } from '@/lib/api/types';
+import dynamic from 'next/dynamic';
+
+const RunDonutChart = dynamic(() => import('@/components/evaluations/run-donut-chart'), {
+  ssr: false,
+  loading: () => <div className="h-64 w-full animate-pulse bg-muted/20 rounded-lg" />,
+});
+
+const CriteriaBarChart = dynamic(() => import('@/components/evaluations/criteria-bar-chart'), {
+  ssr: false,
+  loading: () => <div className="h-80 w-full animate-pulse bg-muted/20 rounded-lg" />,
+});
 
 // ---------------------------------------------------------------------------
 // Types
@@ -57,6 +69,11 @@ type RunEvent = {
   eventType: string;
   payloadJson: string;
   createdAt: string;
+};
+
+type EvaluationResultRow = {
+  publicId: string;
+  criteriaResultsJson: string | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -118,6 +135,21 @@ export default function RunDetailPage() {
       ),
   });
 
+  // Fetch all runs of this project to find sequential index
+  const { data: runsListData } = useQuery({
+    queryKey: ['evaluation-runs', projectId, 'all'],
+    queryFn: () =>
+      apiClient.get<PageResponse<{ publicId: string }>>(
+        `/api/v1/projects/${projectId}/evaluation-runs?page=0&size=1000&sort=createdAt,asc`,
+      ),
+  });
+
+  const runNumber = React.useMemo(() => {
+    if (!runsListData || !runId) return null;
+    const index = runsListData.items.findIndex((item) => item.publicId === runId);
+    return index !== -1 ? index + 1 : null;
+  }, [runsListData, runId]);
+
   // Fetch events
   const { data: events } = useQuery<RunEvent[]>({
     queryKey: ['evaluation-run-events', runId],
@@ -127,6 +159,53 @@ export default function RunDetailPage() {
       ),
   });
 
+  // Fetch results to aggregate criteria performance
+  const { data: resultsData, isLoading: resultsLoading } = useQuery({
+    queryKey: ['evaluation-results-all', runId],
+    queryFn: () =>
+      apiClient.get<PageResponse<EvaluationResultRow>>(
+        `/api/v1/evaluation-runs/${runId}/results?page=0&size=100`,
+      ),
+    enabled: !!run && (run.status === 'COMPLETED' || run.status === 'FAILED'),
+  });
+
+  const criteriaData = React.useMemo(() => {
+    if (!resultsData) return [];
+    
+    const results = resultsData.items ?? [];
+    const aggMap: Record<string, { total: number; passed: number }> = {};
+    
+    results.forEach((row) => {
+      if (!row.criteriaResultsJson) return;
+      try {
+        const parsed = JSON.parse(row.criteriaResultsJson);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((crit: { name?: string; status?: string; score?: number }) => {
+            const name = crit.name || 'Unknown';
+            const isPassed = crit.status === 'PASS' || crit.score === 1 || crit.score === 100;
+            
+            if (!aggMap[name]) {
+              aggMap[name] = { total: 0, passed: 0 };
+            }
+            aggMap[name].total += 1;
+            if (isPassed) {
+              aggMap[name].passed += 1;
+            }
+          });
+        }
+      } catch {
+        // Ignore json parsing errors
+      }
+    });
+    
+    return Object.entries(aggMap).map(([name, stats]) => ({
+      name,
+      total: stats.total,
+      passed: stats.passed,
+      passRate: stats.total > 0 ? Math.round((stats.passed / stats.total) * 100) : 0,
+    })).sort((a, b) => a.passRate - b.passRate);
+  }, [resultsData]);
+
   // Poll job progress when active
   const isActive =
     run?.status === 'RUNNING' || run?.status === 'PENDING';
@@ -134,6 +213,7 @@ export default function RunDetailPage() {
     void queryClient.invalidateQueries({ queryKey: ['evaluation-run', runId] });
     void queryClient.invalidateQueries({ queryKey: ['evaluation-run-events', runId] });
     void queryClient.invalidateQueries({ queryKey: ['evaluation-runs', projectId] });
+    void queryClient.invalidateQueries({ queryKey: ['evaluations', projectId] });
   }, [projectId, queryClient, runId]);
 
   const { job, isPolling } = useJobProgress(
@@ -165,7 +245,8 @@ export default function RunDetailPage() {
   return (
     <>
       <PageShell
-        title={run?.publicId ?? t('runDetail')}
+        title={runNumber ? t('runNumber', { number: runNumber }) : (run?.publicId ?? t('runDetail'))}
+        description={runNumber ? run?.publicId : undefined}
         backHref={`/projects/${projectId}/evaluations`}
         backLabel={tCommon('back')}
         actions={
@@ -266,6 +347,44 @@ export default function RunDetailPage() {
               loading={runLoading}
             />
           </motion.div>
+
+          {/* Charts Section */}
+          {run && (run.status === 'COMPLETED' || run.status === 'FAILED') && (
+            <motion.div
+              variants={itemVariants}
+              className="grid gap-6 md:grid-cols-3"
+            >
+              {/* Donut Chart (Status distribution) */}
+              <div className="md:col-span-1 rounded-lg border bg-card p-4 shadow-xs flex flex-col justify-between">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                  {t('summary')}
+                </h3>
+                <RunDonutChart
+                  passed={run.passedCases}
+                  failed={run.failedCases}
+                  warning={run.warningCases ?? 0}
+                  error={run.errorCases ?? 0}
+                  passRate={run.passRate}
+                />
+              </div>
+
+              {/* Bar Chart (Criteria Success Rate) */}
+              <div className="md:col-span-2 rounded-lg border bg-card p-4 shadow-xs flex flex-col justify-between">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                  {t('passRate')}
+                </h3>
+                {resultsLoading ? (
+                  <div className="h-80 w-full animate-pulse bg-muted/20 rounded-lg" />
+                ) : criteriaData.length > 0 ? (
+                  <CriteriaBarChart data={criteriaData} />
+                ) : (
+                  <div className="h-80 flex items-center justify-center text-sm text-muted-foreground">
+                    {tCommon('notAvailable')}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
 
           {/* Events timeline */}
           <motion.div variants={itemVariants} className="space-y-3">

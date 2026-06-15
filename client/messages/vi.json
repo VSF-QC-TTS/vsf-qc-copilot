@@ -101,6 +101,9 @@
     "welcome": "Xin chào, {name}!",
     "welcomeSubtitle": "Đây là tổng quan hoạt động của bạn.",
     "totalProjects": "Tổng dự án",
+    "totalRubrics": "Tổng số Rubric",
+    "activeProjects": "Dự án đang hoạt động",
+    "recentActivity": "Hoạt động gần đây",
     "createFirstProject": "Tạo dự án đầu tiên",
     "createFirstProjectDesc": "Bạn chưa có dự án nào. Hãy tạo dự án mới để bắt đầu.",
     "viewAllProjects": "Xem tất cả dự án",
@@ -606,6 +609,7 @@
   },
   "evaluations": {
     "title": "Đánh giá",
+    "runNumber": "Lượt chạy #{number}",
     "startEvaluation": "Bắt đầu đánh giá",
     "quickEvaluate": "Đánh giá nhanh",
     "dataset": "Bộ dữ liệu",
@@ -643,6 +647,8 @@
     "totalResults": "Tổng kết quả",
     "passRate": "Tỷ lệ đạt",
     "failRate": "Tỷ lệ không đạt",
+    "passed": "Đạt",
+    "failed": "Không đạt",
     "reviewProgress": "Tiến độ review",
     "columns": {
       "name": "Tên",

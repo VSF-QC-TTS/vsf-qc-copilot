@@ -30,6 +30,12 @@ import { PageShell } from '@/components/layout/page-shell';
 import { Skeleton, SkeletonText } from '@/components/feedback/loading-skeleton';
 import { StartEvaluationDialog } from '@/components/evaluations/start-evaluation-dialog';
 import { motion } from 'motion/react';
+import dynamic from 'next/dynamic';
+
+const QualityTrendChart = dynamic(() => import('@/components/projects/quality-trend-chart'), {
+  ssr: false,
+  loading: () => <div className="h-64 w-full animate-pulse bg-muted/20 rounded-lg" />,
+});
 
 // ---------------------------------------------------------------------------
 // Quick-link definitions
@@ -44,6 +50,10 @@ type EvaluationRunSummary = {
   publicId: string;
   status: EvaluationRunStatus;
   createdAt: string;
+  totalCases: number;
+  completedCases: number;
+  passedCases: number;
+  failedCases: number;
 };
 
 type ReadinessItem = {
@@ -203,6 +213,26 @@ export default function ProjectDetailPage() {
 
   const quickLinks = useQuickLinks(projectId);
   const recentEvaluations = evaluationsData?.items ?? [];
+
+  const trendData = React.useMemo(() => {
+    if (!evaluationsData) return [];
+    
+    // Reverse recent runs so they are rendered from oldest to newest (left to right)
+    const runs = [...(evaluationsData.items ?? [])].reverse();
+    const totalRuns = evaluationsData.totalItems ?? 0;
+    
+    return runs.map((run, index) => {
+      // Index of this run in the full list
+      const runIndex = totalRuns - runs.length + index + 1;
+      const passRate = run.totalCases > 0 ? Math.round((run.passedCases / run.totalCases) * 100) : 0;
+      
+      return {
+        name: tEval('runNumber', { number: runIndex }),
+        passRate,
+      };
+    });
+  }, [evaluationsData, tEval]);
+
   const readinessItems: ReadinessItem[] = [
     {
       key: 'readinessConnector',
@@ -265,7 +295,7 @@ export default function ProjectDetailPage() {
         className="space-y-6"
       >
         {/* ---- Project info card ---- */}
-      <div className="rounded-lg border bg-card p-6 space-y-4">
+      <div className="rounded-lg border bg-card p-4 sm:p-6 space-y-4">
         <div className="flex items-center gap-3">
           <StatusBadge status={project.status} />
         </div>
@@ -294,12 +324,12 @@ export default function ProjectDetailPage() {
 
       {/* ---- Evaluation readiness ---- */}
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-semibold tracking-tight">
             {t('readiness')}
           </h2>
           {allReady && (
-            <Button size="sm" onClick={() => setStartDialogOpen(true)}>
+            <Button size="sm" onClick={() => setStartDialogOpen(true)} className="w-full sm:w-auto">
               <PlusIcon className="mr-2 h-4 w-4" weight="bold" />
               {tEval('startEvaluation')}
             </Button>
@@ -382,23 +412,49 @@ export default function ProjectDetailPage() {
             }
           />
         ) : (
-          <div className="divide-y rounded-lg border bg-card">
-            {recentEvaluations.map((run) => (
-              <div
-                key={run.publicId}
-                className="flex items-center justify-between px-4 py-3"
-              >
-                <span className="text-sm font-medium truncate">
-                  {run.publicId}
-                </span>
-                <div className="flex items-center gap-3">
-                  <StatusBadge status={run.status} size="sm" />
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(run.createdAt).toLocaleDateString()}
-                  </span>
+          <div className="grid gap-6 lg:grid-cols-3">
+            {/* Trend Chart (left/top) */}
+            <div className="lg:col-span-2 rounded-lg border bg-card p-4 shadow-xs flex flex-col justify-between">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                {tEval('passRate')}
+              </h3>
+              {trendData.length > 1 ? (
+                <QualityTrendChart data={trendData} />
+              ) : (
+                <div className="h-64 flex items-center justify-center text-sm text-muted-foreground">
+                  {tCommon('notAvailable')}
                 </div>
-              </div>
-            ))}
+              )}
+            </div>
+
+            {/* Recent Runs list (right/bottom) */}
+            <div className="lg:col-span-1 divide-y rounded-lg border bg-card h-fit">
+              {recentEvaluations.map((run, index) => {
+                const runNumber = (evaluationsData?.totalItems ?? 0) - index;
+                return (
+                  <Link
+                    key={run.publicId}
+                    href={`/projects/${projectId}/evaluations/${run.publicId}`}
+                    className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 px-4 py-3 transition-colors hover:bg-muted/50"
+                  >
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm font-medium text-foreground">
+                        {tEval('runNumber', { number: runNumber })}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground font-mono truncate">
+                        {run.publicId.slice(0, 8)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end sm:shrink-0">
+                      <StatusBadge status={run.status} size="sm" />
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(run.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         )}
       </section>

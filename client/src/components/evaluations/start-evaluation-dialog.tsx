@@ -192,6 +192,9 @@ export function StartEvaluationDialog({
       void queryClient.invalidateQueries({
         queryKey: ['evaluation-runs', projectId],
       });
+      void queryClient.invalidateQueries({
+        queryKey: ['evaluations', projectId],
+      });
       onOpenChange(false);
       if (runPublicId) {
         router.push(`/projects/${projectId}/evaluations/${runPublicId}`);
@@ -264,6 +267,12 @@ export function StartEvaluationDialog({
       );
       setRunPublicId(res.runPublicId);
       setJobPublicId(res.jobPublicId);
+      void queryClient.invalidateQueries({
+        queryKey: ['evaluation-runs', projectId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ['evaluations', projectId],
+      });
     } catch (err: unknown) {
       const msg =
         err instanceof Object && 'message' in err
@@ -284,6 +293,12 @@ export function StartEvaluationDialog({
       );
       setRunPublicId(res.runPublicId);
       setJobPublicId(res.jobPublicId);
+      void queryClient.invalidateQueries({
+        queryKey: ['evaluation-runs', projectId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ['evaluations', projectId],
+      });
     } catch (err: unknown) {
       const msg =
         err instanceof Object && 'message' in err

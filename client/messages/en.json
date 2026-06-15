@@ -101,6 +101,9 @@
     "welcome": "Welcome, {name}!",
     "welcomeSubtitle": "Here is an overview of your activity.",
     "totalProjects": "Total Projects",
+    "totalRubrics": "Total Rubrics",
+    "activeProjects": "Active Projects",
+    "recentActivity": "Recent Activity",
     "createFirstProject": "Create your first project",
     "createFirstProjectDesc": "You don't have any projects yet. Start by creating a new one.",
     "viewAllProjects": "View all projects",
@@ -606,6 +609,7 @@
   },
   "evaluations": {
     "title": "Evaluations",
+    "runNumber": "Run #{number}",
     "startEvaluation": "Start Evaluation",
     "quickEvaluate": "Quick Evaluate",
     "dataset": "Dataset",
@@ -643,6 +647,8 @@
     "totalResults": "Total Results",
     "passRate": "Pass Rate",
     "failRate": "Fail Rate",
+    "passed": "Passed",
+    "failed": "Failed",
     "reviewProgress": "Review Progress",
     "columns": {
       "name": "Name",
