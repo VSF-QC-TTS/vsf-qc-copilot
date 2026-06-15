@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -27,11 +28,14 @@ const items = [
 
 export function Sidebar() {
   const { isCollapsed, isMobileOpen, toggle, setMobileOpen } = useSidebarStore();
+  const [isHovered, setIsHovered] = useState(false);
   const pathname = usePathname();
   const tNav = useTranslations('navigation');
   const tSidebar = useTranslations('sidebar');
 
-  const navContent = (
+  const isExpanded = !isCollapsed || isHovered;
+
+  const renderNavContent = (expanded: boolean) => (
     <>
       {/* Logo */}
       <div className="flex h-16 items-center justify-center border-b px-4">
@@ -54,17 +58,24 @@ export function Sidebar() {
             <Link
               key={key}
               href={href}
-              title={isCollapsed ? tNav(key) : undefined}
+              title={!expanded ? tNav(key) : undefined}
               onClick={() => setMobileOpen(false)}
               className={cn(
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                'flex items-center rounded-md font-medium transition-colors relative group whitespace-nowrap',
                 'hover:bg-accent hover:text-accent-foreground',
-                isActive && 'bg-accent text-accent-foreground',
-                isCollapsed && 'justify-center px-2',
+                isActive ? 'bg-accent text-accent-foreground' : 'text-muted-foreground',
+                expanded ? 'px-3 py-2 gap-3' : 'justify-center p-2',
               )}
             >
-              <Icon size={20} weight={isActive ? 'fill' : 'regular'} />
-              {!isCollapsed && <span>{tNav(key)}</span>}
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                <Icon size={20} weight={isActive ? 'fill' : 'regular'} />
+              </span>
+              <span className={cn(
+                'truncate transition-all duration-300',
+                expanded ? 'opacity-100 w-auto' : 'lg:opacity-0 lg:w-0 lg:overflow-hidden opacity-100 w-auto'
+              )}>
+                {tNav(key)}
+              </span>
             </Link>
           );
         })}
@@ -76,11 +87,11 @@ export function Sidebar() {
           variant="ghost"
           size="sm"
           onClick={toggle}
-          className={cn('w-full', isCollapsed ? 'justify-center' : 'justify-start gap-2')}
+          className={cn('w-full', !expanded ? 'justify-center' : 'justify-start gap-2')}
           aria-label={isCollapsed ? tSidebar('expand') : tSidebar('collapse')}
         >
           {isCollapsed ? <CaretRightIcon size={16} /> : <CaretLeftIcon size={16} />}
-          {!isCollapsed && <span>{tSidebar('collapse')}</span>}
+          {expanded && <span>{tSidebar('collapse')}</span>}
         </Button>
       </div>
     </>
@@ -90,13 +101,16 @@ export function Sidebar() {
     <>
       {/* Desktop sidebar */}
       <aside
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         className={cn(
           'hidden lg:flex lg:flex-col',
-          'min-h-[100dvh] shrink-0 border-r bg-card transition-[width] duration-200',
-          isCollapsed ? 'w-16' : 'w-60',
+          'absolute inset-y-0 left-0 z-40',
+          'min-h-[100dvh] shrink-0 border-r bg-card transition-[width,box-shadow] duration-300 ease-in-out',
+          isExpanded ? 'w-60 shadow-lg' : 'w-16',
         )}
       >
-        {navContent}
+        {renderNavContent(isExpanded)}
       </aside>
 
       {/* Mobile overlay */}
@@ -133,7 +147,7 @@ export function Sidebar() {
                   <XIcon size={20} />
                 </Button>
               </div>
-              {navContent}
+              {renderNavContent(true)}
             </motion.aside>
           </div>
         )}
