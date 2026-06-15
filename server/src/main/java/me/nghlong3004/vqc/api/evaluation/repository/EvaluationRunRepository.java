@@ -30,6 +30,7 @@ public interface EvaluationRunRepository extends JpaRepository<EvaluationRun, Lo
    * @param pageable page and sort request
    * @return page of matching {@link EvaluationRun} entities
    */
+  @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"dataset", "rubricVersion", "rubricVersion.rubric", "targetApiConnector", "judgeModel", "job"})
   Page<EvaluationRun> findByProjectIdAndCreatedBy(Long projectId, User createdBy, Pageable pageable);
 
   /**
@@ -39,5 +40,6 @@ public interface EvaluationRunRepository extends JpaRepository<EvaluationRun, Lo
    * @param createdBy creator {@link User}
    * @return {@link Optional} containing the matching {@link EvaluationRun} when present
    */
+  @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"dataset", "rubricVersion", "rubricVersion.rubric", "targetApiConnector", "judgeModel", "job", "project"})
   Optional<EvaluationRun> findByPublicIdAndCreatedBy(UUID publicId, User createdBy);
 }

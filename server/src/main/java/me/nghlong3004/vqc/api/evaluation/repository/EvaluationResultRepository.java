@@ -57,4 +57,13 @@ public interface EvaluationResultRepository extends JpaRepository<EvaluationResu
 
   Page<EvaluationResult> findByEvaluationRunIdAndJudgeStatusAndReviewDecisionQcStatus(
       Long evaluationRunId, JudgeStatus judgeStatus, QcStatus qcStatus, Pageable pageable);
+
+  /**
+   * Counts results by run ID and judge status.
+   *
+   * @param evaluationRunId internal run identifier
+   * @param judgeStatus judge status
+   * @return count of matching results
+   */
+  long countByEvaluationRunIdAndJudgeStatus(Long evaluationRunId, JudgeStatus judgeStatus);
 }

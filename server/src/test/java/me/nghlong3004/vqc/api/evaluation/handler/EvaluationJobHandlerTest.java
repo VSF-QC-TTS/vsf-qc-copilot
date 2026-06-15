@@ -250,6 +250,10 @@ class EvaluationJobHandlerTest {
                 if ("findByEvaluationRunId".equals(method.getName())) {
                   return new PageImpl<>(savedResults);
                 }
+                if ("countByEvaluationRunIdAndJudgeStatus".equals(method.getName())) {
+                  JudgeStatus status = (JudgeStatus) args[1];
+                  return savedResults.stream().filter(r -> r.getJudgeStatus() == status).count();
+                }
                 throw new UnsupportedOperationException(method.getName());
               }),
           proxy(

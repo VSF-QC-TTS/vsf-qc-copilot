@@ -119,6 +119,9 @@ public class PromptfooConfigGenerator {
   }
 
   String transformResponse(String responseSelector) {
+    if (responseSelector == null || responseSelector.isBlank()) {
+      return null;
+    }
     return switch (responseSelector) {
       case "$.answer" -> "json.answer";
       case "$.data.answer" -> "json.data.answer";

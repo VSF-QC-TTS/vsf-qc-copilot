@@ -122,6 +122,7 @@ public class EvaluationJobHandler {
   private void start(Job job, EvaluationRun run) {
     OffsetDateTime now = OffsetDateTime.now();
     job.setStatus(JobStatus.RUNNING);
+    job.setProgressTotal(run.getTotalCases());
     job.setStartedAt(now);
     job.setErrorMessage(null);
     run.setStatus(EvaluationRunStatus.RUNNING);
@@ -208,10 +209,7 @@ public class EvaluationJobHandler {
   }
 
   private long countResults(EvaluationRun run, JudgeStatus status) {
-    return evaluationResultRepository.findByEvaluationRunId(run.getId(), org.springframework.data.domain.Pageable.unpaged())
-        .stream()
-        .filter(result -> result.getJudgeStatus() == status)
-        .count();
+    return evaluationResultRepository.countByEvaluationRunIdAndJudgeStatus(run.getId(), status);
   }
 
   private BigDecimal calculatePassRate(long passed, int totalCases) {
