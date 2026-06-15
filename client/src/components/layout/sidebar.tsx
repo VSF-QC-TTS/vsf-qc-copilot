@@ -35,12 +35,26 @@ export function Sidebar() {
   const navContent = (
     <>
       {/* Logo */}
-      <div className="flex h-16 items-center gap-3 border-b px-4">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg overflow-hidden">
-          <Image src="/logo.png" alt="Logo" width={32} height={32} className="object-cover" />
+      <div className={cn(
+        "flex border-b px-4 transition-all duration-200",
+        isCollapsed 
+          ? "h-16 items-center justify-center" 
+          : "flex-col items-center justify-center py-6 gap-2 text-center"
+      )}>
+        <div className={cn(
+          "flex items-center justify-center rounded-lg overflow-hidden shrink-0 transition-all duration-200 bg-card border shadow-xs",
+          isCollapsed ? "h-8 w-8" : "h-12 w-12"
+        )}>
+          <Image 
+            src="/logo.png" 
+            alt="Logo" 
+            width={isCollapsed ? 32 : 48} 
+            height={isCollapsed ? 32 : 48} 
+            className="object-cover" 
+          />
         </div>
         {!isCollapsed && (
-          <span className="text-sm font-semibold leading-tight tracking-tight">
+          <span className="text-sm font-semibold leading-tight tracking-tight text-foreground">
             {APP_NAME}
           </span>
         )}

@@ -8,7 +8,6 @@ import { motion } from 'motion/react';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { refreshToken } from '@/lib/api/auth';
 import { setTokenGetter, setClearAuth, setOnRefreshed } from '@/lib/api/client';
-import { APP_NAME } from '@/lib/branding';
 
 type AuthGuardProps = {
   children: React.ReactNode;
@@ -122,21 +121,18 @@ export function AuthGuard({ children }: AuthGuardProps) {
               repeat: Infinity,
               ease: "easeInOut"
             }}
-            className="flex items-center gap-3"
+            className="flex flex-col items-center"
           >
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl overflow-hidden shadow-md border bg-card">
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl overflow-hidden shadow-md border bg-card p-1">
               <Image 
                 src="/logo.png" 
                 alt="Logo" 
-                width={48} 
-                height={48} 
+                width={80} 
+                height={80} 
                 priority 
-                className="object-cover" 
+                className="object-cover rounded-xl" 
               />
             </div>
-            <span className="text-xl font-bold tracking-tight text-foreground">
-              {APP_NAME}
-            </span>
           </motion.div>
           
           <div className="flex flex-col items-center gap-2">
