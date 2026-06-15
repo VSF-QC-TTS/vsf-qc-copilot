@@ -21,6 +21,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
   const [status, setStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>(
     isAuthenticated ? 'authenticated' : 'loading'
   );
+  const [progress, setProgress] = useState(0);
+  const [targetStatus, setTargetStatus] = useState<'authenticated' | 'unauthenticated' | null>(null);
 
   // Wire api client token getter/setter (once)
   useEffect(() => {
@@ -44,11 +46,11 @@ export function AuthGuard({ children }: AuthGuardProps) {
         if (cancelled) return;
 
         login(refreshRes.accessToken, refreshRes.user);
-        setStatus('authenticated');
+        setTargetStatus('authenticated');
       } catch {
         if (cancelled) return;
         logout();
-        setStatus('unauthenticated');
+        setTargetStatus('unauthenticated');
       }
     }
 
@@ -57,6 +59,46 @@ export function AuthGuard({ children }: AuthGuardProps) {
       cancelled = true;
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Simulate progress bar
+  useEffect(() => {
+    if (status !== 'loading') return;
+
+    const timer = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(timer);
+          return 100;
+        }
+
+        // If targetStatus is determined, we speed up to 100%
+        if (targetStatus) {
+          const next = prev + 15;
+          return next >= 100 ? 100 : next;
+        }
+
+        // Cap at 90% until api resolves
+        if (prev >= 90) {
+          return 90;
+        }
+
+        const diff = Math.random() * 8 + 4;
+        return Math.min(prev + diff, 90);
+      });
+    }, 80);
+
+    return () => clearInterval(timer);
+  }, [status, targetStatus]);
+
+  // Transition status once progress reaches 100% and target is resolved
+  useEffect(() => {
+    if (progress === 100 && targetStatus) {
+      const timeout = setTimeout(() => {
+        setStatus(targetStatus);
+      }, 150); // small delay to let user see 100%
+      return () => clearTimeout(timeout);
+    }
+  }, [progress, targetStatus]);
 
   // Redirect when unauthenticated
   useEffect(() => {
@@ -96,22 +138,18 @@ export function AuthGuard({ children }: AuthGuardProps) {
               {APP_NAME}
             </span>
           </motion.div>
+          
           <div className="flex flex-col items-center gap-2">
-            <div className="h-1 w-36 overflow-hidden rounded-full bg-muted">
-              <motion.div
-                initial={{ left: "-100%" }}
-                animate={{ left: "100%" }}
-                transition={{
-                  duration: 1.5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                className="relative h-full w-full bg-primary"
+            <div className="h-1.5 w-40 overflow-hidden rounded-full bg-muted">
+              <div 
+                className="h-full bg-primary transition-all duration-150 ease-out"
+                style={{ width: `${progress}%` }}
               />
             </div>
-            <p className="text-xs font-medium tracking-wide text-muted-foreground animate-pulse">
-              {t('loading')}
-            </p>
+            <div className="flex justify-between w-40 text-[10px] text-muted-foreground font-mono">
+              <span>{t('loading')}</span>
+              <span>{Math.round(progress)}%</span>
+            </div>
           </div>
         </div>
       </div>
