@@ -600,6 +600,12 @@
     "judgeInstructionTooltip": "Hướng dẫn chi tiết cho mô hình AI cách đánh giá tiêu chí con này.",
     "passConditionTooltip": "Điều kiện hoặc định nghĩa cụ thể để đánh giá là đạt (PASS).",
     "failConditionTooltip": "Điều kiện hoặc định nghĩa cụ thể để đánh giá là không đạt (FAIL).",
+    "lockedPublishedHint": "Phiên bản này đã được xuất bản và khóa. Để thay đổi, vui lòng quay lại và tạo một phiên bản nháp mới.",
+    "lockedArchivedHint": "Phiên bản này đã được lưu trữ và khóa.",
+    "unsavedChanges": "Thay đổi chưa lưu",
+    "weightsDistribution": "Phân bổ trọng số",
+    "totalWeight": "Tổng trọng số",
+    "invalidJson": "Định dạng JSON không hợp lệ",
     "columns": {
       "name": "Tên",
       "project": "Dự án",

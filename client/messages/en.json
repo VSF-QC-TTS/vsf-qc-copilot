@@ -600,6 +600,12 @@
     "judgeInstructionTooltip": "Detailed instructions for the AI model on how to evaluate this sub-criterion.",
     "passConditionTooltip": "Specific conditions or definitions to evaluate as pass (PASS).",
     "failConditionTooltip": "Specific conditions or definitions to evaluate as fail (FAIL).",
+    "lockedPublishedHint": "This version is published and locked. To make changes, please go back and create a new version.",
+    "lockedArchivedHint": "This version is archived and locked.",
+    "unsavedChanges": "Unsaved changes",
+    "weightsDistribution": "Weights Distribution",
+    "totalWeight": "Total Weight",
+    "invalidJson": "Invalid JSON format",
     "columns": {
       "name": "Name",
       "project": "Project",

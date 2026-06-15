@@ -188,6 +188,26 @@ export default function VersionDetailPage({
       backLabel={tCommon('back')}
       actions={version && <StatusBadge status={version.status} />}
     >
+      {/* Locked Warning Banners */}
+      {version && version.status !== 'DRAFT' && (
+        <div className={cn(
+          "rounded-xl border p-4 flex items-start gap-3 text-sm leading-relaxed",
+          version.status === 'PUBLISHED' 
+            ? "border-amber-200/50 bg-amber-500/10 text-amber-800 dark:text-amber-300"
+            : "border-red-200/50 bg-red-500/10 text-red-800 dark:text-red-300"
+        )}>
+          <WarningIcon weight="bold" className="size-5 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="font-semibold mb-0.5">
+              {version.status === 'PUBLISHED' ? tCommon('status.PUBLISHED') : tCommon('status.ARCHIVED')}
+            </p>
+            <p className="text-muted-foreground">
+              {version.status === 'PUBLISHED' ? t('lockedPublishedHint') : t('lockedArchivedHint')}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Rubric content */}
       {version && (
         <RubricContentEditor
@@ -213,6 +233,65 @@ export default function VersionDetailPage({
       {actionError && (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {actionError}
+        </div>
+      )}
+
+      {/* Weights Visualization */}
+      {criteria.length > 0 && (
+        <div className="rounded-xl border bg-card/40 p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-foreground">{t('weightsDistribution')}</h3>
+            <span className="text-xs text-muted-foreground">{t('totalWeight')}: {totalWeight}</span>
+          </div>
+          
+          <div className="flex h-3 w-full rounded-full overflow-hidden bg-muted">
+            {criteria.map((c, i) => {
+              const pct = totalWeight > 0 ? (c.weight / totalWeight) * 100 : 0;
+              if (pct === 0) return null;
+              const COLORS = [
+                'bg-blue-500 dark:bg-blue-600',
+                'bg-emerald-500 dark:bg-emerald-600',
+                'bg-amber-500 dark:bg-amber-600',
+                'bg-violet-500 dark:bg-violet-600',
+                'bg-pink-500 dark:bg-pink-600',
+                'bg-cyan-500 dark:bg-cyan-600',
+                'bg-orange-500 dark:bg-orange-600',
+              ];
+              const color = COLORS[i % COLORS.length];
+              return (
+                <div
+                  key={c.publicId}
+                  style={{ width: `${pct}%` }}
+                  className={cn(color, "h-full transition-all duration-300")}
+                  title={`${c.name}: ${c.weight} (${Math.round(pct)}%)`}
+                />
+              );
+            })}
+          </div>
+
+          {/* Legend */}
+          <div className="flex flex-wrap gap-x-4 gap-y-2 pt-1 text-xs">
+            {criteria.map((c, i) => {
+              const pct = totalWeight > 0 ? Math.round((c.weight / totalWeight) * 100) : 0;
+              const COLORS = [
+                'bg-blue-500',
+                'bg-emerald-500',
+                'bg-amber-500',
+                'bg-violet-500',
+                'bg-pink-500',
+                'bg-cyan-500',
+                'bg-orange-500',
+              ];
+              const color = COLORS[i % COLORS.length];
+              return (
+                <div key={c.publicId} className="flex items-center gap-1.5 text-muted-foreground">
+                  <span className={cn("size-2 rounded-full", color)} />
+                  <span className="font-medium text-foreground truncate max-w-[120px]">{c.name}</span>
+                  <span>{pct}%</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -357,6 +436,28 @@ function RubricContentEditor({
   const [schemaDraft, setSchemaDraft] = useState(outputSchemaJson);
   const [serverError, setServerError] = useState<string | null>(null);
 
+  const isDirty = contentDraft !== content || schemaDraft !== outputSchemaJson;
+
+  const isSchemaInvalid = useMemo(() => {
+    if (!schemaDraft.trim()) return false;
+    try {
+      JSON.parse(schemaDraft);
+      return false;
+    } catch {
+      return true;
+    }
+  }, [schemaDraft]);
+
+  React.useEffect(() => {
+    if (!isDirty) return;
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+
   const updateVersionMutation = useMutation({
     mutationFn: () =>
       apiClient.patch(`/api/v1/rubric-versions/${versionId}`, {
@@ -380,15 +481,28 @@ function RubricContentEditor({
     <section className="space-y-3 rounded-md border bg-card p-4">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-semibold">{t('rubricContent')}</h2>
-        {isDraft && (
-          <Button
-            size="sm"
-            disabled={updateVersionMutation.isPending}
-            onClick={() => updateVersionMutation.mutate()}
-          >
-            {updateVersionMutation.isPending ? tCommon('loading') : tCommon('save')}
-          </Button>
-        )}
+        <div className="flex items-center gap-3">
+          {isDirty && !isSchemaInvalid && (
+            <span className="inline-flex items-center gap-1.5 text-xs text-amber-500 font-medium">
+              <span className="size-2 rounded-full bg-amber-500 animate-pulse" />
+              {t('unsavedChanges')}
+            </span>
+          )}
+          {isSchemaInvalid && (
+            <span className="text-xs text-red-500 font-medium">
+              {t('invalidJson')}
+            </span>
+          )}
+          {isDraft && (
+            <Button
+              size="sm"
+              disabled={updateVersionMutation.isPending || !isDirty || isSchemaInvalid}
+              onClick={() => updateVersionMutation.mutate()}
+            >
+              {updateVersionMutation.isPending ? tCommon('loading') : tCommon('save')}
+            </Button>
+          )}
+        </div>
       </div>
       {serverError && (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
