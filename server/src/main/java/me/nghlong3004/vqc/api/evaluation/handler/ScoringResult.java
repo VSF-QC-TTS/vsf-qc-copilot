@@ -7,7 +7,7 @@ import me.nghlong3004.vqc.api.evaluation.enums.JudgeStatus;
  * Immutable result of criteria-based score computation.
  *
  * @param judgeScore weighted aggregate score (0.0000–1.0000)
- * @param judgeStatus effective status after applying critical-criterion override
+ * @param judgeStatus effective status after aggregating known rubric criterion pass/fail results
  * @author nghlong3004 (Long Nguyen Hoang)
  * @since 6/12/2026
  */

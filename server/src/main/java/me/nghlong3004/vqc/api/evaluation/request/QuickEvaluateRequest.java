@@ -22,6 +22,11 @@ public record QuickEvaluateRequest(
             nullable = true)
         UUID connectorPublicId,
     @Schema(
+            description = "Judge model for scoring. Auto-resolved if omitted.",
+            example = "8d2f6a2a-4974-4e9c-83ad-f2e1e58d39f0",
+            nullable = true)
+        UUID judgeModelPublicId,
+    @Schema(
             description = "Rubric version for scoring. Auto-resolved if omitted.",
             example = "5cfb4c51-3ac4-44bd-93b4-8eb4e3f46f3a",
             nullable = true)

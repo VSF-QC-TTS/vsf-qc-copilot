@@ -63,6 +63,12 @@ public class RubricVersion {
   @Column(nullable = false)
   private Integer version;
 
+  @Column(columnDefinition = "TEXT")
+  private String content;
+
+  @Column(name = "output_schema_json", columnDefinition = "TEXT")
+  private String outputSchemaJson;
+
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 50)
   @Builder.Default

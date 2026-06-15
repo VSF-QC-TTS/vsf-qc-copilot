@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import me.nghlong3004.vqc.api.common.crypto.AesGcmEncryptor;
 import me.nghlong3004.vqc.api.config.PromptfooProperties;
 import me.nghlong3004.vqc.api.config.WorkerProperties;
 import me.nghlong3004.vqc.api.dataset.entity.Dataset;
@@ -140,7 +141,8 @@ class PromptfooWorkerSmokeTest {
           public java.util.Map<String, String> decryptSecrets(TargetApiConnector c) { return Map.of(); }
         },
         noOpRepo,
-        properties);
+        properties,
+        new AesGcmEncryptor("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"));
   }
 
   private Fixture fixture(String targetUrl) {

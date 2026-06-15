@@ -31,6 +31,7 @@ public class EvaluationRunMapper {
         run.getDataset().getPublicId(),
         run.getRubricVersion().getPublicId(),
         run.getTargetApiConnector().getPublicId(),
+        run.getJudgeModel() == null ? null : run.getJudgeModel().getPublicId(),
         run.getStatus(),
         run.getTotalCases(),
         run.getCreatedAt());
@@ -50,6 +51,7 @@ public class EvaluationRunMapper {
         run.getDataset().getPublicId(),
         run.getRubricVersion().getPublicId(),
         run.getTargetApiConnector().getPublicId(),
+        run.getJudgeModel() == null ? null : run.getJudgeModel().getPublicId(),
         jobPublicId,
         run.getStatus(),
         run.getTotalCases(),

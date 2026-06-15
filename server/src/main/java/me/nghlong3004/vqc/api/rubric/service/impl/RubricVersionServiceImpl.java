@@ -47,9 +47,18 @@ public class RubricVersionServiceImpl implements RubricVersionService {
   @Override
   @Transactional
   public RubricVersionResponse createVersion(UUID rubricPublicId, String username) {
+    return createVersion(rubricPublicId, null, username);
+  }
+
+  @Override
+  @Transactional
+  public RubricVersionResponse createVersion(
+      UUID rubricPublicId, UUID sourceVersionPublicId, String username) {
     User creator = findCreator(username);
     Rubric rubric = findRubric(rubricPublicId, creator);
     ensureRubricActive(rubric);
+    RubricVersion sourceVersion =
+        sourceVersionPublicId == null ? null : findSourceVersion(sourceVersionPublicId, rubric, creator);
     int nextVersion =
         rubricVersionRepository
             .findTopByRubricOrderByVersionDesc(rubric)
@@ -59,16 +68,23 @@ public class RubricVersionServiceImpl implements RubricVersionService {
         RubricVersion.builder()
             .rubric(rubric)
             .version(nextVersion)
+            .content(sourceVersion == null ? null : sourceVersion.getContent())
+            .outputSchemaJson(sourceVersion == null ? null : sourceVersion.getOutputSchemaJson())
             .status(RubricVersionStatus.DRAFT)
             .createdBy(creator)
             .build();
     RubricVersion saved = rubricVersionRepository.save(rubricVersion);
+    List<RubricCriterion> copiedCriteria =
+        sourceVersion == null ? List.of() : copyCriteria(sourceVersion, saved);
+    if (!copiedCriteria.isEmpty()) {
+      rubricCriterionRepository.saveAll(copiedCriteria);
+    }
     log.info(
         "Created rubric version {} for rubric {} by user {}",
         saved.getPublicId(),
         rubric.getPublicId(),
         creator.getPublicId());
-    return toResponse(saved);
+    return copiedCriteria.isEmpty() ? toResponse(saved) : rubricMapper.toVersionResponse(saved, copiedCriteria);
   }
 
   @Override
@@ -98,6 +114,30 @@ public class RubricVersionServiceImpl implements RubricVersionService {
 
   @Override
   @Transactional(readOnly = true)
+  public RubricVersionPageResponse listUserVersions(
+      RubricVersionStatus status, Pageable pageable, String username) {
+    User creator = findCreator(username);
+    Page<RubricVersion> versions =
+        status == null
+            ? rubricVersionRepository.findByRubricCreatedBy(creator, pageable)
+            : rubricVersionRepository.findByRubricCreatedByAndStatus(creator, status, pageable);
+    List<RubricVersionListItemResponse> items =
+        versions.getContent().stream()
+            .map(
+                version ->
+                    rubricMapper.toVersionListItemResponse(
+                        version, rubricCriterionRepository.countByRubricVersion(version)))
+            .toList();
+    return new RubricVersionPageResponse(
+        items,
+        versions.getNumber(),
+        versions.getSize(),
+        versions.getTotalElements(),
+        versions.getTotalPages());
+  }
+
+  @Override
+  @Transactional(readOnly = true)
   public RubricVersionResponse getVersion(UUID rubricVersionPublicId, String username) {
     RubricVersion rubricVersion = findVersion(rubricVersionPublicId, username);
     return toResponse(rubricVersion);
@@ -109,7 +149,23 @@ public class RubricVersionServiceImpl implements RubricVersionService {
       UUID rubricVersionPublicId, UpdateRubricVersionRequest request, String username) {
     RubricVersion rubricVersion = findVersion(rubricVersionPublicId, username);
     ensureRubricActive(rubricVersion.getRubric());
+    boolean hasContentPatch = request.content() != null || request.outputSchemaJson() != null;
+    if (hasContentPatch) {
+      if (rubricVersion.getStatus() != RubricVersionStatus.DRAFT) {
+        throw new ResourceException(ErrorCode.RUBRIC_VERSION_IMMUTABLE);
+      }
+      if (request.content() != null) {
+        rubricVersion.setContent(trimToNull(request.content()));
+      }
+      if (request.outputSchemaJson() != null) {
+        rubricVersion.setOutputSchemaJson(trimToNull(request.outputSchemaJson()));
+      }
+    }
     RubricVersionStatus requestedStatus = request.status();
+    if (requestedStatus == null) {
+      RubricVersion saved = rubricVersionRepository.save(rubricVersion);
+      return toResponse(saved);
+    }
     if (rubricVersion.getStatus() == requestedStatus) {
       return toResponse(rubricVersion);
     }
@@ -136,6 +192,9 @@ public class RubricVersionServiceImpl implements RubricVersionService {
   private void publish(RubricVersion rubricVersion) {
     if (rubricVersion.getStatus() != RubricVersionStatus.DRAFT) {
       throw new ResourceException(ErrorCode.RUBRIC_VERSION_IMMUTABLE);
+    }
+    if (rubricVersion.getContent() == null || rubricVersion.getContent().isBlank()) {
+      throw new ResourceException(ErrorCode.RUBRIC_VERSION_PUBLISH_INVALID);
     }
     List<RubricCriterion> criteria =
         rubricCriterionRepository.findByRubricVersionOrderBySortOrderAscIdAsc(rubricVersion);
@@ -183,6 +242,40 @@ public class RubricVersionServiceImpl implements RubricVersionService {
         .orElseThrow(() -> new ResourceException(ErrorCode.RUBRIC_NOT_FOUND));
   }
 
+  private RubricVersion findSourceVersion(
+      UUID sourceVersionPublicId, Rubric rubric, User creator) {
+    RubricVersion source =
+        rubricVersionRepository
+            .findByPublicIdAndRubricCreatedBy(sourceVersionPublicId, creator)
+            .orElseThrow(() -> new ResourceException(ErrorCode.RUBRIC_VERSION_NOT_FOUND));
+    if (!source.getRubric().getPublicId().equals(rubric.getPublicId())) {
+      throw new ResourceException(ErrorCode.RUBRIC_VERSION_NOT_FOUND);
+    }
+    return source;
+  }
+
+  private List<RubricCriterion> copyCriteria(
+      RubricVersion sourceVersion, RubricVersion targetVersion) {
+    return rubricCriterionRepository
+        .findByRubricVersionOrderBySortOrderAscIdAsc(sourceVersion)
+        .stream()
+        .map(
+            criterion ->
+                RubricCriterion.builder()
+                    .rubricVersion(targetVersion)
+                    .name(criterion.getName())
+                    .description(criterion.getDescription())
+                    .weight(criterion.getWeight())
+                    .passCondition(criterion.getPassCondition())
+                    .failCondition(criterion.getFailCondition())
+                    .judgeInstruction(criterion.getJudgeInstruction())
+                    .metricKey(criterion.getMetricKey())
+                    .critical(Boolean.TRUE.equals(criterion.getCritical()))
+                    .sortOrder(criterion.getSortOrder())
+                    .build())
+        .toList();
+  }
+
   private User findCreator(String username) {
     return userRepository
         .findByUsername(username.trim().toLowerCase())
@@ -193,5 +286,9 @@ public class RubricVersionServiceImpl implements RubricVersionService {
     if (rubric.getStatus() == RubricStatus.ARCHIVED) {
       throw new ResourceException(ErrorCode.RUBRIC_ARCHIVED);
     }
+  }
+
+  private String trimToNull(String value) {
+    return value == null || value.isBlank() ? null : value.trim();
   }
 }

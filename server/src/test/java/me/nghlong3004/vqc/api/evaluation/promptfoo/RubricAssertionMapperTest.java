@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.List;
 import java.util.Map;
 import me.nghlong3004.vqc.api.rubric.entity.RubricCriterion;
+import me.nghlong3004.vqc.api.rubric.entity.RubricVersion;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -27,19 +28,31 @@ class RubricAssertionMapperTest {
 
   @Test
   void toAssertionsMapsBasicCriterion() {
+    RubricVersion version =
+        RubricVersion.builder().content("Use semantic equivalence, not exact wording.").build();
     RubricCriterion criterion =
         RubricCriterion.builder()
             .metricKey("accuracy")
+            .name("Accuracy")
+            .description("Checks factual correctness.")
             .judgeInstruction("Check if the answer is accurate.")
             .weight(6)
             .build();
 
-    List<Map<String, Object>> assertions = mapper.toAssertions(List.of(criterion));
+    List<Map<String, Object>> assertions = mapper.toAssertions(version, List.of(criterion));
 
     assertThat(assertions).hasSize(1);
     Map<String, Object> assertion = assertions.getFirst();
     assertThat(assertion.get("type")).isEqualTo("llm-rubric");
-    assertThat(assertion.get("value")).isEqualTo("Check if the answer is accurate.");
+    assertThat((String) assertion.get("value"))
+        .contains("Use semantic equivalence, not exact wording.")
+        .contains("Question: {{question}}")
+        .contains("Expected answer: {{groundTruth}}")
+        .contains("Preconditions: {{precondition}}")
+        .contains("Metadata: {{metadata}}")
+        .contains("Criterion: Accuracy")
+        .contains("Description: Checks factual correctness.")
+        .contains("Judge instruction: Check if the answer is accurate.");
     assertThat(assertion.get("metric")).isEqualTo("accuracy");
     assertThat((int) assertion.get("weight")).isEqualTo(6);
   }
@@ -55,7 +68,7 @@ class RubricAssertionMapperTest {
             .weight(4)
             .build();
 
-    List<Map<String, Object>> assertions = mapper.toAssertions(List.of(criterion));
+    List<Map<String, Object>> assertions = mapper.toAssertions(null, List.of(criterion));
 
     String value = (String) assertions.getFirst().get("value");
     assertThat(value).contains("Evaluate the tone of the response.");
@@ -74,8 +87,8 @@ class RubricAssertionMapperTest {
             .weight(10)
             .build();
 
-    String value = (String) mapper.toAssertions(List.of(criterion)).getFirst().get("value");
-    assertThat(value).isEqualTo("Is the response relevant?");
+    String value = (String) mapper.toAssertions(null, List.of(criterion)).getFirst().get("value");
+    assertThat(value).contains("Judge instruction: Is the response relevant?");
     assertThat(value).doesNotContain("PASS condition");
     assertThat(value).doesNotContain("FAIL condition");
   }

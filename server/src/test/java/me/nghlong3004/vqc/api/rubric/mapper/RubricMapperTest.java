@@ -34,6 +34,8 @@ class RubricMapperTest {
 
     assertThat(response.publicId()).isEqualTo(rubric.getPublicId());
     assertThat(response.projectPublicId()).isEqualTo(rubric.getProject().getPublicId());
+    assertThat(response.projectName()).isEqualTo("Health Project");
+    assertThat(response.isTemplate()).isFalse();
     assertThat(response.name()).isEqualTo("Health Answer Quality Rubric");
     assertThat(response.description()).isEqualTo("Checks correctness and safety.");
     assertThat(response.currentVersion()).isEqualTo(2);
@@ -50,6 +52,8 @@ class RubricMapperTest {
 
     assertThat(response.publicId()).isEqualTo(rubric.getPublicId());
     assertThat(response.projectPublicId()).isEqualTo(rubric.getProject().getPublicId());
+    assertThat(response.projectName()).isEqualTo("Health Project");
+    assertThat(response.isTemplate()).isFalse();
     assertThat(response.name()).isEqualTo("Health Answer Quality Rubric");
     assertThat(response.currentVersion()).isEqualTo(2);
     assertThat(response.status()).isEqualTo(RubricStatus.ACTIVE);
@@ -64,8 +68,11 @@ class RubricMapperTest {
 
     assertThat(response.publicId()).isEqualTo(version.getPublicId());
     assertThat(response.rubricPublicId()).isEqualTo(version.getRubric().getPublicId());
-    assertThat(response.version()).isEqualTo(2);
+    assertThat(response.rubricName()).isEqualTo("Health Answer Quality Rubric");
+    assertThat(response.versionNumber()).isEqualTo(2);
     assertThat(response.status()).isEqualTo(RubricVersionStatus.PUBLISHED);
+    assertThat(response.content()).isEqualTo("Judge actual response against expected answer.");
+    assertThat(response.criteriaCount()).isEqualTo(1);
     assertThat(response.publishedAt()).isEqualTo(OffsetDateTime.parse("2026-06-08T11:00:00Z"));
     assertThat(response.criteria()).hasSize(1);
     assertThat(response.criteria().getFirst().metricKey()).isEqualTo("correctness");
@@ -79,9 +86,23 @@ class RubricMapperTest {
 
     assertThat(response.publicId()).isEqualTo(version.getPublicId());
     assertThat(response.rubricPublicId()).isEqualTo(version.getRubric().getPublicId());
-    assertThat(response.version()).isEqualTo(2);
+    assertThat(response.rubricName()).isEqualTo("Health Answer Quality Rubric");
+    assertThat(response.versionNumber()).isEqualTo(2);
     assertThat(response.status()).isEqualTo(RubricVersionStatus.PUBLISHED);
-    assertThat(response.totalCriteria()).isEqualTo(4);
+    assertThat(response.criteriaCount()).isEqualTo(4);
+  }
+
+  @Test
+  void toResponseSupportsUserScopedTemplateWithoutProject() {
+    Rubric rubric = rubric();
+    rubric.setProject(null);
+    rubric.setIsTemplate(true);
+
+    RubricResponse response = rubricMapper.toResponse(rubric);
+
+    assertThat(response.projectPublicId()).isNull();
+    assertThat(response.projectName()).isNull();
+    assertThat(response.isTemplate()).isTrue();
   }
 
   @Test
@@ -106,6 +127,7 @@ class RubricMapperTest {
   private Rubric rubric() {
     Project project = new Project();
     project.setPublicId(UUID.fromString("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"));
+    project.setName("Health Project");
     Rubric rubric = new Rubric();
     rubric.setPublicId(UUID.fromString("3c5582c5-96d8-40e4-9aa1-168f6d27c9dc"));
     rubric.setProject(project);
@@ -124,6 +146,8 @@ class RubricMapperTest {
     version.setRubric(rubric);
     version.setVersion(2);
     version.setStatus(RubricVersionStatus.PUBLISHED);
+    version.setContent("Judge actual response against expected answer.");
+    version.setOutputSchemaJson("{\"type\":\"object\"}");
     version.setCreatedAt(OffsetDateTime.parse("2026-06-08T10:45:00Z"));
     version.setPublishedAt(OffsetDateTime.parse("2026-06-08T11:00:00Z"));
     return version;

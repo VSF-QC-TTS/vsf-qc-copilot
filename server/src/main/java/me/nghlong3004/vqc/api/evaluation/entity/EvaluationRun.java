@@ -24,6 +24,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import me.nghlong3004.vqc.api.dataset.entity.Dataset;
 import me.nghlong3004.vqc.api.evaluation.enums.EvaluationRunStatus;
+import me.nghlong3004.vqc.api.judge.entity.JudgeModel;
 import me.nghlong3004.vqc.api.job.entity.Job;
 import me.nghlong3004.vqc.api.project.entity.Project;
 import me.nghlong3004.vqc.api.rubric.entity.RubricVersion;
@@ -43,7 +44,8 @@ import me.nghlong3004.vqc.api.user.entity.User;
       @Index(name = "idx_evaluation_runs_created_at", columnList = "created_at"),
       @Index(
           name = "idx_evaluation_runs_connector_id",
-          columnList = "target_api_connector_id")
+          columnList = "target_api_connector_id"),
+      @Index(name = "idx_evaluation_runs_judge_model_id", columnList = "judge_model_id")
     })
 @Getter
 @Setter
@@ -75,6 +77,10 @@ public class EvaluationRun {
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "target_api_connector_id", nullable = false)
   private TargetApiConnector targetApiConnector;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "judge_model_id")
+  private JudgeModel judgeModel;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "job_id")

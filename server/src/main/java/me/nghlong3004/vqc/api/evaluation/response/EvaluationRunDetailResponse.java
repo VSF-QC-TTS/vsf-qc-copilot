@@ -16,6 +16,7 @@ public record EvaluationRunDetailResponse(
     @Schema(description = "Dataset public identifier.") UUID datasetPublicId,
     @Schema(description = "Rubric version public identifier.") UUID rubricVersionPublicId,
     @Schema(description = "Target connector public identifier.") UUID targetConnectorPublicId,
+    @Schema(description = "Judge model public identifier.", nullable = true) UUID judgeModelPublicId,
     @Schema(description = "Job public identifier.", nullable = true) UUID jobPublicId,
     @Schema(description = "Run status.", example = "PENDING") EvaluationRunStatus status,
     @Schema(description = "Total test cases.", example = "10") int totalCases,

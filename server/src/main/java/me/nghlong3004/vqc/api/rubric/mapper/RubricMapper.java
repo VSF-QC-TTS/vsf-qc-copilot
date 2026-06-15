@@ -1,6 +1,8 @@
 package me.nghlong3004.vqc.api.rubric.mapper;
 
 import java.util.List;
+import java.util.UUID;
+import me.nghlong3004.vqc.api.project.entity.Project;
 import me.nghlong3004.vqc.api.rubric.entity.Rubric;
 import me.nghlong3004.vqc.api.rubric.entity.RubricCriterion;
 import me.nghlong3004.vqc.api.rubric.entity.RubricVersion;
@@ -19,9 +21,12 @@ import org.springframework.stereotype.Component;
 public class RubricMapper {
 
   public RubricResponse toResponse(Rubric rubric) {
+    Project project = rubric.getProject();
     return new RubricResponse(
         rubric.getPublicId(),
-        rubric.getProject().getPublicId(),
+        projectPublicId(project),
+        projectName(project),
+        Boolean.TRUE.equals(rubric.getIsTemplate()),
         rubric.getName(),
         rubric.getDescription(),
         rubric.getCurrentVersion(),
@@ -32,9 +37,12 @@ public class RubricMapper {
   }
 
   public RubricListItemResponse toListItemResponse(Rubric rubric) {
+    Project project = rubric.getProject();
     return new RubricListItemResponse(
         rubric.getPublicId(),
-        rubric.getProject().getPublicId(),
+        projectPublicId(project),
+        projectName(project),
+        Boolean.TRUE.equals(rubric.getIsTemplate()),
         rubric.getName(),
         rubric.getCurrentVersion(),
         rubric.getStatus(),
@@ -46,8 +54,12 @@ public class RubricMapper {
     return new RubricVersionResponse(
         rubricVersion.getPublicId(),
         rubricVersion.getRubric().getPublicId(),
+        rubricVersion.getRubric().getName(),
         rubricVersion.getVersion(),
         rubricVersion.getStatus(),
+        rubricVersion.getContent(),
+        rubricVersion.getOutputSchemaJson(),
+        criteria.size(),
         rubricVersion.getCreatedAt(),
         rubricVersion.getPublishedAt(),
         criteria.stream().map(this::toCriterionResponse).toList());
@@ -58,6 +70,7 @@ public class RubricMapper {
     return new RubricVersionListItemResponse(
         rubricVersion.getPublicId(),
         rubricVersion.getRubric().getPublicId(),
+        rubricVersion.getRubric().getName(),
         rubricVersion.getVersion(),
         rubricVersion.getStatus(),
         totalCriteria,
@@ -80,5 +93,13 @@ public class RubricMapper {
         criterion.getSortOrder(),
         criterion.getCreatedAt(),
         criterion.getUpdatedAt());
+  }
+
+  private UUID projectPublicId(Project project) {
+    return project == null ? null : project.getPublicId();
+  }
+
+  private String projectName(Project project) {
+    return project == null ? null : project.getName();
   }
 }

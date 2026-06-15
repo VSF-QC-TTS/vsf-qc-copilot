@@ -78,7 +78,7 @@ class CriteriaScoreCalculatorTest {
   }
 
   @Test
-  void criticalCriterionFailureForcesFailStatus() {
+  void failedCriterionForcesFailStatus() {
     String json =
         """
         [
@@ -95,12 +95,11 @@ class CriteriaScoreCalculatorTest {
 
     // Score still computed: (0.7 * 1.0 + 0.3 * 0.0) / (0.7 + 0.3) = 0.7000
     assertThat(result.judgeScore()).isEqualByComparingTo("0.7000");
-    // But status forced to FAIL because critical "safety" failed
     assertThat(result.judgeStatus()).isEqualTo(JudgeStatus.FAIL);
   }
 
   @Test
-  void nonCriticalCriterionFailureDoesNotOverrideStatus() {
+  void anyCriterionFailureForcesFailStatus() {
     String json =
         """
         [
@@ -117,12 +116,11 @@ class CriteriaScoreCalculatorTest {
 
     // (0.6 * 1.0 + 0.4 * 0.2) / (0.6 + 0.4) = 0.68 → 0.6800
     assertThat(result.judgeScore()).isEqualByComparingTo("0.6800");
-    // Non-critical failure does not override → keeps fallback PASS
-    assertThat(result.judgeStatus()).isEqualTo(JudgeStatus.PASS);
+    assertThat(result.judgeStatus()).isEqualTo(JudgeStatus.FAIL);
   }
 
   @Test
-  void unknownMetricKeyDefaultsToWeightOne() {
+  void unknownMetricKeyIsIgnored() {
     String json =
         """
         [{"metricKey":"unknown_metric","pass":true,"score":0.9,"reason":"Fine"}]
@@ -132,8 +130,8 @@ class CriteriaScoreCalculatorTest {
 
     ScoringResult result = calculator.computeScore(json, criteria, JudgeStatus.PASS);
 
-    // Weight defaults to 1.0 for unknown metric: (1.0 * 0.9) / 1.0 = 0.9000
-    assertThat(result.judgeScore()).isEqualByComparingTo("0.9000");
+    assertThat(result.judgeScore()).isNull();
+    assertThat(result.judgeStatus()).isEqualTo(JudgeStatus.PASS);
   }
 
   @Test

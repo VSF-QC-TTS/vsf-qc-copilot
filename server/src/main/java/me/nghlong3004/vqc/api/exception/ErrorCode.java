@@ -83,6 +83,14 @@ public enum ErrorCode {
       HttpStatus.NOT_FOUND.value(),
       "TARGET_CONNECTOR_NOT_FOUND",
       "No target connector found with the provided ID."),
+  JUDGE_MODEL_NOT_FOUND(
+      HttpStatus.NOT_FOUND.value(),
+      "JUDGE_MODEL_NOT_FOUND",
+      "No judge model found with the provided ID."),
+  JUDGE_MODEL_INACTIVE(
+      422,
+      "JUDGE_MODEL_INACTIVE",
+      "Judge model must be active before starting an evaluation run."),
   CURL_PARSE_ERROR(
       HttpStatus.BAD_REQUEST.value(),
       "CURL_PARSE_ERROR",
@@ -131,6 +139,10 @@ public enum ErrorCode {
       HttpStatus.CONFLICT.value(),
       "RUBRIC_CRITERION_METRIC_KEY_CONFLICT",
       "Rubric criterion metric key already exists in this version."),
+  RUBRIC_GENERATION_FAILED(
+      422,
+      "RUBRIC_GENERATION_FAILED",
+      "AI could not generate a valid rubric preview."),
 
   // ── Evaluation ──
   DATASET_NOT_APPROVED(

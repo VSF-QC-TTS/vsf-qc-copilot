@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LightningIcon } from '@phosphor-icons/react';
 
@@ -16,7 +16,7 @@ import {
   type StartEvaluationFormValues,
 } from '@/lib/validations/evaluation';
 import type { PageResponse } from '@/lib/api/types';
-import { useRouter } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -41,6 +41,14 @@ type ConnectorOption = {
   active: boolean;
 };
 
+type JudgeModelOption = {
+  publicId: string;
+  name: string;
+  provider: string;
+  modelName: string;
+  active: boolean;
+};
+
 type StartEvaluationResponse = {
   runPublicId: string;
   jobPublicId: string;
@@ -58,6 +66,36 @@ interface StartEvaluationDialogProps {
   projectId: string;
 }
 
+interface RequirementFieldProps {
+  empty: boolean;
+  label: string;
+  actionHref: string;
+  actionLabel: string;
+  children: React.ReactNode;
+}
+
+function RequirementField({
+  empty,
+  label,
+  actionHref,
+  actionLabel,
+  children,
+}: RequirementFieldProps) {
+  if (!empty) {
+    return <div className="space-y-1.5">{children}</div>;
+  }
+  return (
+    <div className="rounded-md border border-dashed bg-muted/30 p-3">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-medium">{label}</span>
+        <Button asChild size="sm" variant="outline">
+          <Link href={actionHref}>{actionLabel}</Link>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -68,6 +106,7 @@ export function StartEvaluationDialog({
   projectId,
 }: StartEvaluationDialogProps) {
   const t = useTranslations('evaluations');
+  const tCommon = useTranslations('common');
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -80,6 +119,8 @@ export function StartEvaluationDialog({
   const {
     register,
     handleSubmit,
+    setValue,
+    control,
     reset,
     formState: { errors },
   } = useForm<StartEvaluationFormValues>({
@@ -87,7 +128,8 @@ export function StartEvaluationDialog({
     defaultValues: {
       datasetPublicId: '',
       rubricVersionPublicId: '',
-      connectorPublicId: '',
+      targetConnectorPublicId: '',
+      judgeModelPublicId: '',
     },
   });
 
@@ -104,10 +146,10 @@ export function StartEvaluationDialog({
   // Fetch rubric versions (PUBLISHED)
   const { data: rubricVersionsData, isLoading: rubricVersionsLoading } =
     useQuery({
-      queryKey: ['rubric-versions-published', projectId],
+      queryKey: ['rubric-versions-published'],
       queryFn: () =>
         apiClient.get<PageResponse<RubricVersionOption>>(
-          `/api/v1/projects/${projectId}/rubric-versions?status=PUBLISHED&size=100`,
+          '/api/v1/rubric-versions?status=PUBLISHED&size=100',
         ),
       enabled: open,
     });
@@ -122,12 +164,30 @@ export function StartEvaluationDialog({
     enabled: open,
   });
 
-  const datasets = datasetsData?.items ?? [];
-  const rubricVersions = rubricVersionsData?.items ?? [];
-  const connectors = connectorsData?.items ?? [];
+  // Fetch active judge models
+  const { data: judgeModelsData, isLoading: judgeModelsLoading } = useQuery({
+    queryKey: ['judge-models-active', projectId],
+    queryFn: () =>
+      apiClient.get<PageResponse<JudgeModelOption>>(
+        `/api/v1/projects/${projectId}/judge-models?active=true&size=100`,
+      ),
+    enabled: open,
+  });
+
+  const datasets = React.useMemo(() => datasetsData?.items ?? [], [datasetsData]);
+  const rubricVersions = React.useMemo(
+    () => rubricVersionsData?.items ?? [],
+    [rubricVersionsData],
+  );
+  const connectors = React.useMemo(() => connectorsData?.items ?? [], [connectorsData]);
+  const judgeModels = React.useMemo(
+    () => judgeModelsData?.items ?? [],
+    [judgeModelsData],
+  );
+  const selectedValues = useWatch({ control });
 
   // Job progress polling
-  useJobProgress(jobPublicId, {
+  const { job } = useJobProgress(jobPublicId, {
     onCompleted: () => {
       void queryClient.invalidateQueries({
         queryKey: ['evaluation-runs', projectId],
@@ -234,9 +294,50 @@ export function StartEvaluationDialog({
     }
   };
 
-  if (!open) return null;
+  const isLoading =
+    datasetsLoading ||
+    rubricVersionsLoading ||
+    connectorsLoading ||
+    judgeModelsLoading;
+  const canQuickEvaluate =
+    datasets.length === 1 &&
+    rubricVersions.length === 1 &&
+    connectors.length === 1 &&
+    judgeModels.length === 1;
+  const canStart =
+    !isLoading &&
+    !isSubmitting &&
+    Boolean(selectedValues.datasetPublicId) &&
+    Boolean(selectedValues.rubricVersionPublicId) &&
+    Boolean(selectedValues.targetConnectorPublicId) &&
+    Boolean(selectedValues.judgeModelPublicId);
 
-  const isLoading = datasetsLoading || rubricVersionsLoading || connectorsLoading;
+  React.useEffect(() => {
+    if (datasets.length === 1 && !selectedValues.datasetPublicId) {
+      setValue('datasetPublicId', datasets[0].publicId);
+    }
+    if (rubricVersions.length === 1 && !selectedValues.rubricVersionPublicId) {
+      setValue('rubricVersionPublicId', rubricVersions[0].publicId);
+    }
+    if (connectors.length === 1 && !selectedValues.targetConnectorPublicId) {
+      setValue('targetConnectorPublicId', connectors[0].publicId);
+    }
+    if (judgeModels.length === 1 && !selectedValues.judgeModelPublicId) {
+      setValue('judgeModelPublicId', judgeModels[0].publicId);
+    }
+  }, [
+    connectors,
+    datasets,
+    judgeModels,
+    rubricVersions,
+    selectedValues.datasetPublicId,
+    selectedValues.judgeModelPublicId,
+    selectedValues.rubricVersionPublicId,
+    selectedValues.targetConnectorPublicId,
+    setValue,
+  ]);
+
+  if (!open) return null;
 
   return (
     <div
@@ -276,7 +377,7 @@ export function StartEvaluationDialog({
         {jobPublicId ? (
           <div className="mt-4 space-y-2">
             <p className="text-sm text-muted-foreground animate-pulse">
-              {t('progress')}...
+              {t('progress')}: {job?.progress ?? 0}%
             </p>
           </div>
         ) : (
@@ -285,7 +386,12 @@ export function StartEvaluationDialog({
             className="mt-4 space-y-4"
           >
             {/* Dataset select */}
-            <div className="space-y-1.5">
+            <RequirementField
+              empty={datasets.length === 0}
+              label={t('dataset')}
+              actionHref={`/projects/${projectId}/datasets`}
+              actionLabel={t('createMissingDataset')}
+            >
               <label
                 htmlFor="datasetPublicId"
                 className="text-sm font-medium"
@@ -310,10 +416,15 @@ export function StartEvaluationDialog({
                   {errors.datasetPublicId.message}
                 </p>
               )}
-            </div>
+            </RequirementField>
 
             {/* Rubric version select */}
-            <div className="space-y-1.5">
+            <RequirementField
+              empty={rubricVersions.length === 0}
+              label={t('rubricVersion')}
+              actionHref="/rubrics"
+              actionLabel={t('createMissingRubric')}
+            >
               <label
                 htmlFor="rubricVersionPublicId"
                 className="text-sm font-medium"
@@ -338,19 +449,24 @@ export function StartEvaluationDialog({
                   {errors.rubricVersionPublicId.message}
                 </p>
               )}
-            </div>
+            </RequirementField>
 
             {/* Connector select */}
-            <div className="space-y-1.5">
+            <RequirementField
+              empty={connectors.length === 0}
+              label={t('connector')}
+              actionHref={`/projects/${projectId}/connectors`}
+              actionLabel={t('createMissingConnector')}
+            >
               <label
-                htmlFor="connectorPublicId"
+                htmlFor="targetConnectorPublicId"
                 className="text-sm font-medium"
               >
                 {t('connector')}
               </label>
               <select
-                id="connectorPublicId"
-                {...register('connectorPublicId')}
+                id="targetConnectorPublicId"
+                {...register('targetConnectorPublicId')}
                 disabled={isLoading || isSubmitting}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
               >
@@ -361,12 +477,45 @@ export function StartEvaluationDialog({
                   </option>
                 ))}
               </select>
-              {errors.connectorPublicId && (
+              {errors.targetConnectorPublicId && (
                 <p className="text-xs text-red-600">
-                  {errors.connectorPublicId.message}
+                  {errors.targetConnectorPublicId.message}
                 </p>
               )}
-            </div>
+            </RequirementField>
+
+            {/* Judge model select */}
+            <RequirementField
+              empty={judgeModels.length === 0}
+              label={t('judgeModel')}
+              actionHref={`/projects/${projectId}/judge-models`}
+              actionLabel={t('createMissingJudgeModel')}
+            >
+              <label
+                htmlFor="judgeModelPublicId"
+                className="text-sm font-medium"
+              >
+                {t('judgeModel')}
+              </label>
+              <select
+                id="judgeModelPublicId"
+                {...register('judgeModelPublicId')}
+                disabled={isLoading || isSubmitting}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+              >
+                <option value="">{t('selectJudgeModel')}</option>
+                {judgeModels.map((jm) => (
+                  <option key={jm.publicId} value={jm.publicId}>
+                    {jm.name} ({jm.provider}: {jm.modelName})
+                  </option>
+                ))}
+              </select>
+              {errors.judgeModelPublicId && (
+                <p className="text-xs text-red-600">
+                  {errors.judgeModelPublicId.message}
+                </p>
+              )}
+            </RequirementField>
 
             {/* Actions */}
             <div className="flex items-center justify-between gap-3 pt-2">
@@ -374,7 +523,7 @@ export function StartEvaluationDialog({
                 type="button"
                 variant="outline"
                 size="sm"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !canQuickEvaluate}
                 onClick={handleQuickEvaluate}
               >
                 <LightningIcon weight="bold" />
@@ -389,9 +538,9 @@ export function StartEvaluationDialog({
                   disabled={isSubmitting}
                   onClick={() => onOpenChange(false)}
                 >
-                  Cancel
+                  {tCommon('cancel')}
                 </Button>
-                <Button type="submit" disabled={isSubmitting}>
+                <Button type="submit" disabled={!canStart}>
                   {isSubmitting && (
                     <svg
                       className="mr-1.5 size-4 animate-spin"

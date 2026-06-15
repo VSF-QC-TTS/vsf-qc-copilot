@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { PageShell } from '@/components/layout/page-shell';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { apiClient } from '@/lib/api/client';
-import type { ApiError, RubricVersionStatus } from '@/lib/api/types';
+import type { ApiError, PageResponse, RubricVersionStatus } from '@/lib/api/types';
 import { getErrorMessageKey } from '@/lib/utils/error-messages';
 import {
   createCriterionSchema,
@@ -36,9 +36,10 @@ type VersionDetailResponse = {
   status: RubricVersionStatus;
   rubricPublicId: string;
   rubricName: string;
+  content: string | null;
+  outputSchemaJson: string | null;
   criteriaCount: number;
   createdAt: string;
-  updatedAt: string;
 };
 
 type CriterionResponse = {
@@ -66,6 +67,21 @@ const inputClassName =
 const textareaClassName =
   'flex min-h-[80px] w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
+function errorMessage(error: unknown, tErrors: (key: string) => string): string {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    'status' in error &&
+    'message' in error
+  ) {
+    const apiError = error as ApiError;
+    const messageKey = getErrorMessageKey(apiError);
+    return tErrors(messageKey.replace(/^errors\./, ''));
+  }
+  return tErrors('network');
+}
+
 // ---------------------------------------------------------------------------
 // Page component
 // ---------------------------------------------------------------------------
@@ -78,12 +94,14 @@ export default function VersionDetailPage({
   const { rubricId, versionId } = React.use(params);
   const t = useTranslations('rubrics');
   const tCommon = useTranslations('common');
+  const tErrors = useTranslations('errors');
   const queryClient = useQueryClient();
 
   // Panel state
   const [panelOpen, setPanelOpen] = useState(false);
   const [editingCriterion, setEditingCriterion] = useState<CriterionResponse | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Fetch version detail
   const { data: version } = useQuery({
@@ -98,13 +116,13 @@ export default function VersionDetailPage({
   const { data: criteriaData } = useQuery({
     queryKey: ['rubric-criteria', versionId],
     queryFn: () =>
-      apiClient.get<CriterionResponse[]>(
+      apiClient.get<PageResponse<CriterionResponse>>(
         `/api/v1/rubric-versions/${versionId}/criteria`,
       ),
   });
 
   const criteria = useMemo(() => {
-    const list = criteriaData ?? [];
+    const list = criteriaData?.items ?? [];
     return [...list].sort((a, b) => a.sortOrder - b.sortOrder);
   }, [criteriaData]);
 
@@ -117,12 +135,14 @@ export default function VersionDetailPage({
 
   // Open panel for create
   const openCreate = useCallback(() => {
+    setActionError(null);
     setEditingCriterion(null);
     setPanelOpen(true);
   }, []);
 
   // Open panel for edit
   const openEdit = useCallback((criterion: CriterionResponse) => {
+    setActionError(null);
     setEditingCriterion(criterion);
     setPanelOpen(true);
   }, []);
@@ -145,6 +165,9 @@ export default function VersionDetailPage({
       });
       setDeleteConfirmId(null);
     },
+    onError: (error: unknown) => {
+      setActionError(errorMessage(error, tErrors));
+    },
   });
 
   const handleDelete = useCallback(
@@ -165,6 +188,17 @@ export default function VersionDetailPage({
       backLabel={tCommon('back')}
       actions={version && <StatusBadge status={version.status} />}
     >
+      {/* Rubric content */}
+      {version && (
+        <RubricContentEditor
+          key={version.publicId}
+          versionId={versionId}
+          isDraft={isDraft}
+          content={version.content ?? ''}
+          outputSchemaJson={version.outputSchemaJson ?? ''}
+        />
+      )}
+
       {/* Criteria header */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">{t('criteria')}</h2>
@@ -175,6 +209,12 @@ export default function VersionDetailPage({
           </Button>
         )}
       </div>
+
+      {actionError && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {actionError}
+        </div>
+      )}
 
       {/* Criteria list */}
       {criteria.length === 0 ? (
@@ -291,6 +331,88 @@ export default function VersionDetailPage({
         />
       )}
     </PageShell>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Rubric Content Editor
+// ---------------------------------------------------------------------------
+
+function RubricContentEditor({
+  versionId,
+  isDraft,
+  content,
+  outputSchemaJson,
+}: {
+  versionId: string;
+  isDraft: boolean;
+  content: string;
+  outputSchemaJson: string;
+}) {
+  const t = useTranslations('rubrics');
+  const tCommon = useTranslations('common');
+  const tErrors = useTranslations('errors');
+  const queryClient = useQueryClient();
+  const [contentDraft, setContentDraft] = useState(content);
+  const [schemaDraft, setSchemaDraft] = useState(outputSchemaJson);
+  const [serverError, setServerError] = useState<string | null>(null);
+
+  const updateVersionMutation = useMutation({
+    mutationFn: () =>
+      apiClient.patch(`/api/v1/rubric-versions/${versionId}`, {
+        content: contentDraft,
+        outputSchemaJson: schemaDraft,
+      }),
+    onMutate: () => {
+      setServerError(null);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ['rubric-version', versionId],
+      });
+    },
+    onError: (error: unknown) => {
+      setServerError(errorMessage(error, tErrors));
+    },
+  });
+
+  return (
+    <section className="space-y-3 rounded-md border bg-card p-4">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold">{t('rubricContent')}</h2>
+        {isDraft && (
+          <Button
+            size="sm"
+            disabled={updateVersionMutation.isPending}
+            onClick={() => updateVersionMutation.mutate()}
+          >
+            {updateVersionMutation.isPending ? tCommon('loading') : tCommon('save')}
+          </Button>
+        )}
+      </div>
+      {serverError && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {serverError}
+        </div>
+      )}
+      <textarea
+        value={contentDraft}
+        disabled={!isDraft || updateVersionMutation.isPending}
+        onChange={(event) => setContentDraft(event.target.value)}
+        className={cn(textareaClassName, 'min-h-[140px]')}
+      />
+      <details className="rounded-md border bg-background p-3">
+        <summary className="cursor-pointer text-sm font-medium">
+          {t('outputSchema')}
+        </summary>
+        <textarea
+          value={schemaDraft}
+          disabled={!isDraft || updateVersionMutation.isPending}
+          onChange={(event) => setSchemaDraft(event.target.value)}
+          className={cn(textareaClassName, 'mt-3 font-mono')}
+        />
+      </details>
+    </section>
   );
 }
 

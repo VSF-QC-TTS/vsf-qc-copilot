@@ -1,6 +1,6 @@
 # Server API Tree
 
-Date: 2026-06-12
+Date: 2026-06-15
 
 Purpose: ghi lại quan hệ API hiện tại dưới dạng cây để khi project phình to vẫn dễ nắm luồng.
 
@@ -27,14 +27,15 @@ Auth
         |   `-- Connector test run
         |-- Dataset
         |   `-- Test Case
-        |-- Rubric
-        |   `-- Rubric Version
-        |       `-- Rubric Criterion
+        |-- Judge Model
         `-- Evaluation Run / Job
             |-- Evaluation Result
             |   `-- QC Review
             |-- Job Event
             `-- Export
+    `-- User-scoped Rubric
+        `-- Rubric Version
+            `-- Rubric Criterion
 ```
 
 ## API Resource Tree
@@ -87,15 +88,25 @@ Auth
 |   |   `-- GET /
 |   |       `-- List dataset của project; filter: status; pageable/sortable
 |   |
-|   `-- /{projectPublicId}/rubrics [auth]
-|       |-- POST /
-|       |   `-- Tạo rubric dưới project
-|       `-- GET /
-|           `-- List rubric của project; filter: status; pageable/sortable
+|   |-- /{projectPublicId}/rubrics [auth]
+|   |   |-- POST /
+|   |   |   `-- Tạo rubric linked project (backward compat)
+|   |   `-- GET /
+|   |       `-- List rubric của project; filter: status; pageable/sortable
+|   |
+|   |-- /{projectPublicId}/judge-models [auth]
+|   |   |-- POST /
+|   |   |   `-- Tạo judge model cho project; encrypt raw API key; response chỉ masked key
+|   |   `-- GET /
+|   |       `-- List judge models của project; filter: active; pageable/sortable
+|   |
+|   |-- /{projectPublicId}/quick-evaluate [auth]
+|   |   `-- POST /
+|   |       `-- Auto-resolve dataset/connector/rubric version/judge model khi mỗi loại có đúng 1 candidate
 |
 |   `-- /{projectPublicId}/evaluation-runs [auth]
 |       |-- POST /
-|       |   `-- Tạo evaluation run (202); validate dataset/rubric/connector
+|       |   `-- Tạo evaluation run (202); validate dataset/rubric/connector/judge model
 |       `-- GET /
 |           `-- List evaluation runs của project; pageable/sortable
 |
@@ -128,6 +139,16 @@ Auth
 |           `-- Xóa test case theo API contract hiện tại
 |
 |-- /api/v1/rubrics [auth]
+|   |-- POST /generate-preview
+|   |   `-- AI generates editable rubric content/output schema/criteria preview; no DB write
+|   |-- POST /
+|   |   `-- Tạo user-scoped rubric + draft v1; request gồm rubric content/output schema/optional criteria
+|   |-- GET /
+|   |   `-- List user-scoped rubrics owned by current user
+|   |-- GET /templates
+|   |   `-- List system-provided templates
+|   |-- POST /{rubricPublicId}/clone
+|   |   `-- Clone template/rubric into current user's rubrics
 |   `-- /{rubricPublicId}
 |       |-- GET /
 |       |   `-- Chi tiết rubric
@@ -137,16 +158,18 @@ Auth
 |       |   `-- Soft archive rubric
 |       `-- /versions [auth]
 |           |-- POST /
-|           |   `-- Tạo draft version kế tiếp; version number do server quản
+|           |   `-- Tạo draft version kế tiếp; optional body sourceVersionPublicId để clone content/schema/criteria
 |           `-- GET /
 |               `-- List rubric version; filter: status; pageable/sortable
 |
 |-- /api/v1/rubric-versions [auth]
+|   |-- GET /
+|   |   `-- List all user-owned rubric versions; filter: status; pageable/sortable
 |   `-- /{rubricVersionPublicId}
 |       |-- GET /
-|       |   `-- Chi tiết version kèm criteria
+|       |   `-- Chi tiết version kèm content/output schema/criteria
 |       |-- PATCH /
-|       |   `-- Publish/archive version; publish cần ≥1 criterion
+|       |   `-- Update draft content/output schema hoặc publish/archive version; publish cần content + ≥1 criterion
 |       `-- /criteria [auth]
 |           |-- POST /
 |           |   `-- Tạo criterion dưới draft version
@@ -159,6 +182,13 @@ Auth
 |       |   `-- Update criterion dưới draft version
 |       `-- DELETE /
 |           `-- Xóa criterion dưới draft version
+|
+|-- /api/v1/judge-models [auth]
+|   `-- /{judgeModelPublicId}
+|       |-- PATCH /
+|       |   `-- Update judge model metadata/config; optional API key replacement
+|       `-- POST /test-connection
+|           `-- Validate ownership/active status; returns masked model config
 |
 `-- /mock-chatbot [public]
     `-- POST /chat
@@ -219,15 +249,22 @@ User
     |   `-- has many TestCase
     |       `-- status: ACTIVE, INACTIVE
     |
-    `-- has many Rubric
-        |-- status có ARCHIVED
-        |-- currentVersion là null cho tới khi publish
-        `-- has many RubricVersion
-            |-- version tự tăng từ latest version
-            |-- status quyết định có được mutate không
-            `-- has many RubricCriterion
-                |-- metricKey unique trong từng version
-                `-- weight là relative integer (1–100), hệ thống normalize Σ(w×s)/Σ(w)
+    `-- has many JudgeModel
+        |-- provider/model/baseUrl/configJson
+        `-- encryptedApiKey + apiKeyMasked
+
+User
+`-- owns Rubric qua rubric.createdBy
+    |-- project_id nullable; `is_template` cho system templates
+    |-- status có ARCHIVED
+    |-- currentVersion là null cho tới khi publish
+    `-- has many RubricVersion
+        |-- content + optional outputSchemaJson
+        |-- version tự tăng từ latest version
+        |-- status quyết định có được mutate không
+        `-- has many RubricCriterion
+            |-- metricKey unique trong từng version
+            `-- weight là relative integer (1–100), hệ thống normalize Σ(w×s)/Σ(w)
 
 User
 `-- owns EvaluationRun qua evaluation_runs.createdBy
@@ -238,8 +275,9 @@ User
     |   `-- criteriaResultsJson: per-criterion LLM judge breakdown (when rubric criteria exist)
     |-- references Dataset (must be APPROVED)
     |-- references RubricVersion (must be PUBLISHED)
-    |   `-- criteria drive llm-rubric assertions + weighted scoring + isCritical override
-    `-- references TargetApiConnector (must be active)
+    |   `-- criteria drive llm-rubric assertions + weighted scoring; any failed criterion fails the run item
+    |-- references TargetApiConnector (must be active)
+    `-- references JudgeModel (must be active)
 ```
 
 ## Main Workflow Tree
@@ -258,35 +296,41 @@ User
 9. POST /api/v1/datasets/{datasetPublicId}/test-cases
 10. PATCH /api/v1/datasets/{datasetPublicId}
     `-- approve dataset sau khi có active test cases
-11. POST /api/v1/projects/{projectPublicId}/rubrics
-12. POST /api/v1/rubrics/{rubricPublicId}/versions
-13. POST /api/v1/rubric-versions/{rubricVersionPublicId}/criteria
-14. PATCH /api/v1/rubric-versions/{rubricVersionPublicId}
-     `-- publish khi có ≥1 criterion (weight là relative, không cần tổng = 1)
-15. POST /api/v1/projects/{projectPublicId}/evaluation-runs
+11. POST /api/v1/rubrics/generate-preview
+    `-- AI tạo preview content/schema/criteria để QC chỉnh trước khi lưu
+12. POST /api/v1/rubrics
+    `-- tạo reusable rubric + draft v1, gồm content/output schema/optional criteria
+13. POST /api/v1/rubrics/{rubricPublicId}/versions
+    `-- tạo draft version mới; optional sourceVersionPublicId để clone từ version đã có
+14. POST /api/v1/rubric-versions/{rubricVersionPublicId}/criteria
+15. PATCH /api/v1/rubric-versions/{rubricVersionPublicId}
+     `-- publish khi có content + ≥1 criterion (weight là relative, không cần tổng = 1)
+16. POST /api/v1/projects/{projectPublicId}/judge-models
+    `-- cấu hình provider/model/API key cho AI judge của project
+17. POST /api/v1/projects/{projectPublicId}/evaluation-runs
     `-- tạo evaluation run + job, trả 202
-16. GET  /api/v1/jobs/{jobPublicId}
+17. GET  /api/v1/jobs/{jobPublicId}
     `-- poll job progress
-17. GET  /api/v1/evaluation-runs/{runPublicId}
+18. GET  /api/v1/evaluation-runs/{runPublicId}
     `-- xem kết quả tổng
-18. GET  /api/v1/evaluation-runs/{runPublicId}/results
+19. GET  /api/v1/evaluation-runs/{runPublicId}/results
     `-- xem kết quả chi tiết từng test case, gồm qcStatus/qcNote/picBug
-19. Worker consumes Redis queue `vqc:jobs:queue`
+20. Worker consumes Redis queue `vqc:jobs:queue`
     |-- promptfoo executor writes evaluation results and job events
     |-- mock mode for local fallback, CLI mode for real promptfoo eval
-    |-- rubric criteria → llm-rubric assertions; grading via google:gemini-2.5-flash
-    `-- weighted scoring + isCritical override for final judgeStatus/judgeScore
-20. PUT  /api/v1/evaluation-results/{resultPublicId}/review-decision
+    |-- rubric criteria/content → llm-rubric assertions; grading provider lấy từ selected JudgeModel
+    `-- weighted scoring + rubric criterion pass/fail aggregation for final judgeStatus/judgeScore
+21. PUT  /api/v1/evaluation-results/{resultPublicId}/review-decision
     `-- QC upsert final decision cho một result
-21. GET  /api/v1/evaluation-results/{resultPublicId}/review-decision
+22. GET  /api/v1/evaluation-results/{resultPublicId}/review-decision
     `-- xem QC decision, default NOT_REVIEWED nếu chưa review
-22. PATCH /api/v1/review-decisions/{reviewDecisionPublicId}
+23. PATCH /api/v1/review-decisions/{reviewDecisionPublicId}
     `-- update QC decision hiện có
-23. POST /api/v1/evaluation-runs/{runPublicId}/exports
+24. POST /api/v1/evaluation-runs/{runPublicId}/exports
     `-- tạo async export job
-24. GET  /api/v1/exports/{exportPublicId}
+25. GET  /api/v1/exports/{exportPublicId}
     `-- xem export metadata
-25. GET  /api/v1/exports/{exportPublicId}/file
+26. GET  /api/v1/exports/{exportPublicId}/file
     `-- download file khi export READY
 ```
 
@@ -307,7 +351,7 @@ Project
 |-- Evaluation Run / Job
 |   |-- Worker + Promptfoo mock executor [done]
 |   |-- Worker + Promptfoo CLI executor [done: local binary, validation, no-cache, results parser]
-|   |-- Rubric judge mapping [done: llm-rubric assertions, weighted scoring, isCritical override, criteria results]
+|   |-- Rubric judge mapping [done: llm-rubric assertions, semantic groundTruth context, weighted scoring, criteria results]
 |   |-- QC Review [done: upsert/get/patch decision]
 |   `-- Export [done: create/detail/download + worker generation]
 |       `-- flexible mapping; optional missing fields thì để blank

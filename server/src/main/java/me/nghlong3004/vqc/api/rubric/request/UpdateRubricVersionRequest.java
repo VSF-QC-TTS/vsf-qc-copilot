@@ -1,7 +1,7 @@
 package me.nghlong3004.vqc.api.rubric.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import me.nghlong3004.vqc.api.rubric.enums.RubricVersionStatus;
 
 /**
@@ -11,5 +11,10 @@ import me.nghlong3004.vqc.api.rubric.enums.RubricVersionStatus;
 @Schema(name = "UpdateRubricVersionRequest", description = "Update rubric version lifecycle payload")
 public record UpdateRubricVersionRequest(
     @Schema(description = "Rubric version lifecycle status.", example = "PUBLISHED")
-        @NotNull(message = "Rubric version status is required.")
-        RubricVersionStatus status) {}
+        RubricVersionStatus status,
+    @Schema(description = "Rubric judge prompt content.", nullable = true)
+        @Size(max = 10000, message = "Rubric content must be at most 10000 characters.")
+        String content,
+    @Schema(description = "Output schema JSON.", nullable = true)
+        @Size(max = 10000, message = "Output schema JSON must be at most 10000 characters.")
+        String outputSchemaJson) {}

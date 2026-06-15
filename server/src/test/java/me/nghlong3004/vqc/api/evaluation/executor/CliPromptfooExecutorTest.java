@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import me.nghlong3004.vqc.api.common.crypto.AesGcmEncryptor;
 import me.nghlong3004.vqc.api.config.PromptfooProperties;
 import me.nghlong3004.vqc.api.dataset.entity.Dataset;
 import me.nghlong3004.vqc.api.evaluation.entity.EvaluationRun;
@@ -75,6 +76,9 @@ class CliPromptfooExecutorTest {
     assertThat(results.getFirst().judgeStatus()).isEqualTo(JudgeStatus.PASS);
     assertThat(results.getFirst().latencyMs()).isEqualTo(123);
     assertThat(results.getFirst().rawPromptfooResultJson()).contains("Actual answer");
+    assertThat(results.getFirst().criteriaResultsJson())
+        .contains("\"metricKey\":\"accuracy\"")
+        .contains("\"metricKey\":\"tone\"");
   }
 
   @Test
@@ -218,7 +222,12 @@ class CliPromptfooExecutorTest {
         new PromptfooResultParser(objectMapper),
         secretService,
         criterionRepository,
-        properties);
+        properties,
+        testEncryptor());
+  }
+
+  private AesGcmEncryptor testEncryptor() {
+    return new AesGcmEncryptor("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
   }
 
   private PromptfooProperties promptfooProperties(Path tempDir, Path fakePromptfoo) {
@@ -383,7 +392,35 @@ class CliPromptfooExecutorTest {
                 "gradingResult": {
                   "pass": true,
                   "score": 0.91,
-                  "reason": "matched"
+                  "reason": "matched",
+                  "componentResults": [
+                    {
+                      "pass": true,
+                      "score": 1.0,
+                      "reason": "Accurate",
+                      "assertion": {
+                        "type": "llm-rubric",
+                        "metric": "accuracy"
+                      }
+                    },
+                    {
+                      "pass": true,
+                      "score": 0.8,
+                      "reason": "Good tone",
+                      "assertion": {
+                        "type": "llm-rubric",
+                        "metric": "tone"
+                      }
+                    },
+                    {
+                      "pass": true,
+                      "score": 1.0,
+                      "reason": "Exact text fallback",
+                      "assertion": {
+                        "type": "contains"
+                      }
+                    }
+                  ]
                 },
                 "failureReason": 0
               }
@@ -443,12 +480,12 @@ class CliPromptfooExecutorTest {
     // Tests should contain rubric assertions
     JsonNode tests = objectMapper.readTree(runDir.resolve("tests.json").toFile());
     JsonNode firstTestAssert = tests.get(0).path("assert");
-    // First test case has groundTruth → contains + 2 rubric assertions = 3
-    assertThat(firstTestAssert.size()).isEqualTo(3);
-    assertThat(firstTestAssert.get(0).path("type").asText()).isEqualTo("contains");
-    assertThat(firstTestAssert.get(1).path("type").asText()).isEqualTo("llm-rubric");
-    assertThat(firstTestAssert.get(1).path("metric").asText()).isEqualTo("accuracy");
-    assertThat(firstTestAssert.get(2).path("metric").asText()).isEqualTo("tone");
+    assertThat(tests.get(0).path("vars").path("groundTruth").asText()).isEqualTo("Answer");
+    // Ground truth is passed as judge context; rubric assertions replace exact contains.
+    assertThat(firstTestAssert.size()).isEqualTo(2);
+    assertThat(firstTestAssert.get(0).path("type").asText()).isEqualTo("llm-rubric");
+    assertThat(firstTestAssert.get(0).path("metric").asText()).isEqualTo("accuracy");
+    assertThat(firstTestAssert.get(1).path("metric").asText()).isEqualTo("tone");
     // Second test case has no groundTruth → only 2 rubric assertions
     JsonNode secondTestAssert = tests.get(1).path("assert");
     assertThat(secondTestAssert.size()).isEqualTo(2);

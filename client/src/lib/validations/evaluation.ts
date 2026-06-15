@@ -13,7 +13,8 @@ export const QC_STATUSES = ['PASS', 'FAIL', 'NEED_FIX', 'IGNORED'] as const;
 export const startEvaluationSchema = z.object({
   datasetPublicId: z.string().min(1, 'Dataset is required'),
   rubricVersionPublicId: z.string().min(1, 'Rubric version is required'),
-  connectorPublicId: z.string().min(1, 'Connector is required'),
+  targetConnectorPublicId: z.string().min(1, 'Connector is required'),
+  judgeModelPublicId: z.string().min(1, 'Judge model is required'),
 });
 
 export type StartEvaluationFormValues = z.input<typeof startEvaluationSchema>;

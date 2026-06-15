@@ -15,8 +15,13 @@ public interface RubricVersionService {
 
   RubricVersionResponse createVersion(UUID rubricPublicId, String username);
 
+  RubricVersionResponse createVersion(UUID rubricPublicId, UUID sourceVersionPublicId, String username);
+
   RubricVersionPageResponse listVersions(
       UUID rubricPublicId, RubricVersionStatus status, Pageable pageable, String username);
+
+  RubricVersionPageResponse listUserVersions(
+      RubricVersionStatus status, Pageable pageable, String username);
 
   RubricVersionResponse getVersion(UUID rubricVersionPublicId, String username);
 

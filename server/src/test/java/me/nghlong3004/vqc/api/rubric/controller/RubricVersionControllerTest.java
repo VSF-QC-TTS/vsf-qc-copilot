@@ -64,11 +64,37 @@ class RubricVersionControllerTest {
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.publicId").value("5cfb4c51-3ac4-44bd-93b4-8eb4e3f46f3a"))
         .andExpect(jsonPath("$.rubricPublicId").value("3c5582c5-96d8-40e4-9aa1-168f6d27c9dc"))
-        .andExpect(jsonPath("$.version").value(2))
+        .andExpect(jsonPath("$.versionNumber").value(2))
         .andExpect(jsonPath("$.status").value("DRAFT"));
 
     assertThat(RecordingRubricVersionService.rubricPublicId)
         .isEqualTo(UUID.fromString("3c5582c5-96d8-40e4-9aa1-168f6d27c9dc"));
+    assertThat(RecordingRubricVersionService.sourceVersionPublicId).isNull();
+    assertThat(RecordingRubricVersionService.username).isEqualTo("qc.demo@example.com");
+  }
+
+  @Test
+  void createVersionAcceptsSourceVersionToClone() throws Exception {
+    RecordingRubricVersionService.versionResponse = versionResponse(RubricVersionStatus.DRAFT);
+
+    mockMvc
+        .perform(
+            post("/api/v1/rubrics/3c5582c5-96d8-40e4-9aa1-168f6d27c9dc/versions")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "sourceVersionPublicId": "8cfb4c51-3ac4-44bd-93b4-8eb4e3f46f3a"
+                    }
+                    """))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.status").value("DRAFT"));
+
+    assertThat(RecordingRubricVersionService.rubricPublicId)
+        .isEqualTo(UUID.fromString("3c5582c5-96d8-40e4-9aa1-168f6d27c9dc"));
+    assertThat(RecordingRubricVersionService.sourceVersionPublicId)
+        .isEqualTo(UUID.fromString("8cfb4c51-3ac4-44bd-93b4-8eb4e3f46f3a"));
     assertThat(RecordingRubricVersionService.username).isEqualTo("qc.demo@example.com");
   }
 
@@ -80,6 +106,7 @@ class RubricVersionControllerTest {
                 new RubricVersionListItemResponse(
                     UUID.fromString("5cfb4c51-3ac4-44bd-93b4-8eb4e3f46f3a"),
                     UUID.fromString("3c5582c5-96d8-40e4-9aa1-168f6d27c9dc"),
+                    "Health Answer Quality Rubric",
                     2,
                     RubricVersionStatus.DRAFT,
                     3,
@@ -97,9 +124,9 @@ class RubricVersionControllerTest {
                 .queryParam("status", "DRAFT"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.items[0].publicId").value("5cfb4c51-3ac4-44bd-93b4-8eb4e3f46f3a"))
-        .andExpect(jsonPath("$.items[0].version").value(2))
+        .andExpect(jsonPath("$.items[0].versionNumber").value(2))
         .andExpect(jsonPath("$.items[0].status").value("DRAFT"))
-        .andExpect(jsonPath("$.items[0].totalCriteria").value(3));
+        .andExpect(jsonPath("$.items[0].criteriaCount").value(3));
 
     assertThat(RecordingRubricVersionService.status).isEqualTo(RubricVersionStatus.DRAFT);
     assertThat(RecordingRubricVersionService.pageable.getPageSize()).isEqualTo(20);
@@ -143,12 +170,53 @@ class RubricVersionControllerTest {
         .isEqualTo(RubricVersionStatus.PUBLISHED);
   }
 
+  @Test
+  void updateVersionContentReturnsUpdatedDraft() throws Exception {
+    RecordingRubricVersionService.versionResponse =
+        new RubricVersionResponse(
+            UUID.fromString("5cfb4c51-3ac4-44bd-93b4-8eb4e3f46f3a"),
+            UUID.fromString("3c5582c5-96d8-40e4-9aa1-168f6d27c9dc"),
+            "Health Answer Quality Rubric",
+            2,
+            RubricVersionStatus.DRAFT,
+            "Updated rubric content.",
+            "{\"type\":\"object\"}",
+            0,
+            OffsetDateTime.parse("2026-06-08T10:45:00Z"),
+            null,
+            List.of());
+
+    mockMvc
+        .perform(
+            patch("/api/v1/rubric-versions/5cfb4c51-3ac4-44bd-93b4-8eb4e3f46f3a")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "content": "Updated rubric content.",
+                      "outputSchemaJson": "{\\"type\\":\\"object\\"}"
+                    }
+                    """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content").value("Updated rubric content."))
+        .andExpect(jsonPath("$.outputSchemaJson").value("{\"type\":\"object\"}"));
+
+    assertThat(RecordingRubricVersionService.updateRequest.status()).isNull();
+    assertThat(RecordingRubricVersionService.updateRequest.content())
+        .isEqualTo("Updated rubric content.");
+  }
+
   private RubricVersionResponse versionResponse(RubricVersionStatus status) {
     return new RubricVersionResponse(
         UUID.fromString("5cfb4c51-3ac4-44bd-93b4-8eb4e3f46f3a"),
         UUID.fromString("3c5582c5-96d8-40e4-9aa1-168f6d27c9dc"),
+        "Health Answer Quality Rubric",
         2,
         status,
+        "Judge actual response against expected answer.",
+        "{\"type\":\"object\"}",
+        0,
         OffsetDateTime.parse("2026-06-08T10:45:00Z"),
         status == RubricVersionStatus.PUBLISHED
             ? OffsetDateTime.parse("2026-06-08T11:00:00Z")
@@ -168,6 +236,7 @@ class RubricVersionControllerTest {
   static class RecordingRubricVersionService implements RubricVersionService {
 
     static UUID rubricPublicId;
+    static UUID sourceVersionPublicId;
     static UUID rubricVersionPublicId;
     static RubricVersionStatus status;
     static Pageable pageable;
@@ -178,6 +247,7 @@ class RubricVersionControllerTest {
 
     static void reset() {
       rubricPublicId = null;
+      sourceVersionPublicId = null;
       rubricVersionPublicId = null;
       status = null;
       pageable = null;
@@ -189,7 +259,14 @@ class RubricVersionControllerTest {
 
     @Override
     public RubricVersionResponse createVersion(UUID rubricPublicId, String username) {
+      return createVersion(rubricPublicId, null, username);
+    }
+
+    @Override
+    public RubricVersionResponse createVersion(
+        UUID rubricPublicId, UUID sourceVersionPublicId, String username) {
       RecordingRubricVersionService.rubricPublicId = rubricPublicId;
+      RecordingRubricVersionService.sourceVersionPublicId = sourceVersionPublicId;
       RecordingRubricVersionService.username = username;
       return versionResponse;
     }
@@ -198,6 +275,15 @@ class RubricVersionControllerTest {
     public RubricVersionPageResponse listVersions(
         UUID rubricPublicId, RubricVersionStatus status, Pageable pageable, String username) {
       RecordingRubricVersionService.rubricPublicId = rubricPublicId;
+      RecordingRubricVersionService.status = status;
+      RecordingRubricVersionService.pageable = pageable;
+      RecordingRubricVersionService.username = username;
+      return versionPageResponse;
+    }
+
+    @Override
+    public RubricVersionPageResponse listUserVersions(
+        RubricVersionStatus status, Pageable pageable, String username) {
       RecordingRubricVersionService.status = status;
       RecordingRubricVersionService.pageable = pageable;
       RecordingRubricVersionService.username = username;

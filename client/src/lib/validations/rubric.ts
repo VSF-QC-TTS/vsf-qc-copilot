@@ -1,13 +1,40 @@
 import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
-// Create Rubric
+// Generate / Create Rubric
 // ---------------------------------------------------------------------------
+
+export const generateRubricPreviewSchema = z.object({
+  name: z.string().min(1, 'Rubric name is required').max(200, 'Name too long'),
+  evaluationGoal: z
+    .string()
+    .min(1, 'Evaluation goal is required')
+    .max(2000, 'Evaluation goal too long'),
+  domainContext: z.string().max(5000, 'Context too long').optional().or(z.literal('')),
+  language: z.string().max(20, 'Language too long').optional().or(z.literal('')),
+  sampleQuestion: z.string().max(2000, 'Sample question too long').optional().or(z.literal('')),
+  sampleExpectedAnswer: z
+    .string()
+    .max(5000, 'Sample answer too long')
+    .optional()
+    .or(z.literal('')),
+  extraInstructions: z
+    .string()
+    .max(5000, 'Instructions too long')
+    .optional()
+    .or(z.literal('')),
+});
+
+export type GenerateRubricPreviewFormValues = z.input<typeof generateRubricPreviewSchema>;
 
 export const createRubricSchema = z.object({
   name: z.string().min(1, 'Rubric name is required').max(200, 'Name too long'),
   description: z.string().max(1000, 'Description too long').optional().or(z.literal('')),
-  projectPublicId: z.string().min(1, 'Project is required'),
+  content: z
+    .string()
+    .min(1, 'Rubric content is required')
+    .max(10000, 'Rubric content too long'),
+  outputSchemaJson: z.string().max(10000, 'Output schema too long').optional().or(z.literal('')),
 });
 
 export type CreateRubricFormValues = z.input<typeof createRubricSchema>;

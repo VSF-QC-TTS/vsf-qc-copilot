@@ -12,6 +12,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import me.nghlong3004.vqc.api.exception.ErrorResponse;
 import me.nghlong3004.vqc.api.rubric.enums.RubricVersionStatus;
+import me.nghlong3004.vqc.api.rubric.request.CreateRubricVersionRequest;
 import me.nghlong3004.vqc.api.rubric.request.UpdateRubricVersionRequest;
 import me.nghlong3004.vqc.api.rubric.response.RubricVersionPageResponse;
 import me.nghlong3004.vqc.api.rubric.response.RubricVersionResponse;
@@ -63,8 +64,12 @@ public class RubricVersionController {
       produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseStatus(HttpStatus.CREATED)
   public RubricVersionResponse createVersion(
-      @PathVariable UUID rubricPublicId, Principal principal) {
-    return rubricVersionService.createVersion(rubricPublicId, principal.getName());
+      @PathVariable UUID rubricPublicId,
+      @RequestBody(required = false) CreateRubricVersionRequest request,
+      Principal principal) {
+    UUID sourceVersionPublicId = request == null ? null : request.sourceVersionPublicId();
+    return rubricVersionService.createVersion(
+        rubricPublicId, sourceVersionPublicId, principal.getName());
   }
 
   @Operation(summary = "List rubric versions", description = "Lists versions under a rubric.")
@@ -87,6 +92,18 @@ public class RubricVersionController {
           Pageable pageable,
       Principal principal) {
     return rubricVersionService.listVersions(rubricPublicId, status, pageable, principal.getName());
+  }
+
+  @Operation(
+      summary = "List user rubric versions",
+      description = "Lists rubric versions owned by the authenticated user, optionally filtered by status.")
+  @GetMapping(value = "/api/v1/rubric-versions", produces = MediaType.APPLICATION_JSON_VALUE)
+  public RubricVersionPageResponse listUserVersions(
+      @RequestParam(required = false) RubricVersionStatus status,
+      @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+          Pageable pageable,
+      Principal principal) {
+    return rubricVersionService.listUserVersions(status, pageable, principal.getName());
   }
 
   @Operation(summary = "Get rubric version detail", description = "Returns a rubric version with criteria.")

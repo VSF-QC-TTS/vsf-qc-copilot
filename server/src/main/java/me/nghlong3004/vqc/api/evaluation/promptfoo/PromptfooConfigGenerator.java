@@ -40,7 +40,18 @@ public class PromptfooConfigGenerator {
       Path runDir) {
     try {
       Files.createDirectories(runDir);
-      List<Map<String, Object>> rubricAssertions = rubricAssertionMapper.toAssertions(criteria);
+      List<Map<String, Object>> rubricAssertions =
+          new ArrayList<>(rubricAssertionMapper.toAssertions(run.getRubricVersion(), criteria));
+      if (rubricAssertions.isEmpty()
+          && run.getRubricVersion() != null
+          && run.getRubricVersion().getContent() != null
+          && !run.getRubricVersion().getContent().isBlank()) {
+        Map<String, Object> assertion = new LinkedHashMap<>();
+        assertion.put("type", "llm-rubric");
+        assertion.put("value", run.getRubricVersion().getContent().trim());
+        assertion.put("metric", "overall");
+        rubricAssertions.add(assertion);
+      }
       objectMapper.writeValue(
           runDir.resolve("tests.json").toFile(), tests(testCases, rubricAssertions));
       objectMapper.writeValue(
@@ -127,6 +138,7 @@ public class PromptfooConfigGenerator {
     vars.put("vqcTestCaseId", testCase.getId());
     vars.put("vqcTestCasePublicId", String.valueOf(testCase.getPublicId()));
     vars.put("question", testCase.getQuestion());
+    vars.put("groundTruth", testCase.getGroundTruth() == null ? "" : testCase.getGroundTruth());
     vars.put("precondition", testCase.getPrecondition() == null ? Map.of() : testCase.getPrecondition());
     vars.put("metadata", testCase.getMetadata() == null ? Map.of() : testCase.getMetadata());
     if (testCase.getExternalId() != null && !testCase.getExternalId().isBlank()) {
@@ -135,7 +147,9 @@ public class PromptfooConfigGenerator {
     test.put("vars", vars);
 
     List<Map<String, Object>> assertions = new ArrayList<>();
-    if (testCase.getGroundTruth() != null && !testCase.getGroundTruth().isBlank()) {
+    if (rubricAssertions.isEmpty()
+        && testCase.getGroundTruth() != null
+        && !testCase.getGroundTruth().isBlank()) {
       assertions.add(Map.of("type", "contains", "value", testCase.getGroundTruth()));
     }
     assertions.addAll(rubricAssertions);

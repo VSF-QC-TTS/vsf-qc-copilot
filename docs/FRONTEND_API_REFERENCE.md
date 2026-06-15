@@ -661,6 +661,14 @@ Soft archive. Sets status to `ARCHIVED`.
 
 Creates a new DRAFT version. Version number auto-increments.
 
+**Request body:** optional. Omit body to create a blank draft, or pass a source version to clone content, output schema, and criteria.
+
+```json
+{
+  "sourceVersionPublicId": "uuid"
+}
+```
+
 **Response:** `201 Created` → `RubricVersionResponse`
 
 ---
@@ -745,7 +753,7 @@ Publish or archive a version.
 | `failCondition` | string | ❌ | max 4000 chars |
 | `judgeInstruction` | string | ✅ | 1–8000 chars. Prompt for the AI judge. |
 | `metricKey` | string | ✅ | 1–100 chars. `^[a-z][a-z0-9_]*$`. **Unique per version.** |
-| `isCritical` | boolean | ❌ | If `true`, failing this criterion forces overall `FAIL` regardless of score |
+| `isCritical` | boolean | ❌ | UI/metadata flag for highlighting important criteria. Overall result now fails when any criterion fails. |
 | `sortOrder` | integer | ❌ | Display order, default `0` |
 
 > **Weight system:** Use integers to express relative importance.

@@ -61,7 +61,74 @@ class RubricVersionServiceImplTest {
     assertThat(savedVersion.get().getCreatedBy()).isSameAs(creator);
     assertThat(savedVersion.get().getVersion()).isEqualTo(3);
     assertThat(savedVersion.get().getStatus()).isEqualTo(RubricVersionStatus.DRAFT);
-    assertThat(response.version()).isEqualTo(3);
+    assertThat(response.versionNumber()).isEqualTo(3);
+  }
+
+  @Test
+  void createVersionClonesSourceVersionContentAndCriteria() {
+    User creator = user();
+    Rubric rubric = rubric(creator);
+    RubricVersion source = version(rubric, 2, RubricVersionStatus.PUBLISHED);
+    RubricCriterion sourceCriterion = criterion(source, "correctness", 4);
+    AtomicReference<RubricVersion> savedVersion = new AtomicReference<>();
+    AtomicReference<List<RubricCriterion>> savedCriteria = new AtomicReference<>();
+    RubricVersionServiceImpl service =
+        service(
+            versionRepository(
+                savedVersion,
+                Optional.of(source),
+                null,
+                new AtomicReference<>(),
+                Optional.of(source),
+                Optional.empty()),
+            rubricRepository(new AtomicReference<>(), Optional.of(rubric)),
+            criterionRepository(
+                List.of(sourceCriterion), new AtomicReference<>(), 1, savedCriteria),
+            userRepository(Optional.of(creator)));
+
+    RubricVersionResponse response =
+        service.createVersion(
+            rubric.getPublicId(), source.getPublicId(), "qc.demo@example.com");
+
+    assertThat(savedVersion.get().getVersion()).isEqualTo(3);
+    assertThat(savedVersion.get().getStatus()).isEqualTo(RubricVersionStatus.DRAFT);
+    assertThat(savedVersion.get().getContent()).isEqualTo(source.getContent());
+    assertThat(savedVersion.get().getOutputSchemaJson()).isEqualTo(source.getOutputSchemaJson());
+    assertThat(savedCriteria.get()).hasSize(1);
+    assertThat(savedCriteria.get().getFirst()).isNotSameAs(sourceCriterion);
+    assertThat(savedCriteria.get().getFirst().getRubricVersion()).isSameAs(savedVersion.get());
+    assertThat(savedCriteria.get().getFirst().getMetricKey()).isEqualTo("correctness");
+    assertThat(response.criteriaCount()).isEqualTo(1);
+    assertThat(response.criteria().getFirst().metricKey()).isEqualTo("correctness");
+  }
+
+  @Test
+  void createVersionRejectsSourceVersionFromAnotherRubric() {
+    User creator = user();
+    Rubric rubric = rubric(creator);
+    Rubric otherRubric = rubric(creator);
+    otherRubric.setPublicId(UUID.fromString("6c5582c5-96d8-40e4-9aa1-168f6d27c9dc"));
+    RubricVersion source = version(otherRubric, 1, RubricVersionStatus.PUBLISHED);
+    RubricVersionServiceImpl service =
+        service(
+            versionRepository(
+                new AtomicReference<>(),
+                Optional.empty(),
+                null,
+                new AtomicReference<>(),
+                Optional.of(source),
+                Optional.empty()),
+            rubricRepository(new AtomicReference<>(), Optional.of(rubric)),
+            criterionRepository(List.of(), new AtomicReference<>(), 0),
+            userRepository(Optional.of(creator)));
+
+    assertThatThrownBy(
+            () ->
+                service.createVersion(
+                    rubric.getPublicId(), source.getPublicId(), "qc.demo@example.com"))
+        .isInstanceOf(ResourceException.class)
+        .extracting(error -> ((ResourceException) error).getResponse().code())
+        .isEqualTo("RUBRIC_VERSION_NOT_FOUND");
   }
 
   @Test
@@ -107,7 +174,7 @@ class RubricVersionServiceImplTest {
 
     assertThat(query.get().rubric()).isSameAs(rubric);
     assertThat(query.get().status()).isEqualTo(RubricVersionStatus.DRAFT);
-    assertThat(response.items().getFirst().totalCriteria()).isEqualTo(3);
+    assertThat(response.items().getFirst().criteriaCount()).isEqualTo(3);
   }
 
   @Test
@@ -133,7 +200,7 @@ class RubricVersionServiceImplTest {
     RubricVersionResponse response =
         service.updateVersion(
             version.getPublicId(),
-            new UpdateRubricVersionRequest(RubricVersionStatus.PUBLISHED),
+            new UpdateRubricVersionRequest(RubricVersionStatus.PUBLISHED, null, null),
             "qc.demo@example.com");
 
     assertThat(savedVersion.get()).isSameAs(version);
@@ -142,6 +209,7 @@ class RubricVersionServiceImplTest {
     assertThat(version.getPublishedAt()).isNotNull();
     assertThat(rubric.getCurrentVersion()).isEqualTo(1);
     assertThat(response.status()).isEqualTo(RubricVersionStatus.PUBLISHED);
+    assertThat(response.content()).isEqualTo("Judge actual response against expected answer.");
   }
 
   @Test
@@ -166,7 +234,7 @@ class RubricVersionServiceImplTest {
             () ->
                 service.updateVersion(
                     version.getPublicId(),
-                    new UpdateRubricVersionRequest(RubricVersionStatus.PUBLISHED),
+                    new UpdateRubricVersionRequest(RubricVersionStatus.PUBLISHED, null, null),
                     "qc.demo@example.com"))
         .isInstanceOf(ResourceException.class)
         .extracting(error -> ((ResourceException) error).getResponse().code())
@@ -197,7 +265,7 @@ class RubricVersionServiceImplTest {
 
     service.updateVersion(
         version.getPublicId(),
-        new UpdateRubricVersionRequest(RubricVersionStatus.ARCHIVED),
+        new UpdateRubricVersionRequest(RubricVersionStatus.ARCHIVED, null, null),
         "qc.demo@example.com");
 
     assertThat(savedVersion.get()).isSameAs(version);
@@ -285,11 +353,25 @@ class RubricVersionServiceImplTest {
       List<RubricCriterion> criteria,
       AtomicReference<RubricVersion> countedVersion,
       long count) {
+    return criterionRepository(criteria, countedVersion, count, new AtomicReference<>());
+  }
+
+  private RubricCriterionRepository criterionRepository(
+      List<RubricCriterion> criteria,
+      AtomicReference<RubricVersion> countedVersion,
+      long count,
+      AtomicReference<List<RubricCriterion>> savedCriteria) {
     return (RubricCriterionRepository)
         Proxy.newProxyInstance(
             RubricCriterionRepository.class.getClassLoader(),
             new Class<?>[] {RubricCriterionRepository.class},
             (proxy, method, args) -> {
+              if ("saveAll".equals(method.getName())) {
+                @SuppressWarnings("unchecked")
+                List<RubricCriterion> items = (List<RubricCriterion>) args[0];
+                savedCriteria.set(items);
+                return items;
+              }
               if ("findByRubricVersionOrderBySortOrderAscIdAsc".equals(method.getName())) {
                 return criteria;
               }
@@ -348,6 +430,8 @@ class RubricVersionServiceImplTest {
     version.setRubric(rubric);
     version.setVersion(versionNumber);
     version.setStatus(status);
+    version.setContent("Judge actual response against expected answer.");
+    version.setOutputSchemaJson("{\"type\":\"object\"}");
     version.setCreatedAt(OffsetDateTime.parse("2026-06-08T10:45:00Z"));
     return version;
   }

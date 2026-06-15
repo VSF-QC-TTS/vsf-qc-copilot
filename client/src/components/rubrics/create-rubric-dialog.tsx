@@ -4,31 +4,49 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { ArrowLeftIcon, RobotIcon } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api/client';
-import type { ApiError, PageResponse, ProjectResponse } from '@/lib/api/types';
+import type { ApiError } from '@/lib/api/types';
 import { getErrorMessageKey } from '@/lib/utils/error-messages';
 import {
-  createRubricSchema,
-  type CreateRubricFormValues,
+  generateRubricPreviewSchema,
+  type GenerateRubricPreviewFormValues,
 } from '@/lib/validations/rubric';
 import { useRouter } from '@/i18n/navigation';
-
-// ---------------------------------------------------------------------------
-// Props
-// ---------------------------------------------------------------------------
 
 interface CreateRubricDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-// ---------------------------------------------------------------------------
-// Shared input styles (matches create-dataset-dialog pattern)
-// ---------------------------------------------------------------------------
+type PreviewCriterion = {
+  name: string;
+  description: string | null;
+  weight: number;
+  passCondition: string | null;
+  failCondition: string | null;
+  judgeInstruction: string;
+  metricKey: string;
+  isCritical: boolean;
+  sortOrder: number;
+};
+
+type RubricPreview = {
+  name: string;
+  description: string | null;
+  content: string;
+  outputSchemaJson: string | null;
+  criteria: PreviewCriterion[];
+};
+
+type CreateRubricResponse = {
+  rubricPublicId: string;
+  publicId: string;
+};
 
 const inputClassName =
   'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
@@ -36,12 +54,20 @@ const inputClassName =
 const textareaClassName =
   'flex min-h-[80px] w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
-const selectClassName =
-  'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
+function errorMessage(error: unknown, tErrors: (key: string) => string): string {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    'status' in error &&
+    'message' in error
+  ) {
+    const apiError = error as ApiError;
+    const messageKey = getErrorMessageKey(apiError);
+    return tErrors(messageKey.replace(/^errors\./, ''));
+  }
+  return tErrors('network');
+}
 
 export function CreateRubricDialog({
   open,
@@ -54,61 +80,56 @@ export function CreateRubricDialog({
   const queryClient = useQueryClient();
 
   const [serverError, setServerError] = React.useState<string | null>(null);
+  const [preview, setPreview] = React.useState<RubricPreview | null>(null);
+  const [isGenerating, setIsGenerating] = React.useState(false);
+  const [isCreating, setIsCreating] = React.useState(false);
 
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
-  } = useForm<CreateRubricFormValues>({
-    resolver: zodResolver(createRubricSchema),
+    formState: { errors },
+  } = useForm<GenerateRubricPreviewFormValues>({
+    resolver: zodResolver(generateRubricPreviewSchema),
     defaultValues: {
       name: '',
-      description: '',
-      projectPublicId: '',
+      evaluationGoal: '',
+      domainContext: '',
+      language: 'vi',
+      sampleQuestion: '',
+      sampleExpectedAnswer: '',
+      extraInstructions: '',
     },
   });
 
-  // --- Fetch active projects for select ---
-  const { data: projectsData } = useQuery({
-    queryKey: ['projects', 'active-for-rubric'],
-    queryFn: () =>
-      apiClient.get<PageResponse<ProjectResponse>>(
-        '/api/v1/projects?page=0&size=100&status=ACTIVE&sort=name,asc',
-      ),
-    enabled: open,
-  });
+  const isBusy = isGenerating || isCreating;
 
-  const projects = projectsData?.items ?? [];
-
-  /* ---- Close helper ---- */
   const handleClose = React.useCallback(
     (nextOpen: boolean) => {
       if (!nextOpen) {
         reset();
+        setPreview(null);
         setServerError(null);
+        setIsGenerating(false);
+        setIsCreating(false);
       }
       onOpenChange(nextOpen);
     },
     [onOpenChange, reset],
   );
 
-  /* ---- Escape key ---- */
   React.useEffect(() => {
     if (!open) return;
-
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && !isBusy) {
         e.stopPropagation();
         handleClose(false);
       }
     }
-
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
-  }, [open, handleClose]);
+  }, [open, handleClose, isBusy]);
 
-  /* ---- Lock body scroll ---- */
   React.useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -118,35 +139,62 @@ export function CreateRubricDialog({
     };
   }, [open]);
 
-  /* ---- Submit ---- */
-  async function onSubmit(values: CreateRubricFormValues) {
+  async function onGenerate(values: GenerateRubricPreviewFormValues) {
     setServerError(null);
-
+    setIsGenerating(true);
     try {
-      const { projectPublicId, ...body } = values;
-      const result = await apiClient.post<{ publicId: string }>(
-        `/api/v1/projects/${projectPublicId}/rubrics`,
-        body,
+      const result = await apiClient.post<RubricPreview>(
+        '/api/v1/rubrics/generate-preview',
+        values,
+      );
+      setPreview(result);
+    } catch (error: unknown) {
+      setServerError(errorMessage(error, tErrors));
+    } finally {
+      setIsGenerating(false);
+    }
+  }
+
+  async function handleCreate() {
+    if (!preview) return;
+    setServerError(null);
+    setIsCreating(true);
+    try {
+      const result = await apiClient.post<CreateRubricResponse>(
+        '/api/v1/rubrics',
+        preview,
       );
       await queryClient.invalidateQueries({ queryKey: ['rubrics'] });
+      await queryClient.invalidateQueries({ queryKey: ['rubric-versions-published'] });
       handleClose(false);
-      router.push(`/rubrics/${result.publicId}`);
+      router.push(`/rubrics/${result.rubricPublicId}/versions/${result.publicId}`);
     } catch (error: unknown) {
-      if (
-        typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        'status' in error &&
-        'message' in error
-      ) {
-        const apiError = error as ApiError;
-        const messageKey = getErrorMessageKey(apiError);
-        const key = messageKey.replace(/^errors\./, '');
-        setServerError(tErrors(key));
-      } else {
-        setServerError(tErrors('network'));
-      }
+      setServerError(errorMessage(error, tErrors));
+      setIsCreating(false);
     }
+  }
+
+  function updatePreview<K extends keyof RubricPreview>(
+    key: K,
+    value: RubricPreview[K],
+  ) {
+    setPreview((current) => (current ? { ...current, [key]: value } : current));
+  }
+
+  function updateCriterion<K extends keyof PreviewCriterion>(
+    index: number,
+    key: K,
+    value: PreviewCriterion[K],
+  ) {
+    setPreview((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        criteria: current.criteria.map((criterion, idx) =>
+          idx === index ? { ...criterion, [key]: value } : criterion,
+        ),
+      };
+    });
   }
 
   if (!open) return null;
@@ -156,136 +204,324 @@ export function CreateRubricDialog({
       data-slot="create-rubric-dialog"
       className="fixed inset-0 z-50 flex items-center justify-center"
     >
-      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={() => !isSubmitting && handleClose(false)}
+        onClick={() => !isBusy && handleClose(false)}
         aria-hidden="true"
       />
 
-      {/* Card */}
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="create-rubric-title"
         className={cn(
-          'relative z-10 w-full max-w-md rounded-lg border bg-card p-6 shadow-lg',
+          'relative z-10 max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg border bg-card p-6 shadow-lg',
           'animate-in fade-in-0 zoom-in-95',
         )}
       >
-        <h2
-          id="create-rubric-title"
-          className="text-lg font-semibold text-card-foreground"
-        >
-          {t('createRubricTitle')}
-        </h2>
+        <div className="flex items-center gap-2">
+          <RobotIcon className="size-5 text-primary" weight="duotone" />
+          <h2
+            id="create-rubric-title"
+            className="text-lg font-semibold text-card-foreground"
+          >
+            {t('createRubricTitle')}
+          </h2>
+        </div>
 
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="mt-4 space-y-4"
-        >
-          {serverError && (
-            <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-              {serverError}
+        {serverError && (
+          <div className="mt-4 rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {serverError}
+          </div>
+        )}
+
+        {preview ? (
+          <div className="mt-4 space-y-5">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="space-y-2">
+                <label htmlFor="preview-name" className="text-sm font-medium">
+                  {t('rubricName')}
+                </label>
+                <input
+                  id="preview-name"
+                  value={preview.name}
+                  disabled={isBusy}
+                  onChange={(event) => updatePreview('name', event.target.value)}
+                  className={inputClassName}
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="preview-description" className="text-sm font-medium">
+                  {t('rubricDescription')}
+                </label>
+                <input
+                  id="preview-description"
+                  value={preview.description ?? ''}
+                  disabled={isBusy}
+                  onChange={(event) =>
+                    updatePreview('description', event.target.value)
+                  }
+                  className={inputClassName}
+                />
+              </div>
             </div>
-          )}
 
-          {/* Project select */}
-          <div className="space-y-2">
-            <label
-              htmlFor="rubric-project"
-              className="text-sm font-medium leading-none text-foreground"
-            >
-              {t('project')}
-            </label>
-            <select
-              id="rubric-project"
-              disabled={isSubmitting}
-              className={cn(
-                selectClassName,
-                errors.projectPublicId &&
-                  'border-destructive focus-visible:ring-destructive',
-              )}
-              {...register('projectPublicId')}
-            >
-              <option value="">{t('selectProject')}</option>
-              {projects.map((p) => (
-                <option key={p.publicId} value={p.publicId}>
-                  {p.name}
-                </option>
+            <div className="space-y-2">
+              <label htmlFor="preview-content" className="text-sm font-medium">
+                {t('rubricContent')}
+              </label>
+              <textarea
+                id="preview-content"
+                value={preview.content}
+                disabled={isBusy}
+                onChange={(event) => updatePreview('content', event.target.value)}
+                className={cn(textareaClassName, 'min-h-[140px]')}
+              />
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold">{t('criteria')}</h3>
+              {preview.criteria.map((criterion, index) => (
+                <div
+                  key={`${criterion.metricKey}-${index}`}
+                  className="grid gap-3 rounded-md border bg-background p-3 lg:grid-cols-[1fr_96px]"
+                >
+                  <div className="grid gap-3 lg:grid-cols-2">
+                    <input
+                      value={criterion.name}
+                      disabled={isBusy}
+                      onChange={(event) =>
+                        updateCriterion(index, 'name', event.target.value)
+                      }
+                      className={inputClassName}
+                      aria-label={t('criterionName')}
+                    />
+                    <input
+                      value={criterion.metricKey}
+                      disabled={isBusy}
+                      onChange={(event) =>
+                        updateCriterion(index, 'metricKey', event.target.value)
+                      }
+                      className={inputClassName}
+                      aria-label={t('metricKey')}
+                    />
+                    <textarea
+                      value={criterion.judgeInstruction}
+                      disabled={isBusy}
+                      onChange={(event) =>
+                        updateCriterion(index, 'judgeInstruction', event.target.value)
+                      }
+                      className={textareaClassName}
+                      aria-label={t('judgeInstruction')}
+                    />
+                    <textarea
+                      value={criterion.passCondition ?? ''}
+                      disabled={isBusy}
+                      onChange={(event) =>
+                        updateCriterion(index, 'passCondition', event.target.value)
+                      }
+                      className={textareaClassName}
+                      aria-label={t('passCondition')}
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <label className="block text-xs font-medium text-muted-foreground">
+                      {t('weight')}
+                      <input
+                        type="number"
+                        min={1}
+                        max={100}
+                        value={criterion.weight}
+                        disabled={isBusy}
+                        onChange={(event) =>
+                          updateCriterion(
+                            index,
+                            'weight',
+                            Number(event.target.value),
+                          )
+                        }
+                        className={cn(inputClassName, 'mt-1')}
+                      />
+                    </label>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={criterion.isCritical}
+                        disabled={isBusy}
+                        onChange={(event) =>
+                          updateCriterion(index, 'isCritical', event.target.checked)
+                        }
+                        className="size-4 rounded border-input"
+                      />
+                      {t('isCritical')}
+                    </label>
+                  </div>
+                </div>
               ))}
-            </select>
-            {errors.projectPublicId && (
-              <p className="text-sm text-destructive">
-                {errors.projectPublicId.message}
-              </p>
-            )}
-          </div>
+            </div>
 
-          {/* Name field */}
-          <div className="space-y-2">
-            <label
-              htmlFor="rubric-name"
-              className="text-sm font-medium leading-none text-foreground"
-            >
-              {t('rubricName')}
-            </label>
-            <input
-              id="rubric-name"
-              type="text"
-              autoFocus
-              disabled={isSubmitting}
-              className={cn(
-                inputClassName,
-                errors.name && 'border-destructive focus-visible:ring-destructive',
+            <details className="rounded-md border bg-background p-3">
+              <summary className="cursor-pointer text-sm font-medium">
+                {t('outputSchema')}
+              </summary>
+              <textarea
+                value={preview.outputSchemaJson ?? ''}
+                disabled={isBusy}
+                onChange={(event) =>
+                  updatePreview('outputSchemaJson', event.target.value)
+                }
+                className={cn(textareaClassName, 'mt-3 font-mono')}
+              />
+            </details>
+
+            <div className="flex justify-between gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isBusy}
+                onClick={() => setPreview(null)}
+              >
+                <ArrowLeftIcon weight="bold" />
+                {tCommon('back')}
+              </Button>
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isBusy}
+                  onClick={() => handleClose(false)}
+                >
+                  {tCommon('cancel')}
+                </Button>
+                <Button type="button" disabled={isBusy} onClick={handleCreate}>
+                  {isCreating ? tCommon('loading') : tCommon('create')}
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit(onGenerate)} className="mt-4 space-y-4">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="space-y-2">
+                <label htmlFor="rubric-name" className="text-sm font-medium">
+                  {t('rubricName')}
+                </label>
+                <input
+                  id="rubric-name"
+                  autoFocus
+                  disabled={isGenerating}
+                  className={cn(
+                    inputClassName,
+                    errors.name && 'border-destructive focus-visible:ring-destructive',
+                  )}
+                  {...register('name')}
+                />
+                {errors.name && (
+                  <p className="text-sm text-destructive">{errors.name.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="rubric-language" className="text-sm font-medium">
+                  {t('language')}
+                </label>
+                <input
+                  id="rubric-language"
+                  disabled={isGenerating}
+                  className={inputClassName}
+                  {...register('language')}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="evaluation-goal" className="text-sm font-medium">
+                {t('evaluationGoal')}
+              </label>
+              <textarea
+                id="evaluation-goal"
+                disabled={isGenerating}
+                className={cn(
+                  textareaClassName,
+                  errors.evaluationGoal &&
+                    'border-destructive focus-visible:ring-destructive',
+                )}
+                placeholder={t('evaluationGoalPlaceholder')}
+                {...register('evaluationGoal')}
+              />
+              {errors.evaluationGoal && (
+                <p className="text-sm text-destructive">
+                  {errors.evaluationGoal.message}
+                </p>
               )}
-              {...register('name')}
-            />
-            {errors.name && (
-              <p className="text-sm text-destructive">{errors.name.message}</p>
-            )}
-          </div>
+            </div>
 
-          {/* Description field */}
-          <div className="space-y-2">
-            <label
-              htmlFor="rubric-description"
-              className="text-sm font-medium leading-none text-foreground"
-            >
-              {t('rubricDescription')}
-            </label>
-            <textarea
-              id="rubric-description"
-              disabled={isSubmitting}
-              className={cn(
-                textareaClassName,
-                errors.description &&
-                  'border-destructive focus-visible:ring-destructive',
-              )}
-              {...register('description')}
-            />
-            {errors.description && (
-              <p className="text-sm text-destructive">
-                {errors.description.message}
-              </p>
-            )}
-          </div>
+            <div className="space-y-2">
+              <label htmlFor="domain-context" className="text-sm font-medium">
+                {t('domainContext')}
+              </label>
+              <textarea
+                id="domain-context"
+                disabled={isGenerating}
+                className={textareaClassName}
+                placeholder={t('domainContextPlaceholder')}
+                {...register('domainContext')}
+              />
+            </div>
 
-          {/* Actions */}
-          <div className="flex justify-end gap-3 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isSubmitting}
-              onClick={() => handleClose(false)}
-            >
-              {tCommon('cancel')}
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? tCommon('loading') : tCommon('create')}
-            </Button>
-          </div>
-        </form>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="space-y-2">
+                <label htmlFor="sample-question" className="text-sm font-medium">
+                  {t('sampleQuestion')}
+                </label>
+                <textarea
+                  id="sample-question"
+                  disabled={isGenerating}
+                  className={textareaClassName}
+                  {...register('sampleQuestion')}
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="sample-answer" className="text-sm font-medium">
+                  {t('sampleExpectedAnswer')}
+                </label>
+                <textarea
+                  id="sample-answer"
+                  disabled={isGenerating}
+                  className={textareaClassName}
+                  {...register('sampleExpectedAnswer')}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="extra-instructions" className="text-sm font-medium">
+                {t('extraInstructions')}
+              </label>
+              <textarea
+                id="extra-instructions"
+                disabled={isGenerating}
+                className={textareaClassName}
+                {...register('extraInstructions')}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isGenerating}
+                onClick={() => handleClose(false)}
+              >
+                {tCommon('cancel')}
+              </Button>
+              <Button type="submit" disabled={isGenerating}>
+                <RobotIcon weight="bold" />
+                {isGenerating ? tCommon('loading') : t('generatePreview')}
+              </Button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

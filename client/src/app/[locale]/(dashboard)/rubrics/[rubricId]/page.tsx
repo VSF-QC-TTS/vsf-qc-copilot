@@ -10,6 +10,7 @@ import {
   PencilSimpleIcon,
   ChecksIcon,
   ArchiveIcon,
+  XIcon,
 } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -41,7 +42,6 @@ type VersionResponse = {
   status: RubricVersionStatus;
   criteriaCount: number;
   createdAt: string;
-  updatedAt: string;
 };
 const PAGE_SIZE = 10;
 
@@ -67,6 +67,21 @@ function formatDate(iso: string): string {
   });
 }
 
+function errorMessage(error: unknown, tErrors: (key: string) => string): string {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    'status' in error &&
+    'message' in error
+  ) {
+    const apiError = error as ApiError;
+    const messageKey = getErrorMessageKey(apiError);
+    return tErrors(messageKey.replace(/^errors\./, ''));
+  }
+  return tErrors('network');
+}
+
 // ---------------------------------------------------------------------------
 // Page component
 // ---------------------------------------------------------------------------
@@ -88,6 +103,9 @@ export default function RubricDetailPage({
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [metaError, setMetaError] = useState<string | null>(null);
+  const [createVersionOpen, setCreateVersionOpen] = useState(false);
+  const [selectedSourceVersionId, setSelectedSourceVersionId] = useState<string | null>(null);
+  const [createVersionError, setCreateVersionError] = useState<string | null>(null);
 
   // Versions pagination
   const [vPage, setVPage] = useState(0);
@@ -111,6 +129,18 @@ export default function RubricDetailPage({
   const versions = versionsData?.items ?? [];
   const totalVersions = versionsData?.totalItems ?? 0;
   const totalVersionPages = versionsData?.totalPages ?? 0;
+
+  const { data: allVersionsData, isLoading: allVersionsLoading } = useQuery({
+    queryKey: ['rubric-versions', rubricId, 'all-for-clone'],
+    queryFn: () =>
+      apiClient.get<PageResponse<VersionResponse>>(
+        `/api/v1/rubrics/${rubricId}/versions?page=0&size=100`,
+      ),
+    enabled: createVersionOpen,
+  });
+  const sourceVersions = allVersionsData?.items ?? versions;
+  const effectiveSelectedSourceVersionId =
+    selectedSourceVersionId ?? sourceVersions[0]?.publicId ?? null;
 
   // Start editing
   const startEdit = useCallback(() => {
@@ -161,16 +191,41 @@ export default function RubricDetailPage({
 
   // Create version
   const createVersionMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (sourceVersionPublicId: string | null) =>
       apiClient.post<VersionResponse>(
         `/api/v1/rubrics/${rubricId}/versions`,
+        sourceVersionPublicId ? { sourceVersionPublicId } : undefined,
       ),
-    onSuccess: () => {
+    onSuccess: (created) => {
       void queryClient.invalidateQueries({
         queryKey: ['rubric-versions', rubricId],
       });
+      setCreateVersionOpen(false);
+      setCreateVersionError(null);
+      setSelectedSourceVersionId(null);
+      router.push(`/rubrics/${rubricId}/versions/${created.publicId}`);
+    },
+    onError: (error: unknown) => {
+      setCreateVersionError(errorMessage(error, tErrors));
     },
   });
+
+  const openCreateVersion = () => {
+    setCreateVersionError(null);
+    setSelectedSourceVersionId(sourceVersions[0]?.publicId ?? null);
+    setCreateVersionOpen(true);
+  };
+
+  const closeCreateVersion = () => {
+    if (createVersionMutation.isPending) return;
+    setCreateVersionOpen(false);
+    setCreateVersionError(null);
+  };
+
+  const submitCreateVersion = () => {
+    setCreateVersionError(null);
+    createVersionMutation.mutate(effectiveSelectedSourceVersionId);
+  };
 
   // Publish version
   const publishMutation = useMutation({
@@ -381,7 +436,7 @@ export default function RubricDetailPage({
           <Button
             size="sm"
             disabled={createVersionMutation.isPending}
-            onClick={() => createVersionMutation.mutate()}
+            onClick={openCreateVersion}
           >
             <PlusIcon weight="bold" />
             {t('createVersion')}
@@ -418,6 +473,149 @@ export default function RubricDetailPage({
           />
         )}
       </div>
+
+      <CreateVersionDialog
+        open={createVersionOpen}
+        versions={sourceVersions}
+        selectedVersionId={effectiveSelectedSourceVersionId}
+        loadingVersions={allVersionsLoading}
+        submitting={createVersionMutation.isPending}
+        error={createVersionError}
+        onSelect={setSelectedSourceVersionId}
+        onSubmit={submitCreateVersion}
+        onClose={closeCreateVersion}
+      />
     </PageShell>
+  );
+}
+
+function CreateVersionDialog({
+  open,
+  versions,
+  selectedVersionId,
+  loadingVersions,
+  submitting,
+  error,
+  onSelect,
+  onSubmit,
+  onClose,
+}: {
+  open: boolean;
+  versions: VersionResponse[];
+  selectedVersionId: string | null;
+  loadingVersions: boolean;
+  submitting: boolean;
+  error: string | null;
+  onSelect: (versionId: string | null) => void;
+  onSubmit: () => void;
+  onClose: () => void;
+}) {
+  const t = useTranslations('rubrics');
+  const tCommon = useTranslations('common');
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-version-title"
+        className="relative z-10 w-full max-w-lg rounded-lg border bg-card p-6 shadow-lg"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="create-version-title" className="text-lg font-semibold">
+            {t('createVersion')}
+          </h2>
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-8"
+            disabled={submitting}
+            onClick={onClose}
+          >
+            <XIcon weight="bold" className="size-4" />
+          </Button>
+        </div>
+
+        {error && (
+          <div className="mt-4 rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
+        <div className="mt-4 space-y-3">
+          <p className="text-sm text-muted-foreground">
+            {t('createVersionSourceHelp')}
+          </p>
+
+          {loadingVersions ? (
+            <div className="rounded-md border px-4 py-6 text-center text-sm text-muted-foreground">
+              {tCommon('loading')}
+            </div>
+          ) : versions.length > 0 ? (
+            <div className="space-y-2">
+              {versions.map((version) => (
+                <label
+                  key={version.publicId}
+                  className="flex cursor-pointer items-center justify-between gap-3 rounded-md border bg-background px-3 py-2"
+                >
+                  <span className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="sourceVersionPublicId"
+                      checked={selectedVersionId === version.publicId}
+                      disabled={submitting}
+                      onChange={() => onSelect(version.publicId)}
+                      className="size-4"
+                    />
+                    <span className="text-sm font-medium">
+                      v{version.versionNumber}
+                    </span>
+                  </span>
+                  <span className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span>{t('criteria')}: {version.criteriaCount}</span>
+                    <StatusBadge status={version.status} size="sm" />
+                  </span>
+                </label>
+              ))}
+            </div>
+          ) : (
+            <label className="flex cursor-pointer items-start gap-3 rounded-md border bg-background px-3 py-2">
+              <input
+                type="radio"
+                name="sourceVersionPublicId"
+                checked={selectedVersionId === null}
+                disabled={submitting}
+                onChange={() => onSelect(null)}
+                className="mt-1 size-4"
+              />
+              <span>
+                <span className="block text-sm font-medium">
+                  {t('createBlankVersion')}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {t('createBlankVersionHelp')}
+                </span>
+              </span>
+            </label>
+          )}
+        </div>
+
+        <div className="mt-6 flex justify-end gap-3">
+          <Button variant="outline" disabled={submitting} onClick={onClose}>
+            {tCommon('cancel')}
+          </Button>
+          <Button disabled={submitting || loadingVersions} onClick={onSubmit}>
+            {submitting ? tCommon('loading') : tCommon('create')}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }

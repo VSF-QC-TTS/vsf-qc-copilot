@@ -84,6 +84,7 @@ class EvaluationRunControllerTest {
                       "datasetPublicId": "d1d2d3d4-e5f6-7890-abcd-ef1234567890",
                       "rubricVersionPublicId": "a1a2a3a4-e5f6-7890-abcd-ef1234567890",
                       "targetConnectorPublicId": "c1c2c3c4-e5f6-7890-abcd-ef1234567890",
+                      "judgeModelPublicId": "8d2f6a2a-4974-4e9c-83ad-f2e1e58d39f0",
                       "maxConcurrency": 2
                     }
                     """))
@@ -137,6 +138,7 @@ class EvaluationRunControllerTest {
                     UUID.fromString("d1d2d3d4-e5f6-7890-abcd-ef1234567890"),
                     UUID.fromString("a1a2a3a4-e5f6-7890-abcd-ef1234567890"),
                     UUID.fromString("c1c2c3c4-e5f6-7890-abcd-ef1234567890"),
+                    UUID.fromString("8d2f6a2a-4974-4e9c-83ad-f2e1e58d39f0"),
                     EvaluationRunStatus.COMPLETED,
                     10,
                     OffsetDateTime.parse("2026-06-11T10:00:00Z"))),
@@ -187,6 +189,7 @@ class EvaluationRunControllerTest {
             UUID.fromString("d1d2d3d4-e5f6-7890-abcd-ef1234567890"),
             UUID.fromString("a1a2a3a4-e5f6-7890-abcd-ef1234567890"),
             UUID.fromString("c1c2c3c4-e5f6-7890-abcd-ef1234567890"),
+            UUID.fromString("8d2f6a2a-4974-4e9c-83ad-f2e1e58d39f0"),
             UUID.fromString("b2c3d4e5-f6a7-8901-bcde-f12345678901"),
             EvaluationRunStatus.COMPLETED,
             10,

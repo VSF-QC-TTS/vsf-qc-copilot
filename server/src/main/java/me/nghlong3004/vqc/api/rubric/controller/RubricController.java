@@ -13,10 +13,16 @@ import lombok.RequiredArgsConstructor;
 import me.nghlong3004.vqc.api.exception.ErrorResponse;
 import me.nghlong3004.vqc.api.rubric.enums.RubricStatus;
 import me.nghlong3004.vqc.api.rubric.request.CreateRubricRequest;
+import me.nghlong3004.vqc.api.rubric.request.CreateRubricWithVersionRequest;
+import me.nghlong3004.vqc.api.rubric.request.GenerateRubricPreviewRequest;
 import me.nghlong3004.vqc.api.rubric.request.UpdateRubricRequest;
+import me.nghlong3004.vqc.api.rubric.response.GenerateRubricPreviewResponse;
 import me.nghlong3004.vqc.api.rubric.response.RubricPageResponse;
 import me.nghlong3004.vqc.api.rubric.response.RubricResponse;
+import me.nghlong3004.vqc.api.rubric.response.RubricVersionResponse;
+import me.nghlong3004.vqc.api.rubric.service.RubricGenerationService;
 import me.nghlong3004.vqc.api.rubric.service.RubricService;
+import me.nghlong3004.vqc.api.rubric.service.RubricWorkflowService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -42,6 +48,49 @@ import org.springframework.web.bind.annotation.RestController;
 public class RubricController {
 
   private final RubricService rubricService;
+  private final RubricWorkflowService rubricWorkflowService;
+  private final RubricGenerationService rubricGenerationService;
+
+  @Operation(
+      summary = "Generate rubric preview",
+      description = "Generates an editable rubric preview without persisting it.")
+  @PostMapping(
+      value = "/api/v1/rubrics/generate-preview",
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  public GenerateRubricPreviewResponse generateRubricPreview(
+      @Valid @RequestBody GenerateRubricPreviewRequest request, Principal principal) {
+    return rubricGenerationService.generatePreview(request, principal.getName());
+  }
+
+  @Operation(
+      summary = "Create user-scoped rubric with draft version",
+      description = "Creates a reusable rubric and its first draft version in one request.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "201",
+        description = "Rubric and first draft version created",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = RubricVersionResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Validation failed",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @PostMapping(
+      value = "/api/v1/rubrics",
+      consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  @ResponseStatus(HttpStatus.CREATED)
+  public RubricVersionResponse createUserScopedRubric(
+      @Valid @RequestBody CreateRubricWithVersionRequest request, Principal principal) {
+    return rubricWorkflowService.createRubricWithVersion(request, principal.getName());
+  }
 
   @Operation(summary = "Create rubric", description = "Creates a rubric under a project.")
   @ApiResponses({

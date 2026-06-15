@@ -21,6 +21,9 @@ public record CreateEvaluationRunRequest(
     @Schema(description = "Target connector public identifier.", example = "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d")
         @NotNull(message = "Target connector public id is required.")
         UUID targetConnectorPublicId,
+    @Schema(description = "Judge model public identifier.", example = "8d2f6a2a-4974-4e9c-83ad-f2e1e58d39f0")
+        @NotNull(message = "Judge model public id is required.")
+        UUID judgeModelPublicId,
     @Schema(description = "Max concurrent evaluations.", example = "1", nullable = true)
         @Min(value = 1, message = "Max concurrency must be at least 1.")
         @Max(value = 10, message = "Max concurrency must be at most 10.")

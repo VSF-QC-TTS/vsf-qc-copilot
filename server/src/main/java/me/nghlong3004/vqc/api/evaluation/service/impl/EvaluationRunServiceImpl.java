@@ -25,6 +25,8 @@ import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunPageResponse;
 import me.nghlong3004.vqc.api.evaluation.service.EvaluationRunService;
 import me.nghlong3004.vqc.api.exception.ErrorCode;
 import me.nghlong3004.vqc.api.exception.ResourceException;
+import me.nghlong3004.vqc.api.judge.entity.JudgeModel;
+import me.nghlong3004.vqc.api.judge.repository.JudgeModelRepository;
 import me.nghlong3004.vqc.api.job.entity.Job;
 import me.nghlong3004.vqc.api.job.enums.JobStatus;
 import me.nghlong3004.vqc.api.job.enums.JobType;
@@ -68,6 +70,7 @@ public class EvaluationRunServiceImpl implements EvaluationRunService {
   private final DatasetRepository datasetRepository;
   private final RubricVersionRepository rubricVersionRepository;
   private final TargetApiConnectorRepository targetApiConnectorRepository;
+  private final JudgeModelRepository judgeModelRepository;
   private final TestCaseRepository testCaseRepository;
   private final UserRepository userRepository;
   private final JobQueuePublisher jobQueuePublisher;
@@ -91,6 +94,9 @@ public class EvaluationRunServiceImpl implements EvaluationRunService {
         findConnector(request.targetConnectorPublicId(), creator, project);
     validateConnectorActive(connector);
 
+    JudgeModel judgeModel = findJudgeModel(request.judgeModelPublicId(), creator, project);
+    validateJudgeModelActive(judgeModel);
+
     long activeCases = testCaseRepository.countByDatasetAndStatus(dataset, TestCaseStatus.ACTIVE);
     validateTestCaseCount(activeCases);
 
@@ -100,6 +106,7 @@ public class EvaluationRunServiceImpl implements EvaluationRunService {
             .dataset(dataset)
             .rubricVersion(rubricVersion)
             .targetApiConnector(connector)
+            .judgeModel(judgeModel)
             .status(EvaluationRunStatus.PENDING)
             .totalCases((int) activeCases)
             .maxConcurrency(request.maxConcurrency() != null ? request.maxConcurrency() : 1)
@@ -265,6 +272,12 @@ public class EvaluationRunServiceImpl implements EvaluationRunService {
     }
   }
 
+  private void validateJudgeModelActive(JudgeModel judgeModel) {
+    if (!Boolean.TRUE.equals(judgeModel.getActive())) {
+      throw new ResourceException(ErrorCode.JUDGE_MODEL_INACTIVE);
+    }
+  }
+
   private void validateTestCaseCount(long activeCases) {
     if (activeCases < 1) {
       throw new ResourceException(ErrorCode.DATASET_NO_ACTIVE_CASES);
@@ -302,6 +315,17 @@ public class EvaluationRunServiceImpl implements EvaluationRunService {
       throw new ResourceException(ErrorCode.TARGET_CONNECTOR_NOT_FOUND);
     }
     return connector;
+  }
+
+  private JudgeModel findJudgeModel(UUID judgeModelPublicId, User creator, Project project) {
+    JudgeModel judgeModel =
+        judgeModelRepository
+            .findByPublicIdAndCreatedBy(judgeModelPublicId, creator)
+            .orElseThrow(() -> new ResourceException(ErrorCode.JUDGE_MODEL_NOT_FOUND));
+    if (!project.getId().equals(judgeModel.getProject().getId())) {
+      throw new ResourceException(ErrorCode.JUDGE_MODEL_NOT_FOUND);
+    }
+    return judgeModel;
   }
 
   private Project findProject(UUID projectPublicId, User creator) {
@@ -345,6 +369,16 @@ public class EvaluationRunServiceImpl implements EvaluationRunService {
       connectorId = connectors.getContent().getFirst().getPublicId();
     }
 
+    UUID judgeModelId = request.judgeModelPublicId();
+    if (judgeModelId == null) {
+      Page<JudgeModel> judgeModels =
+          judgeModelRepository.findByProjectAndActive(project, true, PageRequest.of(0, 2));
+      if (judgeModels.getTotalElements() != 1) {
+        throw new ResourceException(ErrorCode.QUICK_EVALUATE_AMBIGUOUS);
+      }
+      judgeModelId = judgeModels.getContent().getFirst().getPublicId();
+    }
+
     UUID rubricVersionId = request.rubricVersionPublicId();
     if (rubricVersionId == null) {
       Page<RubricVersion> versions =
@@ -361,6 +395,7 @@ public class EvaluationRunServiceImpl implements EvaluationRunService {
             datasetId,
             rubricVersionId,
             connectorId,
+            judgeModelId,
             request.maxConcurrency());
 
     return createEvaluationRun(projectPublicId, resolved, username);

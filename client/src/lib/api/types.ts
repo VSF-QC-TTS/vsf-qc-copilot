@@ -80,6 +80,26 @@ export type DatasetStatus = 'DRAFT' | 'APPROVED' | 'ARCHIVED';
 export type TestCaseStatus = 'ACTIVE' | 'INACTIVE';
 export type RubricVersionStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 export type ExportStatus = 'PENDING' | 'PROCESSING' | 'READY' | 'FAILED';
+export type JudgeProvider =
+  | 'GEMINI'
+  | 'OPENAI'
+  | 'ANTHROPIC'
+  | 'DEEPSEEK'
+  | 'CUSTOM';
+
+export type JudgeModelResponse = {
+  publicId: string;
+  projectPublicId: string;
+  name: string;
+  provider: JudgeProvider;
+  modelName: string;
+  baseUrl: string | null;
+  apiKeyMasked: string;
+  configJson: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
 
 export type JobResponse = {
   publicId: string;

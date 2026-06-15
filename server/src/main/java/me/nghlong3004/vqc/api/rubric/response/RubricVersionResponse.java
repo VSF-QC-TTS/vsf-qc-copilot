@@ -14,8 +14,12 @@ import me.nghlong3004.vqc.api.rubric.enums.RubricVersionStatus;
 public record RubricVersionResponse(
     @Schema(description = "Public rubric version identifier.") UUID publicId,
     @Schema(description = "Public rubric identifier.") UUID rubricPublicId,
-    @Schema(description = "Version number.") int version,
+    @Schema(description = "Rubric name.") String rubricName,
+    @Schema(description = "Version number.") int versionNumber,
     @Schema(description = "Rubric version lifecycle status.") RubricVersionStatus status,
+    @Schema(description = "Rubric prompt content.", nullable = true) String content,
+    @Schema(description = "Expected judge output schema JSON.", nullable = true) String outputSchemaJson,
+    @Schema(description = "Criterion count.") int criteriaCount,
     @Schema(description = "Version creation timestamp.") OffsetDateTime createdAt,
     @Schema(description = "Version publish timestamp.", nullable = true) OffsetDateTime publishedAt,
     @Schema(description = "Sorted criteria in this version.") List<RubricCriterionResponse> criteria) {}

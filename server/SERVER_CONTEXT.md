@@ -1,8 +1,8 @@
 # Server Context
 
-Date: 2026-06-13
+Date: 2026-06-15
 Repo area: `server/`
-Last full-suite pass: 371 tests, 0 failures (2026-06-13). Features 8–11 (bulk import, AI generate, rubric decoupling, quick evaluate) implemented and regression-tested.
+Last full-suite pass: 371 tests, 0 failures (2026-06-13). Focused rubric/evaluation/frontend checks passed on 2026-06-15 after rubric workflow + judge model changes.
 
 Purpose: this is the server bootstrap handoff. If a user only says "read `server/SERVER_CONTEXT.md`", the agent must use this file to discover the next files to read without asking for more pointers. Current code is the source of truth when docs and implementation differ. The full product target lives in `docs/`; treat docs as roadmap/contract intent unless the user explicitly asks to migrate current code toward them.
 
@@ -94,9 +94,9 @@ Domain choices in current code:
 ## [CURRENT_STATE] Persistence
 
 Persistence now vs target:
-- Current Flyway has six migrations: `V1__init_schema.sql` (auth, project, connector, requirement, dataset, test_case, rubric — rubric `project_id` is nullable, `is_template` added), `V2__create_jobs_evaluation.sql` (jobs, job_events, evaluation_runs, evaluation_results), `V3__create_review_decisions.sql`, `V4__create_export_files.sql`, `V5__create_connector_secrets.sql`, `V6__drop_requirement_from_datasets.sql` (drops requirement FK from datasets).
+- Current Flyway has five migrations: `V1__init_schema.sql` (auth, project, connector, requirement table kept, dataset without requirement FK, test_case, rubric, rubric version content/schema), `V2__create_jobs_evaluation.sql` (jobs, job_events, judge_models, evaluation_runs with judge model FK, evaluation_results), `V3__create_review_decisions.sql`, `V4__create_export_files.sql`, `V5__create_connector_secrets.sql`.
 - Dataset has `generation_prompt TEXT` column for AI generation context.
-- Rubrics are user-scoped (nullable `project_id`); `is_template BOOLEAN NOT NULL DEFAULT FALSE` flags system templates.
+- Rubrics are user-scoped (nullable `project_id`); `is_template BOOLEAN NOT NULL DEFAULT FALSE` flags system templates. Rubric versions store `content` and optional `output_schema_json`.
 - Email verification and password reset tokens are opaque raw values; only SHA-256 hashes are stored.
 - `OpaqueTokenService` owns raw token generation and hashing for one-time email tokens.
 - Future MVP docs expect main tables to use internal `BIGINT id` plus public `UUID public_id`; APIs should expose `publicId`, not internal `id`.
@@ -116,7 +116,7 @@ Implemented API slices after auth:
   - Test-run renders `{{question}}`, `{{precondition}}`, and `{{metadata}}`, resolves `{{secret:KEY}}` placeholders to real decrypted values before calling the configured API, and returns masked preview headers. Test-runs now work for authed connectors.
   - `RestClient.Builder` is provided by `ApplicationConfig`; `timeoutSeconds` is accepted but not yet wired into a per-request HTTP timeout.
   - **Create from cURL**: `POST /api/v1/projects/{projectPublicId}/target-api-connectors/from-curl` accepts `{name, rawCurl}` (+ optional description/responseSelector/timeoutSeconds/retryCount). `CurlParser` extracts method/URL/headers/body. `ConnectorSecretDetector` auto-detects and masks sensitive headers with `{{secret:KEY}}` placeholders. Backend test-calls the target API; saves only on success (422 if test fails). `ResponseSelectorDetector` auto-guesses the response JSONPath selector from common keys. Minimal input: just `name` + `rawCurl`.
-- Requirements: **REMOVED** (module deleted in V6 migration; `me.nghlong3004.vqc.api.requirement` package removed).
+- Requirements: **REMOVED** from the API/domain flow; `me.nghlong3004.vqc.api.requirement` package is gone. The legacy `business_requirements` table is still created, but datasets no longer reference it.
 - Datasets and test cases:
   - Dataset create/list are nested under `/api/v1/projects/{projectPublicId}/datasets`.
   - Dataset detail/update use `/api/v1/datasets/{datasetPublicId}`.
@@ -128,6 +128,8 @@ Implemented API slices after auth:
   - Archived datasets reject test case create/update/delete.
 - Rubrics, rubric versions, and criteria:
   - Rubrics are now **user-scoped** (not project-scoped). `project_id` is nullable; `is_template` flag marks system templates.
+  - `POST /api/v1/rubrics` creates a user-scoped rubric plus draft v1 in one transaction. Request includes `name`, optional `description`, required rubric `content`, optional `outputSchemaJson`, and optional criteria. If criteria are omitted, service seeds a small default criteria set.
+  - `POST /api/v1/rubrics/generate-preview` calls Spring AI `ChatClient` and returns editable rubric `content`, `outputSchemaJson`, and criteria without persisting. Frontend uses this as the QC-friendly rubric wizard preview step.
   - `POST /api/v1/projects/{projectPublicId}/rubrics` creates a rubric linked to a project (backward compat).
   - `GET /api/v1/projects/{projectPublicId}/rubrics` lists rubrics under a project.
   - `GET /api/v1/rubrics` lists all rubrics owned by the authenticated user (user-scoped).
@@ -135,19 +137,26 @@ Implemented API slices after auth:
   - `POST /api/v1/rubrics/{rubricPublicId}/clone` creates a copy of a rubric for the user.
   - Rubric detail/update/archive use `/api/v1/rubrics/{rubricPublicId}`; `DELETE` soft-archives with status `ARCHIVED`.
   - `RubricTemplateSeeder` seeds 5 built-in templates on first boot (idempotent).
-  - Version create/list are nested under `/api/v1/rubrics/{rubricPublicId}/versions`.
-  - Version detail/update use `/api/v1/rubric-versions/{rubricVersionPublicId}`.
+  - Version create/list are nested under `/api/v1/rubrics/{rubricPublicId}/versions`; create accepts optional `sourceVersionPublicId` to clone content, output schema, and criteria into the new draft version.
+  - `GET /api/v1/rubric-versions` lists all user-owned versions, with optional `status`; frontend start-evaluation uses this to pick any reusable published rubric version.
+  - Version detail/update use `/api/v1/rubric-versions/{rubricVersionPublicId}`. Draft versions can patch `content` and `outputSchemaJson`; lifecycle status patch still publishes/archives.
   - Criteria create/list are nested under `/api/v1/rubric-versions/{rubricVersionPublicId}/criteria`.
   - Criteria update/delete use `/api/v1/rubric-criteria/{criterionPublicId}`.
   - Rubric access is owner-scoped by authenticated username/email through `createdBy`.
   - Version numbers are server-managed and auto-increment from the latest version.
   - Rubric `currentVersion` starts as `null`; publishing a draft version sets `publishedAt` and the rubric `currentVersion`.
   - Criteria use **relative integer weights** (1–100, default 1). System normalizes at evaluation time via `Σ(w×s)/Σ(w)`.
-  - Publishing requires at least one criterion (no sum constraint).
+  - Publishing requires nonblank rubric version `content` and at least one criterion (no sum constraint).
   - Published/archived versions are immutable for criteria create/update/delete; archived rubrics reject version/criteria mutation.
   - `metricKey` is unique per rubric version and must be lowercase letters/numbers/underscores.
+- Judge models:
+  - Project-scoped judge models live under `/api/v1/projects/{projectPublicId}/judge-models`.
+  - `POST /api/v1/projects/{projectPublicId}/judge-models` creates provider/model config and encrypts the raw API key with AES-256-GCM. Responses return only `apiKeyMasked`.
+  - `GET /api/v1/projects/{projectPublicId}/judge-models` lists models, with optional `active`.
+  - `PATCH /api/v1/judge-models/{judgeModelPublicId}` updates metadata/config and replaces the encrypted API key only when a new key is supplied.
+  - `POST /api/v1/judge-models/{judgeModelPublicId}/test-connection` currently validates ownership/active status and returns the masked config; it does not call external providers yet.
 - Evaluation runs and jobs:
-  - `POST /api/v1/projects/{projectPublicId}/evaluation-runs` creates an evaluation run + job, validates that the referenced dataset is `APPROVED`, rubric version is `PUBLISHED`, and connector exists, then pushes a job message to a Redis queue and returns `202 Accepted` with `runPublicId` and `jobPublicId`.
+  - `POST /api/v1/projects/{projectPublicId}/evaluation-runs` creates an evaluation run + job, validates that the referenced dataset is `APPROVED`, rubric version is `PUBLISHED`, connector is active, and judge model is active under the same project, then pushes a job message to a Redis queue and returns `202 Accepted` with `runPublicId` and `jobPublicId`.
   - `GET /api/v1/projects/{projectPublicId}/evaluation-runs` lists runs under a project with pagination.
   - `GET /api/v1/evaluation-runs/{runPublicId}` returns run detail (flat path, owner-scoped).
   - `GET /api/v1/evaluation-runs/{runPublicId}/results` lists evaluation results with optional `judgeStatus` and `qcStatus` filters, pagination, test-case review context, and QC fields (`qcStatus`, `qcNote`, `picBug`).
@@ -164,6 +173,8 @@ Implemented API slices after auth:
   - CLI output parser supports `results.results[]` from `promptfoo@0.121.15` and keeps compatibility with `results.outputs[]`, mapping rows into `PromptfooResult`.
   - CLI config supports response selectors `$.answer` and `$.data.answer` only; unsupported selectors fail fast.
   - CLI config resolves `{{secret:KEY}}` placeholders to `{{env.VQC_SECRET_KEY}}` in generated promptfoo config. `CliPromptfooExecutor` decrypts secrets from the `connector_secrets` table via `ConnectorSecretService` and passes them as `VQC_SECRET_*` environment variables to the promptfoo CLI process. Raw secrets never touch disk.
+  - CLI judge provider comes from `EvaluationRun.judgeModel`: `GEMINI` → `google:<model>`, `OPENAI` → `openai:<model>`, `ANTHROPIC` → `anthropic:<model>`, `DEEPSEEK`/`CUSTOM` → OpenAI-compatible provider with optional `OPENAI_BASE_URL`. Decrypted judge API keys are passed per run via provider-specific env vars.
+  - Rubric criteria still generate structured `llm-rubric` assertions. If criteria are empty but `RubricVersion.content` exists, config generation creates one holistic rubric assertion from that content.
   - Promptfoo local runner metadata and lockfile exist under `tooling/promptfoo-runner` for `promptfoo@0.121.15`; install `node_modules` locally before real CLI/smoke runs.
   - `EvaluationJobHandler` loads active dataset test cases, runs the executor, writes one `EvaluationResult` per active case, updates run/job counters and statuses, and emits `RUNNING`, `CASE_COMPLETED`, `COMPLETED`, or `FAILED` job events.
 - QC review:
@@ -193,7 +204,7 @@ Implemented API slices after auth:
   - `GenerateDatasetRequest` has `prompt` (generation context), `count` (5–100), and optional `additionalPrompt`.
 - Quick evaluate:
   - `POST /api/v1/projects/{projectPublicId}/quick-evaluate` starts an evaluation with auto-resolve.
-  - Null `datasetPublicId`, `connectorPublicId`, or `rubricVersionPublicId` are resolved to the sole candidate; 422 if 0 or >1.
+  - Null `datasetPublicId`, `connectorPublicId`, `rubricVersionPublicId`, or `judgeModelPublicId` are resolved to the sole candidate; 422 if 0 or >1.
   - Delegates to `createEvaluationRun` after resolution.
 
 ## [FUTURE_SLICE] Known Current Gaps
@@ -211,7 +222,7 @@ Following backend slices:
 ## [FUTURE_SLICE] Product Direction
 
 Future product direction from docs:
-- MVP flow: Login -> Project -> Dynamic Target API Connector -> Dataset/Test Cases -> Rubric/Criteria -> Evaluation Run/Job -> Results -> QC Review -> Export.
+- MVP flow: Login -> Project -> Dynamic Target API Connector -> Dataset/Test Cases -> Rubric/Criteria -> Project Judge Model -> Evaluation Run/Job -> Results -> QC Review -> Export.
 - Evaluation Run/Job, Worker, Results, QC Review, and Export APIs are implemented (see `[API_CHANGE]`).
 - Use `target_api_connectors` / API path `target-api-connectors`, not the older ambiguous `api_connectors`, when implementing connector work.
 - Dynamic connector must support manual config first: method/url/headers/body template/response selector, non-streaming JSON, timeout/retry, and secret placeholders.

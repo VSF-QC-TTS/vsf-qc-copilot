@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.lang.reflect.Proxy;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -20,6 +21,9 @@ import me.nghlong3004.vqc.api.evaluation.repository.EvaluationRunRepository;
 import me.nghlong3004.vqc.api.evaluation.request.CreateEvaluationRunRequest;
 import me.nghlong3004.vqc.api.evaluation.response.CreateEvaluationRunResponse;
 import me.nghlong3004.vqc.api.exception.ResourceException;
+import me.nghlong3004.vqc.api.judge.entity.JudgeModel;
+import me.nghlong3004.vqc.api.judge.enums.JudgeProvider;
+import me.nghlong3004.vqc.api.judge.repository.JudgeModelRepository;
 import me.nghlong3004.vqc.api.job.entity.Job;
 import me.nghlong3004.vqc.api.job.repository.JobEventRepository;
 import me.nghlong3004.vqc.api.job.repository.JobRepository;
@@ -56,6 +60,7 @@ class EvaluationRunServiceImplTest {
     Dataset dataset = approvedDataset(project, creator);
     RubricVersion rubricVersion = publishedRubricVersion(creator);
     TargetApiConnector connector = activeConnector(project, creator);
+    JudgeModel judgeModel = judgeModel(project, creator);
 
     AtomicReference<String> publishedJobId = new AtomicReference<>();
     EvaluationRunServiceImpl service = buildService(
@@ -67,6 +72,7 @@ class EvaluationRunServiceImplTest {
             dataset.getPublicId(),
             rubricVersion.getPublicId(),
             connector.getPublicId(),
+            judgeModel.getPublicId(),
             null),
         "qc.demo@example.com");
 
@@ -248,6 +254,7 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(DatasetRepository.class),
         ignoredRepo(RubricVersionRepository.class),
         ignoredRepo(TargetApiConnectorRepository.class),
+        ignoredRepo(JudgeModelRepository.class),
         ignoredRepo(TestCaseRepository.class),
         userRepository(Optional.empty()),
         ignoredPublisher(),
@@ -255,7 +262,8 @@ class EvaluationRunServiceImplTest {
 
     assertThatThrownBy(() -> service.createEvaluationRun(
             UUID.randomUUID(),
-            new CreateEvaluationRunRequest(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null),
+            new CreateEvaluationRunRequest(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null),
             "missing@example.com"))
         .isInstanceOf(ResourceException.class)
         .extracting(e -> ((ResourceException) e).getResponse().code())
@@ -274,6 +282,7 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(DatasetRepository.class),
         ignoredRepo(RubricVersionRepository.class),
         ignoredRepo(TargetApiConnectorRepository.class),
+        ignoredRepo(JudgeModelRepository.class),
         ignoredRepo(TestCaseRepository.class),
         userRepository(Optional.of(creator)),
         ignoredPublisher(),
@@ -281,7 +290,8 @@ class EvaluationRunServiceImplTest {
 
     assertThatThrownBy(() -> service.createEvaluationRun(
             UUID.randomUUID(),
-            new CreateEvaluationRunRequest(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null),
+            new CreateEvaluationRunRequest(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null),
             "qc.demo@example.com"))
         .isInstanceOf(ResourceException.class)
         .extracting(e -> ((ResourceException) e).getResponse().code())
@@ -321,6 +331,7 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(DatasetRepository.class),
         ignoredRepo(RubricVersionRepository.class),
         ignoredRepo(TargetApiConnectorRepository.class),
+        ignoredRepo(JudgeModelRepository.class),
         ignoredRepo(TestCaseRepository.class),
         userRepository(Optional.of(creator)),
         ignoredPublisher(),
@@ -356,6 +367,7 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(DatasetRepository.class),
         ignoredRepo(RubricVersionRepository.class),
         ignoredRepo(TargetApiConnectorRepository.class),
+        ignoredRepo(JudgeModelRepository.class),
         ignoredRepo(TestCaseRepository.class),
         userRepository(Optional.of(creator)),
         ignoredPublisher(),
@@ -403,6 +415,7 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(DatasetRepository.class),
         ignoredRepo(RubricVersionRepository.class),
         ignoredRepo(TargetApiConnectorRepository.class),
+        ignoredRepo(JudgeModelRepository.class),
         ignoredRepo(TestCaseRepository.class),
         userRepository(Optional.of(creator)),
         ignoredPublisher(),
@@ -430,6 +443,7 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(DatasetRepository.class),
         ignoredRepo(RubricVersionRepository.class),
         ignoredRepo(TargetApiConnectorRepository.class),
+        ignoredRepo(JudgeModelRepository.class),
         ignoredRepo(TestCaseRepository.class),
         userRepository(Optional.of(creator)),
         ignoredPublisher(),
@@ -480,6 +494,7 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(DatasetRepository.class),
         ignoredRepo(RubricVersionRepository.class),
         ignoredRepo(TargetApiConnectorRepository.class),
+        ignoredRepo(JudgeModelRepository.class),
         ignoredRepo(TestCaseRepository.class),
         userRepository(Optional.of(creator)),
         ignoredPublisher(),
@@ -519,6 +534,7 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(DatasetRepository.class),
         ignoredRepo(RubricVersionRepository.class),
         ignoredRepo(TargetApiConnectorRepository.class),
+        ignoredRepo(JudgeModelRepository.class),
         ignoredRepo(TestCaseRepository.class),
         userRepository(Optional.of(creator)),
         ignoredPublisher(),
@@ -561,6 +577,7 @@ class EvaluationRunServiceImplTest {
             ignoredRepo(DatasetRepository.class),
             ignoredRepo(RubricVersionRepository.class),
             ignoredRepo(TargetApiConnectorRepository.class),
+            ignoredRepo(JudgeModelRepository.class),
             ignoredRepo(TestCaseRepository.class),
             userRepository(Optional.of(creator)),
             ignoredPublisher(),
@@ -592,6 +609,7 @@ class EvaluationRunServiceImplTest {
         datasetRepository(Optional.of(dataset)),
         rubricVersionRepository(Optional.of(rubricVersion)),
         connectorRepository(Optional.of(connector)),
+        judgeModelRepository(Optional.of(judgeModel(project, creator))),
         testCaseRepository(activeCases),
         userRepository(Optional.of(creator)),
         jobQueuePublisher(publishedJobId),
@@ -601,7 +619,7 @@ class EvaluationRunServiceImplTest {
   private CreateEvaluationRunRequest request(
       Dataset dataset, RubricVersion rv, TargetApiConnector connector) {
     return new CreateEvaluationRunRequest(
-        dataset.getPublicId(), rv.getPublicId(), connector.getPublicId(), null);
+        dataset.getPublicId(), rv.getPublicId(), connector.getPublicId(), UUID.randomUUID(), null);
   }
 
   // ── Proxy repositories ──
@@ -682,6 +700,17 @@ class EvaluationRunServiceImplTest {
   private TargetApiConnectorRepository connectorRepository(Optional<TargetApiConnector> result) {
     return proxy(TargetApiConnectorRepository.class, (p, m, args) -> {
       if ("findByPublicIdAndCreatedBy".equals(m.getName())) return result;
+      throw new UnsupportedOperationException(m.getName());
+    });
+  }
+
+  private JudgeModelRepository judgeModelRepository(Optional<JudgeModel> result) {
+    return proxy(JudgeModelRepository.class, (p, m, args) -> {
+      if ("findByPublicIdAndCreatedBy".equals(m.getName())) return result;
+      if ("findByProjectAndActive".equals(m.getName())) {
+        return new org.springframework.data.domain.PageImpl<>(
+            result.map(List::of).orElseGet(List::of));
+      }
       throw new UnsupportedOperationException(m.getName());
     });
   }
@@ -785,6 +814,7 @@ class EvaluationRunServiceImplTest {
         .publicId(UUID.fromString("c3a1b2c3-d4e5-4f7a-8b9c-0d1e2f3a4b5c"))
         .rubric(rubric)
         .version(1)
+        .content("Judge actual response against expected answer.")
         .status(RubricVersionStatus.PUBLISHED)
         .createdBy(creator)
         .build();
@@ -806,6 +836,19 @@ class EvaluationRunServiceImplTest {
         .url("http://localhost:8080/mock-chatbot/chat")
         .bodyType(BodyType.RAW_JSON)
         .responseFormat(ResponseFormat.JSON)
+        .active(true)
+        .createdBy(creator)
+        .build();
+  }
+
+  private JudgeModel judgeModel(Project project, User creator) {
+    return JudgeModel.builder()
+        .id(1L)
+        .publicId(UUID.fromString("8d2f6a2a-4974-4e9c-83ad-f2e1e58d39f0"))
+        .project(project)
+        .name("Gemini QC Judge")
+        .provider(JudgeProvider.GEMINI)
+        .modelName("gemini-2.5-flash")
         .active(true)
         .createdBy(creator)
         .build();

@@ -10,6 +10,7 @@ import {
   ListChecksIcon,
   ChartBarIcon,
   ArchiveIcon,
+  RobotIcon,
 } from '@phosphor-icons/react';
 
 import { Link, useRouter } from '@/i18n/navigation';
@@ -42,6 +43,12 @@ type EvaluationRunSummary = {
   createdAt: string;
 };
 
+type ReadinessItem = {
+  key: string;
+  href: string;
+  ready: boolean;
+};
+
 function useQuickLinks(projectId: string): QuickLink[] {
   return React.useMemo(
     () => [
@@ -60,6 +67,11 @@ function useQuickLinks(projectId: string): QuickLink[] {
         labelKey: 'rubrics',
         href: '/rubrics',
         icon: ListChecksIcon,
+      },
+      {
+        labelKey: 'judgeModels',
+        href: `/projects/${projectId}/judge-models`,
+        icon: RobotIcon,
       },
       {
         labelKey: 'evaluations',
@@ -142,6 +154,38 @@ export default function ProjectDetailPage() {
       ),
   });
 
+  const { data: approvedDatasetsData } = useQuery({
+    queryKey: ['project-readiness', projectId, 'datasets'],
+    queryFn: () =>
+      apiClient.get<PageResponse<{ publicId: string }>>(
+        `/api/v1/projects/${projectId}/datasets?status=APPROVED&page=0&size=1`,
+      ),
+  });
+
+  const { data: activeConnectorsData } = useQuery({
+    queryKey: ['project-readiness', projectId, 'connectors'],
+    queryFn: () =>
+      apiClient.get<PageResponse<{ publicId: string }>>(
+        `/api/v1/projects/${projectId}/target-api-connectors?active=true&page=0&size=1`,
+      ),
+  });
+
+  const { data: activeJudgeModelsData } = useQuery({
+    queryKey: ['project-readiness', projectId, 'judge-models'],
+    queryFn: () =>
+      apiClient.get<PageResponse<{ publicId: string }>>(
+        `/api/v1/projects/${projectId}/judge-models?active=true&page=0&size=1`,
+      ),
+  });
+
+  const { data: publishedRubricsData } = useQuery({
+    queryKey: ['project-readiness', projectId, 'rubric-versions'],
+    queryFn: () =>
+      apiClient.get<PageResponse<{ publicId: string }>>(
+        '/api/v1/rubric-versions?status=PUBLISHED&page=0&size=1',
+      ),
+  });
+
   // --- ArchiveIcon mutation ---
   const archiveMutation = useMutation({
     mutationFn: () => apiClient.del('/api/v1/projects/' + projectId),
@@ -154,6 +198,28 @@ export default function ProjectDetailPage() {
 
   const quickLinks = useQuickLinks(projectId);
   const recentEvaluations = evaluationsData?.items ?? [];
+  const readinessItems: ReadinessItem[] = [
+    {
+      key: 'readinessConnector',
+      href: `/projects/${projectId}/connectors`,
+      ready: (activeConnectorsData?.totalItems ?? 0) > 0,
+    },
+    {
+      key: 'readinessDataset',
+      href: `/projects/${projectId}/datasets`,
+      ready: (approvedDatasetsData?.totalItems ?? 0) > 0,
+    },
+    {
+      key: 'readinessJudgeModel',
+      href: `/projects/${projectId}/judge-models`,
+      ready: (activeJudgeModelsData?.totalItems ?? 0) > 0,
+    },
+    {
+      key: 'readinessRubric',
+      href: '/rubrics',
+      ready: (publishedRubricsData?.totalItems ?? 0) > 0,
+    },
+  ];
 
   // --- Loading state ---
   if (projectLoading) {
@@ -213,6 +279,36 @@ export default function ProjectDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* ---- Evaluation readiness ---- */}
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold tracking-tight">
+          {t('readiness')}
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {readinessItems.map((item) => (
+            <Link
+              key={item.key}
+              href={item.href}
+              className={cn(
+                'rounded-lg border bg-card p-4 transition-colors hover:bg-accent hover:text-accent-foreground',
+                item.ready ? 'border-emerald-200' : 'border-amber-200',
+              )}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-medium">{t(item.key)}</span>
+                <StatusBadge
+                  status={item.ready ? 'ACTIVE' : 'PENDING'}
+                  size="sm"
+                />
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {item.ready ? t('readinessReady') : t('readinessMissing')}
+              </p>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {/* ---- Quick links ---- */}
       <section className="space-y-3">
