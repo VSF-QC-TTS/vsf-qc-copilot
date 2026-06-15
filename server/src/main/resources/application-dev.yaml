@@ -58,7 +58,7 @@ spring:
         chat:
           model: ${GEMINI_MODEL:gemini-2.5-flash}
           temperature: 0
-          max-output-tokens: ${GEMINI_MAX_TOKENS:1024}
+          max-output-tokens: ${GEMINI_MAX_TOKENS:8192}
 
   security:
     oauth2:
