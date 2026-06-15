@@ -27,68 +27,66 @@ export function DataTablePagination({
   onPageChange,
 }: DataTablePaginationProps) {
   const t = useTranslations('table');
-  const rangeStart = totalItems === 0 ? 0 : pageIndex * pageSize + 1;
-  const rangeEnd = Math.min((pageIndex + 1) * pageSize, totalItems);
 
   const isFirstPage = pageIndex === 0;
   const isLastPage = pageIndex >= totalPages - 1;
 
   return (
-    <div className="flex flex-col items-center justify-between gap-4 px-2 py-4 sm:flex-row">
-      <p className="text-sm text-muted-foreground">
-        {t('showing', { from: rangeStart, to: rangeEnd, total: totalItems })}
-      </p>
+    <div className="flex items-center justify-center px-2 py-3 border-t border-border/40">
+      {/* Unified pill control group */}
+      <div className="flex items-center rounded-lg border bg-muted/20 p-0.5 dark:bg-muted/5 shadow-xs">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-md hover:bg-background hover:text-foreground active:scale-95 transition-all"
+          onClick={() => onPageChange(0)}
+          disabled={isFirstPage}
+          aria-label={t('firstPage')}
+        >
+          <CaretDoubleLeftIcon className="size-3.5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-md hover:bg-background hover:text-foreground active:scale-95 transition-all"
+          onClick={() => onPageChange(pageIndex - 1)}
+          disabled={isFirstPage}
+          aria-label={t('previousPage')}
+        >
+          <CaretLeftIcon className="size-3.5" />
+        </Button>
 
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-8"
-            onClick={() => onPageChange(0)}
-            disabled={isFirstPage}
-            aria-label={t('firstPage')}
-          >
-            <CaretDoubleLeftIcon className="size-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-8"
-            onClick={() => onPageChange(pageIndex - 1)}
-            disabled={isFirstPage}
-            aria-label={t('previousPage')}
-          >
-            <CaretLeftIcon className="size-4" />
-          </Button>
+        {/* Separator line */}
+        <div className="h-4 w-px bg-border mx-1" />
 
-          <span className="min-w-[5ch] text-center text-sm text-muted-foreground">
-            {totalPages === 0
-              ? '0 / 0'
-              : t('page', { current: pageIndex + 1, total: totalPages })}
-          </span>
+        {/* Page status */}
+        <span className="px-3 text-xs font-semibold text-foreground/90 select-none min-w-[6ch] text-center">
+          {totalPages === 0 ? '0 / 0' : `${pageIndex + 1} / ${totalPages}`}
+        </span>
 
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-8"
-            onClick={() => onPageChange(pageIndex + 1)}
-            disabled={isLastPage}
-            aria-label={t('nextPage')}
-          >
-            <CaretRightIcon className="size-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-8"
-            onClick={() => onPageChange(totalPages - 1)}
-            disabled={isLastPage}
-            aria-label={t('lastPage')}
-          >
-            <CaretDoubleRightIcon className="size-4" />
-          </Button>
-        </div>
+        {/* Separator line */}
+        <div className="h-4 w-px bg-border mx-1" />
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-md hover:bg-background hover:text-foreground active:scale-95 transition-all"
+          onClick={() => onPageChange(pageIndex + 1)}
+          disabled={isLastPage}
+          aria-label={t('nextPage')}
+        >
+          <CaretRightIcon className="size-3.5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-md hover:bg-background hover:text-foreground active:scale-95 transition-all"
+          onClick={() => onPageChange(totalPages - 1)}
+          disabled={isLastPage}
+          aria-label={t('lastPage')}
+        >
+          <CaretDoubleRightIcon className="size-3.5" />
+        </Button>
       </div>
     </div>
   );
