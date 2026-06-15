@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
-import { CheckIcon, XIcon } from "@phosphor-icons/react";
+import { CheckIcon } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -19,7 +19,7 @@ import {
 } from "@/lib/validations/auth";
 
 const inputClassName =
-  "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+  "flex h-10 w-full rounded-lg border border-border/80 bg-background/50 px-3 py-2 text-sm transition-all duration-200 placeholder:text-muted-foreground hover:border-primary/30 focus-visible:border-primary/50 focus-visible:bg-background focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-50 shadow-xs";
 
 export default function RegisterPage() {
   const t = useTranslations("auth");
@@ -89,23 +89,27 @@ export default function RegisterPage() {
 
   if (isSuccess) {
     return (
-      <div className="flex flex-col items-center gap-4 text-center">
-        <CheckIcon size={48} weight="bold" className="text-primary" />
-        <p className="text-lg font-medium">{t("registerSuccess")}</p>
-        <Link
-          href="/login"
-          className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-        >
-          {t("goToLogin")}
-        </Link>
+      <div className="flex flex-col items-center gap-4 text-center py-4 animate-in zoom-in-95 duration-400">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 shadow-xs">
+          <CheckIcon size={28} weight="bold" />
+        </div>
+        <div className="space-y-1.5">
+          <h3 className="text-lg font-bold text-foreground">Đăng ký tài khoản thành công</h3>
+          <p className="text-sm text-muted-foreground max-w-[280px]">{t("registerSuccess")}</p>
+        </div>
+        <Button asChild className="mt-2 transition-transform active:scale-[0.98] w-full max-w-[150px]">
+          <Link href="/login">
+            {t("goToLogin")}
+          </Link>
+        </Button>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2 text-center">
-        <h2 className="text-lg font-semibold text-foreground">
+      <div className="space-y-1.5 text-center">
+        <h2 className="text-xl font-bold tracking-tight text-foreground">
           {t("registerTitle")}
         </h2>
         <p className="text-sm text-muted-foreground">
@@ -115,16 +119,16 @@ export default function RegisterPage() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {serverError && (
-          <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive dark:bg-destructive/10 animate-in fade-in duration-300">
             {serverError}
           </div>
         )}
 
         {/* Full Name */}
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <label
             htmlFor="fullName"
-            className="text-sm font-medium leading-none text-foreground"
+            className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/90"
           >
             {t("fullNameLabel")}
           </label>
@@ -137,22 +141,22 @@ export default function RegisterPage() {
             className={cn(
               inputClassName,
               errors.fullName &&
-                "border-destructive focus-visible:ring-destructive",
+                "border-destructive focus-visible:ring-destructive/20 focus-visible:border-destructive",
             )}
             {...register("fullName")}
           />
           {errors.fullName && (
-            <p className="text-sm text-destructive">
+            <p className="text-xs font-medium text-destructive mt-1">
               {errors.fullName.message}
             </p>
           )}
         </div>
 
         {/* Email */}
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <label
             htmlFor="email"
-            className="text-sm font-medium leading-none text-foreground"
+            className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/90"
           >
             {t("emailLabel")}
           </label>
@@ -165,20 +169,20 @@ export default function RegisterPage() {
             className={cn(
               inputClassName,
               errors.email &&
-                "border-destructive focus-visible:ring-destructive",
+                "border-destructive focus-visible:ring-destructive/20 focus-visible:border-destructive",
             )}
             {...register("email")}
           />
           {errors.email && (
-            <p className="text-sm text-destructive">{errors.email.message}</p>
+            <p className="text-xs font-medium text-destructive mt-1">{errors.email.message}</p>
           )}
         </div>
 
         {/* Password */}
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <label
             htmlFor="password"
-            className="text-sm font-medium leading-none text-foreground"
+            className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/90"
           >
             {t("passwordLabel")}
           </label>
@@ -192,7 +196,7 @@ export default function RegisterPage() {
             className={cn(
               inputClassName,
               errors.password &&
-                "border-destructive focus-visible:ring-destructive",
+                "border-destructive focus-visible:ring-destructive/20 focus-visible:border-destructive",
             )}
             {...passwordField}
             onFocus={() => setIsPasswordFocused(true)}
@@ -202,7 +206,7 @@ export default function RegisterPage() {
             }}
           />
           {errors.password && (
-            <p className="text-sm text-destructive">
+            <p className="text-xs font-medium text-destructive mt-1">
               {errors.password.message}
             </p>
           )}
@@ -211,42 +215,51 @@ export default function RegisterPage() {
           <div
             aria-hidden={!shouldShowPasswordRequirements}
             className={cn(
-              "overflow-hidden transition-[max-height,opacity,padding] duration-200 ease-out",
+              "overflow-hidden transition-[max-height,opacity,padding] duration-300 ease-out",
               shouldShowPasswordRequirements
-                ? "max-h-32 pt-1 opacity-100"
-                : "max-h-0 pt-0 opacity-0",
+                ? "max-h-[160px] pt-2 pb-1 opacity-100"
+                : "max-h-0 pt-0 pb-0 opacity-0",
             )}
           >
-            <ul className="flex flex-col gap-1">
-              {requirements.map((req) => (
-                <li key={req.label} className="flex items-center gap-2 text-sm">
-                  {req.met ? (
-                    <CheckIcon size={16} weight="bold" className="text-green-600" />
-                  ) : (
-                    <XIcon
-                      size={16}
-                      weight="bold"
-                      className="text-muted-foreground"
-                    />
-                  )}
-                  <span
-                    className={cn(
-                      req.met ? "text-green-600" : "text-muted-foreground",
-                    )}
-                  >
-                    {req.label}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <div className="rounded-lg border bg-muted/20 p-3 space-y-2 dark:bg-muted/5">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/85">
+                Yêu cầu mật khẩu
+              </p>
+              <ul className="grid grid-cols-2 gap-2 text-xs">
+                {requirements.map((req) => (
+                  <li key={req.label} className="flex items-center gap-2">
+                    <span className={cn(
+                      "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-all duration-300",
+                      req.met 
+                        ? "bg-green-500/10 border-green-500/30 text-green-600 dark:text-green-400" 
+                        : "bg-muted/50 border-border text-muted-foreground/60"
+                    )}>
+                      {req.met ? (
+                        <CheckIcon size={10} weight="bold" />
+                      ) : (
+                        <div className="h-1 w-1 rounded-full bg-muted-foreground/40" />
+                      )}
+                    </span>
+                    <span
+                      className={cn(
+                        "transition-colors duration-300 font-medium text-[11px]",
+                        req.met ? "text-green-600 dark:text-green-400" : "text-muted-foreground"
+                      )}
+                    >
+                      {req.label}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
 
         {/* Confirm Password */}
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <label
             htmlFor="confirmPassword"
-            className="text-sm font-medium leading-none text-foreground"
+            className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/90"
           >
             {t("confirmPasswordLabel")}
           </label>
@@ -260,30 +273,34 @@ export default function RegisterPage() {
             className={cn(
               inputClassName,
               errors.confirmPassword &&
-                "border-destructive focus-visible:ring-destructive",
+                "border-destructive focus-visible:ring-destructive/20 focus-visible:border-destructive",
             )}
             {...register("confirmPassword")}
           />
           {errors.confirmPassword && (
-            <p className="text-sm text-destructive">
+            <p className="text-xs font-medium text-destructive mt-1">
               {errors.confirmPassword.message}
             </p>
           )}
         </div>
 
         {/* Submit button */}
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
+        <Button 
+          type="submit" 
+          className="w-full transition-transform active:scale-[0.98] font-medium shadow-xs" 
+          disabled={isSubmitting}
+        >
           {isSubmitting ? t("registerSubmitting") : t("registerButton")}
         </Button>
       </form>
 
       {/* Bottom link */}
-      <div className="flex flex-col items-center gap-2 text-sm">
-        <p className="text-muted-foreground">
+      <div className="flex flex-col items-center gap-2 text-sm pt-2">
+        <p className="text-xs text-muted-foreground">
           {t("alreadyHaveAccount")}{" "}
           <Link
             href="/login"
-            className="font-medium text-foreground underline-offset-4 hover:underline"
+            className="font-semibold text-foreground underline-offset-4 hover:text-primary transition-colors hover:underline"
           >
             {t("loginLink")}
           </Link>

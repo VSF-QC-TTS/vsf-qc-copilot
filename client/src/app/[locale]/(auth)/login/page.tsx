@@ -17,7 +17,7 @@ import { loginSchema, type LoginFormValues } from "@/lib/validations/auth";
 import { Link } from "@/i18n/navigation";
 
 const inputClassName =
-  "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+  "flex h-10 w-full rounded-lg border border-border/80 bg-background/50 px-3 py-2 text-sm transition-all duration-200 placeholder:text-muted-foreground hover:border-primary/30 focus-visible:border-primary/50 focus-visible:bg-background focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-50 shadow-xs";
 
 export default function LoginPage() {
   const t = useTranslations("auth");
@@ -55,7 +55,6 @@ export default function LoginPage() {
       ) {
         const apiError = error as ApiError;
         const messageKey = getErrorMessageKey(apiError);
-        // getErrorMessageKey returns "errors.CODE", we need just "CODE" for tErrors
         const key = messageKey.replace(/^errors\./, "");
         setServerError(tErrors(key));
       } else {
@@ -66,8 +65,8 @@ export default function LoginPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2 text-center">
-        <h2 className="text-lg font-semibold text-foreground">
+      <div className="space-y-1.5 text-center">
+        <h2 className="text-xl font-bold tracking-tight text-foreground">
           {t("loginTitle")}
         </h2>
         <p className="text-sm text-muted-foreground">{t("loginSubtitle")}</p>
@@ -75,16 +74,16 @@ export default function LoginPage() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {serverError && (
-          <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive dark:bg-destructive/10 animate-in fade-in duration-300">
             {serverError}
           </div>
         )}
 
         {/* Email field */}
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <label
             htmlFor="email"
-            className="text-sm font-medium leading-none text-foreground"
+            className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/90"
           >
             {t("email")}
           </label>
@@ -96,20 +95,20 @@ export default function LoginPage() {
             className={cn(
               inputClassName,
               errors.email &&
-                "border-destructive focus-visible:ring-destructive",
+                "border-destructive focus-visible:ring-destructive/20 focus-visible:border-destructive",
             )}
             {...register("email")}
           />
           {errors.email && (
-            <p className="text-sm text-destructive">{errors.email.message}</p>
+            <p className="text-xs font-medium text-destructive mt-1">{errors.email.message}</p>
           )}
         </div>
 
         {/* Password field */}
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <label
             htmlFor="password"
-            className="text-sm font-medium leading-none text-foreground"
+            className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/90"
           >
             {t("password")}
           </label>
@@ -122,36 +121,40 @@ export default function LoginPage() {
             className={cn(
               inputClassName,
               errors.password &&
-                "border-destructive focus-visible:ring-destructive",
+                "border-destructive focus-visible:ring-destructive/20 focus-visible:border-destructive",
             )}
             {...register("password")}
           />
           {errors.password && (
-            <p className="text-sm text-destructive">
+            <p className="text-xs font-medium text-destructive mt-1 text-left">
               {errors.password.message}
             </p>
           )}
         </div>
 
         {/* Submit button */}
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
+        <Button 
+          type="submit" 
+          className="w-full transition-transform active:scale-[0.98] font-medium shadow-xs" 
+          disabled={isSubmitting}
+        >
           {isSubmitting ? t("authenticating") : t("login")}
         </Button>
       </form>
 
       {/* Bottom links */}
-      <div className="flex flex-col items-center gap-2 text-sm">
+      <div className="flex flex-col items-center gap-2.5 text-sm pt-2">
         <Link
           href="/forgot-password"
-          className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          className="text-xs font-medium text-muted-foreground underline-offset-4 hover:text-primary transition-colors hover:underline"
         >
           {t("forgotPassword")}
         </Link>
-        <p className="text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           {t("noAccount")}{" "}
           <Link
             href="/register"
-            className="font-medium text-foreground underline-offset-4 hover:underline"
+            className="font-semibold text-foreground underline-offset-4 hover:text-primary transition-colors hover:underline"
           >
             {t("register")}
           </Link>

@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { SignOutIcon, GearSixIcon, ListIcon } from '@phosphor-icons/react';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { useSidebarStore } from '@/lib/store/sidebar-store';
@@ -98,12 +98,24 @@ export function Header() {
           const label = getSegmentLabel(segment);
           if (!label) return null;
           
+          const isLast = index === pathSegments.length - 1;
+          const href = '/' + pathSegments.slice(0, index + 1).join('/');
+
           return (
             <div key={segment} className="flex items-center gap-1.5">
               {index > 0 && <span className="text-muted-foreground/30">/</span>}
-              <span className={cn(index === pathSegments.length - 1 ? "font-medium text-foreground" : "")}>
-                {label}
-              </span>
+              {isLast ? (
+                <span className="font-semibold text-foreground">
+                  {label}
+                </span>
+              ) : (
+                <Link
+                  href={href}
+                  className="hover:text-foreground transition-colors hover:underline underline-offset-4"
+                >
+                  {label}
+                </Link>
+              )}
             </div>
           );
         })}
