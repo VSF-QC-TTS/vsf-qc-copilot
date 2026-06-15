@@ -9,6 +9,7 @@ import {
   ExportIcon,
   ClockIcon,
 } from '@phosphor-icons/react';
+import { motion, AnimatePresence } from 'motion/react';
 
 import { Button } from '@/components/ui/button';
 import { PageShell } from '@/components/layout/page-shell';
@@ -54,7 +55,7 @@ type EvaluationRunDetail = {
 type RunEvent = {
   publicId: string;
   eventType: string;
-  message: string;
+  payloadJson: string;
   createdAt: string;
 };
 
@@ -71,6 +72,27 @@ function formatDateTime(iso: string): string {
     minute: '2-digit',
   });
 }
+
+const containerVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.4,
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.3 },
+  },
+};
 
 // ---------------------------------------------------------------------------
 // Page component
@@ -128,105 +150,164 @@ export default function RunDetailPage() {
       ? `${Math.round((job.progressCurrent / job.progressTotal) * 100)}%`
       : null;
 
+  const renderEventMessage = React.useCallback(
+    (evt: RunEvent) => {
+      try {
+        const payload = JSON.parse(evt.payloadJson || '{}');
+        return t(`eventTypes.${evt.eventType}`, payload);
+      } catch {
+        return evt.eventType;
+      }
+    },
+    [t],
+  );
+
   return (
     <>
-    <PageShell
-      title={run?.publicId ?? t('runDetail')}
-      backHref={`/projects/${projectId}/evaluations`}
-      backLabel={tCommon('back')}
-      actions={
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() =>
-              router.push(
-                `/projects/${projectId}/evaluations/${runId}/results`,
-              )
-            }
-          >
-            <TableIcon weight="bold" />
-            {t('results')}
-          </Button>
-          {/* ExportIcon (Epic 11) */}
-          <Button variant="outline" onClick={() => setExportOpen(true)}>
-            <ExportIcon weight="bold" />
-            {t('export')}
-          </Button>
-        </div>
-      }
-    >
-      {/* Status */}
-      <div className="flex items-center gap-3">
-        {run && <StatusBadge status={run.status} />}
-        {isPolling && progressPercent && (
-          <span className="text-sm text-muted-foreground animate-pulse">
-            {progressPercent}
-          </span>
-        )}
-      </div>
-
-      {/* Summary cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
-          label={t('totalResults')}
-          value={run?.totalCases ?? null}
-          loading={runLoading}
-        />
-        <MetricCard
-          label={t('passRate')}
-          value={
-            run?.passRate !== undefined && run?.passRate !== null
-              ? `${Math.round(run.passRate * 100)}%`
-              : null
-          }
-          loading={runLoading}
-        />
-        <MetricCard
-          label={t('passed')}
-          value={run?.passedCases ?? null}
-          loading={runLoading}
-        />
-        <MetricCard
-          label={t('failed')}
-          value={run?.failedCases ?? null}
-          loading={runLoading}
-        />
-      </div>
-
-      {/* Events timeline */}
-      <div className="space-y-2">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-          {t('events')}
-        </h2>
-
-        {events && events.length > 0 ? (
-          <div className="space-y-3">
-            {events.map((evt) => (
-              <div
-                key={evt.publicId}
-                className="flex items-start gap-3 rounded-md border p-3"
-              >
-                <ClockIcon
-                  className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-                  weight="duotone"
-                />
-                <div className="flex-1 space-y-0.5">
-                  <p className="text-sm">{evt.message}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDateTime(evt.createdAt)}
-                  </p>
-                </div>
-                <StatusBadge status={evt.eventType} size="sm" />
-              </div>
-            ))}
+      <PageShell
+        title={run?.publicId ?? t('runDetail')}
+        backHref={`/projects/${projectId}/evaluations`}
+        backLabel={tCommon('back')}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() =>
+                router.push(
+                  `/projects/${projectId}/evaluations/${runId}/results`,
+                )
+              }
+            >
+              <TableIcon weight="bold" />
+              {t('results')}
+            </Button>
+            <Button variant="outline" onClick={() => setExportOpen(true)}>
+              <ExportIcon weight="bold" />
+              {t('export')}
+            </Button>
           </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            {t('noEvents')}
-          </p>
-        )}
-      </div>
-    </PageShell>
+        }
+      >
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="space-y-6"
+        >
+          {/* Status */}
+          <motion.div variants={itemVariants} className="flex items-center gap-3">
+            {run && <StatusBadge status={run.status} />}
+            {isPolling && progressPercent && (
+              <span className="text-sm text-muted-foreground animate-pulse">
+                {progressPercent}
+              </span>
+            )}
+          </motion.div>
+
+          {/* Configuration Card */}
+          {run && (
+            <motion.div
+              variants={itemVariants}
+              className="rounded-lg border bg-card p-4 space-y-3 shadow-xs"
+            >
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                {t('configuration')}
+              </h2>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-sm">
+                <div className="space-y-1">
+                  <span className="text-muted-foreground block text-xs">{t('dataset')}</span>
+                  <span className="font-medium text-foreground">{run.datasetName ?? '-'}</span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-muted-foreground block text-xs">{t('rubric')}</span>
+                  <span className="font-medium text-foreground">
+                    {run.rubricName ?? '-'} {run.rubricVersionNumber ? `(v${run.rubricVersionNumber})` : ''}
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-muted-foreground block text-xs">{t('connector')}</span>
+                  <span className="font-medium text-foreground">{run.connectorName ?? '-'}</span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-muted-foreground block text-xs">{t('judgeModel')}</span>
+                  <span className="font-medium text-foreground">{run.judgeModelDisplayName ?? '-'}</span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Summary cards */}
+          <motion.div
+            variants={itemVariants}
+            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+          >
+            <MetricCard
+              label={t('totalResults')}
+              value={run?.totalCases ?? null}
+              loading={runLoading}
+            />
+            <MetricCard
+              label={t('passRate')}
+              value={
+                run?.passRate !== undefined && run?.passRate !== null
+                  ? `${Math.round(run.passRate * 100)}%`
+                  : null
+              }
+              loading={runLoading}
+            />
+            <MetricCard
+              label={t('passed')}
+              value={run?.passedCases ?? null}
+              loading={runLoading}
+            />
+            <MetricCard
+              label={t('failed')}
+              value={run?.failedCases ?? null}
+              loading={runLoading}
+            />
+          </motion.div>
+
+          {/* Events timeline */}
+          <motion.div variants={itemVariants} className="space-y-3">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              {t('events')}
+            </h2>
+
+            {events && events.length > 0 ? (
+              <div className="space-y-3">
+                <AnimatePresence initial={false}>
+                  {events.map((evt) => (
+                    <motion.div
+                      key={evt.publicId}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="flex items-start gap-3 rounded-md border p-3 bg-card shadow-xs"
+                    >
+                      <ClockIcon
+                        className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                        weight="duotone"
+                      />
+                      <div className="flex-1 space-y-0.5">
+                        <p className="text-sm text-foreground">{renderEventMessage(evt)}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDateTime(evt.createdAt)}
+                        </p>
+                      </div>
+                      <StatusBadge status={evt.eventType} size="sm" />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {t('noEvents')}
+              </p>
+            )}
+          </motion.div>
+        </motion.div>
+      </PageShell>
 
       {/* ExportIcon dialog */}
       <ExportDialog
