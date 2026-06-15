@@ -258,7 +258,7 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(TestCaseRepository.class),
         userRepository(Optional.empty()),
         ignoredPublisher(),
-        new EvaluationRunMapper());
+        new EvaluationRunMapper(new com.fasterxml.jackson.databind.ObjectMapper()));
 
     assertThatThrownBy(() -> service.createEvaluationRun(
             UUID.randomUUID(),
@@ -286,7 +286,7 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(TestCaseRepository.class),
         userRepository(Optional.of(creator)),
         ignoredPublisher(),
-        new EvaluationRunMapper());
+        new EvaluationRunMapper(new com.fasterxml.jackson.databind.ObjectMapper()));
 
     assertThatThrownBy(() -> service.createEvaluationRun(
             UUID.randomUUID(),
@@ -335,7 +335,7 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(TestCaseRepository.class),
         userRepository(Optional.of(creator)),
         ignoredPublisher(),
-        new EvaluationRunMapper());
+        new EvaluationRunMapper(new com.fasterxml.jackson.databind.ObjectMapper()));
 
     var response = service.listEvaluationRuns(
         project.getPublicId(),
@@ -371,7 +371,7 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(TestCaseRepository.class),
         userRepository(Optional.of(creator)),
         ignoredPublisher(),
-        new EvaluationRunMapper());
+        new EvaluationRunMapper(new com.fasterxml.jackson.databind.ObjectMapper()));
 
     var response = service.listEvaluationRuns(
         project.getPublicId(),
@@ -419,7 +419,7 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(TestCaseRepository.class),
         userRepository(Optional.of(creator)),
         ignoredPublisher(),
-        new EvaluationRunMapper());
+        new EvaluationRunMapper(new com.fasterxml.jackson.databind.ObjectMapper()));
 
     var detail = service.getEvaluationRun(run.getPublicId(), "qc.demo@example.com");
 
@@ -447,7 +447,7 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(TestCaseRepository.class),
         userRepository(Optional.of(creator)),
         ignoredPublisher(),
-        new EvaluationRunMapper());
+        new EvaluationRunMapper(new com.fasterxml.jackson.databind.ObjectMapper()));
 
     assertThatThrownBy(() -> service.getEvaluationRun(UUID.randomUUID(), "qc.demo@example.com"))
         .isInstanceOf(ResourceException.class)
@@ -498,7 +498,7 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(TestCaseRepository.class),
         userRepository(Optional.of(creator)),
         ignoredPublisher(),
-        new EvaluationRunMapper());
+        new EvaluationRunMapper(new com.fasterxml.jackson.databind.ObjectMapper()));
 
     var response = service.listEvaluationResults(
         run.getPublicId(), null, null,
@@ -538,7 +538,7 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(TestCaseRepository.class),
         userRepository(Optional.of(creator)),
         ignoredPublisher(),
-        new EvaluationRunMapper());
+        new EvaluationRunMapper(new com.fasterxml.jackson.databind.ObjectMapper()));
 
     var response = service.listEvaluationResults(
         run.getPublicId(), null, null,
@@ -581,7 +581,7 @@ class EvaluationRunServiceImplTest {
             ignoredRepo(TestCaseRepository.class),
             userRepository(Optional.of(creator)),
             ignoredPublisher(),
-            new EvaluationRunMapper());
+            new EvaluationRunMapper(new com.fasterxml.jackson.databind.ObjectMapper()));
 
     var response =
         service.listEvaluationResults(
@@ -613,7 +613,7 @@ class EvaluationRunServiceImplTest {
         testCaseRepository(activeCases),
         userRepository(Optional.of(creator)),
         jobQueuePublisher(publishedJobId),
-        new EvaluationRunMapper());
+        new EvaluationRunMapper(new com.fasterxml.jackson.databind.ObjectMapper()));
   }
 
   private CreateEvaluationRunRequest request(
