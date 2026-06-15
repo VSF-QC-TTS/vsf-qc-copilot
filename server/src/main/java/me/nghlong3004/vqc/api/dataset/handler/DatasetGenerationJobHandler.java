@@ -22,6 +22,7 @@ import me.nghlong3004.vqc.api.testcase.entity.TestCase;
 import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
 import me.nghlong3004.vqc.api.testcase.repository.TestCaseRepository;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,7 +52,7 @@ public class DatasetGenerationJobHandler {
    *
    * @param jobPublicId public job identifier
    */
-  @Transactional
+  @Async
   public void handle(UUID jobPublicId) {
     Job job = jobRepository.findByPublicId(jobPublicId).orElse(null);
     if (job == null) {

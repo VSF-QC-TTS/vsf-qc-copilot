@@ -34,6 +34,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class TestCaseServiceImpl implements TestCaseService {
 
+  private static final int MAX_TEST_CASES = 100;
+
   private final TestCaseRepository testCaseRepository;
   private final DatasetRepository datasetRepository;
   private final UserRepository userRepository;
@@ -48,6 +50,12 @@ public class TestCaseServiceImpl implements TestCaseService {
     if (dataset.getStatus() == DatasetStatus.ARCHIVED) {
       throw new ResourceException(ErrorCode.DATASET_ARCHIVED);
     }
+    
+    long existingCount = testCaseRepository.countByDatasetAndStatus(dataset, TestCaseStatus.ACTIVE);
+    if (existingCount >= MAX_TEST_CASES) {
+      throw new ResourceException(ErrorCode.IMPORT_TOO_MANY_ROWS);
+    }
+
     TestCase testCase =
         TestCase.builder()
             .dataset(dataset)
