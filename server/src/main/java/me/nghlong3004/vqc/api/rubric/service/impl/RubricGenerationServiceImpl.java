@@ -181,9 +181,14 @@ public class RubricGenerationServiceImpl implements RubricGenerationService {
     return cleaned.trim();
   }
 
-  private static String defaultOutputSchema(String outputSchemaJson) {
-    if (!isBlank(outputSchemaJson)) {
-      return outputSchemaJson.trim();
+  private static String defaultOutputSchema(com.fasterxml.jackson.databind.JsonNode outputSchemaJson) {
+    if (outputSchemaJson != null && !outputSchemaJson.isNull() && !outputSchemaJson.isMissingNode()) {
+      if (outputSchemaJson.isTextual()) {
+        String text = outputSchemaJson.asText().trim();
+        if (!isBlank(text)) return text;
+      } else if (outputSchemaJson.isObject() && !outputSchemaJson.isEmpty()) {
+        return outputSchemaJson.toString();
+      }
     }
     return """
         {"type":"object","properties":{"score":{"type":"number"},"status":{"type":"string","enum":["PASS","FAIL","WARNING"]},"reason":{"type":"string"}},"required":["score","status","reason"]}
@@ -206,7 +211,7 @@ public class RubricGenerationServiceImpl implements RubricGenerationService {
       String name,
       String description,
       String content,
-      String outputSchemaJson,
+      com.fasterxml.jackson.databind.JsonNode outputSchemaJson,
       List<GeneratedCriterion> criteria) {}
 
   record GeneratedCriterion(
