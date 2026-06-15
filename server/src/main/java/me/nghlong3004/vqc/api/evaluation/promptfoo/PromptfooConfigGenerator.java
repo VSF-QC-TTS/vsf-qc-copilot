@@ -11,6 +11,7 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import me.nghlong3004.vqc.api.evaluation.entity.EvaluationRun;
 import me.nghlong3004.vqc.api.rubric.entity.RubricCriterion;
+import me.nghlong3004.vqc.api.targetconnector.curl.JsonPathLite;
 import me.nghlong3004.vqc.api.targetconnector.entity.TargetApiConnector;
 import me.nghlong3004.vqc.api.testcase.entity.TestCase;
 import org.springframework.stereotype.Component;
@@ -122,11 +123,11 @@ public class PromptfooConfigGenerator {
     if (responseSelector == null || responseSelector.isBlank()) {
       return null;
     }
-    return switch (responseSelector) {
-      case "$.answer" -> "json.answer";
-      case "$.data.answer" -> "json.data.answer";
-      default -> throw new PromptfooExecutionException("Unsupported response selector: " + responseSelector);
-    };
+    try {
+      return JsonPathLite.toJavascriptExpression(responseSelector);
+    } catch (IllegalArgumentException ex) {
+      throw new PromptfooExecutionException("Unsupported response selector: " + responseSelector, ex);
+    }
   }
 
   List<Map<String, Object>> tests(

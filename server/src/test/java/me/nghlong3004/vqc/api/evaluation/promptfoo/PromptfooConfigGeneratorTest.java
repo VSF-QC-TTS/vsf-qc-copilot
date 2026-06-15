@@ -85,6 +85,12 @@ class PromptfooConfigGeneratorTest {
   }
 
   @Test
+  void transformResponseSupportsNestedArrayJsonPath() {
+    assertThat(generator.transformResponse("$.candidates[0].content.parts[0].text"))
+        .isEqualTo("json?.candidates?.[0]?.content?.parts?.[0]?.text");
+  }
+
+  @Test
   @SuppressWarnings("unchecked")
   void testsUseGroundTruthAsRubricContextWhenRubricAssertionsExist() {
     TestCase testCase =

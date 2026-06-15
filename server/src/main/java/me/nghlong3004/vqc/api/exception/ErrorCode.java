@@ -99,6 +99,10 @@ public enum ErrorCode {
       422,
       "TARGET_CONNECTOR_TEST_FAILED",
       "The target API call failed. Please verify your cURL command and try again."),
+  TARGET_CONNECTOR_RESPONSE_EXTRACTION_FAILED(
+      422,
+      "TARGET_CONNECTOR_RESPONSE_EXTRACTION_FAILED",
+      "The target API response could not be mapped to a non-empty answer."),
   DATASET_NOT_FOUND(
       HttpStatus.NOT_FOUND.value(),
       "DATASET_NOT_FOUND",

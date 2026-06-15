@@ -43,6 +43,7 @@ public class TargetApiConnectorMapper {
         secretRefs(connector.getSecretRefs()),
         connector.getResponseFormat(),
         connector.getResponseSelector(),
+        connector.getResponseSchema(),
         connector.getStreaming(),
         connector.getStreamingType(),
         connector.getStreamingEventSelector(),

@@ -38,6 +38,23 @@ class ResponseSelectorDetectorTest {
   }
 
   @Test
+  void detectsGeminiTextResponse() {
+    Map<String, Object> response =
+        Map.of(
+            "candidates",
+            java.util.List.of(
+                Map.of(
+                    "content",
+                    Map.of(
+                        "parts",
+                        java.util.List.of(Map.of("text", "Hi there!")),
+                        "role",
+                        "model"))));
+
+    assertThat(detector.detect(response)).isEqualTo("$.candidates[0].content.parts[0].text");
+  }
+
+  @Test
   void fallsBackToSingleStringKey() {
     Map<String, Object> response = Map.of("customField", "some value", "count", 5);
     assertThat(detector.detect(response)).isEqualTo("$.customField");

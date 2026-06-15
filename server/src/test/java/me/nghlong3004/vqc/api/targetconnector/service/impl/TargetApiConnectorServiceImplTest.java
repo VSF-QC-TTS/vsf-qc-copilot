@@ -25,9 +25,11 @@ import me.nghlong3004.vqc.api.targetconnector.enums.HttpMethodType;
 import me.nghlong3004.vqc.api.targetconnector.enums.ResponseFormat;
 import me.nghlong3004.vqc.api.targetconnector.mapper.TargetApiConnectorMapper;
 import me.nghlong3004.vqc.api.targetconnector.repository.TargetApiConnectorRepository;
+import me.nghlong3004.vqc.api.targetconnector.request.CreateConnectorFromCurlRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.CreateTargetApiConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.TestTargetConnectorRequest;
 import me.nghlong3004.vqc.api.targetconnector.request.UpdateTargetApiConnectorRequest;
+import me.nghlong3004.vqc.api.targetconnector.response.CreateConnectorFromCurlResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorListItemResponse;
 import me.nghlong3004.vqc.api.targetconnector.response.TargetApiConnectorPageResponse;
@@ -58,7 +60,7 @@ class TargetApiConnectorServiceImplTest {
             null, project.getPublicId(), "Mock Health Chatbot", null, ConnectorProtocol.HTTP, HttpMethodType.POST, null,
             null, "http://localhost:8080/mock-chatbot/chat", Map.of(), Map.of(), Map.of(),
             BodyType.RAW_JSON, Map.of(), null, AuthType.BEARER, Map.of(), java.util.List.of(),
-            ResponseFormat.JSON, "$.answer", false, null, null, 60, 1, true, null, null);
+            ResponseFormat.JSON, "$.answer", null, false, null, null, 60, 1, true, null, null);
     TargetApiConnectorServiceImpl service =
         new TargetApiConnectorServiceImpl(
             connectorRepository(savedConnector),
@@ -181,7 +183,7 @@ class TargetApiConnectorServiceImplTest {
             connector.getPublicId(), null, "Mock Health Chatbot", null, ConnectorProtocol.HTTP, HttpMethodType.POST, null,
             null, "http://localhost:8080/mock-chatbot/chat", Map.of(), Map.of(), Map.of(),
             BodyType.RAW_JSON, Map.of(), null, AuthType.NONE, Map.of(), java.util.List.of(),
-            ResponseFormat.JSON, "$.answer", false, null, null, 60, 1, true, null, null);
+            ResponseFormat.JSON, "$.answer", null, false, null, null, 60, 1, true, null, null);
     TargetApiConnectorServiceImpl service =
         new TargetApiConnectorServiceImpl(
             connectorRepository(
@@ -240,7 +242,7 @@ class TargetApiConnectorServiceImplTest {
             connector.getPublicId(), null, "Mock Health Chatbot v2", null, ConnectorProtocol.HTTP, HttpMethodType.POST, null,
             null, "http://localhost:8080/mock-chatbot/chat", Map.of(), Map.of(), Map.of(),
             BodyType.RAW_JSON, Map.of(), null, AuthType.BEARER, Map.of(), java.util.List.of(),
-            ResponseFormat.JSON, "$.answer", false, null, null, 90, 2, false, null, null);
+            ResponseFormat.JSON, "$.answer", null, false, null, null, 90, 2, false, null, null);
     TargetApiConnectorServiceImpl service =
         new TargetApiConnectorServiceImpl(
             connectorRepository(
@@ -361,6 +363,49 @@ class TargetApiConnectorServiceImplTest {
     // Verify preview still shows masked value
     assertThat(response.requestPreview().headers())
         .containsEntry("Authorization", "Bearer ********");
+  }
+
+  @Test
+  void createConnectorFromCurlInfersGeminiTemplateSelectorAndSchema() {
+    User creator = new User();
+    creator.setUsername("qc.demo@example.com");
+    Project project = new Project();
+    AtomicReference<TargetApiConnector> savedConnector = new AtomicReference<>();
+    TargetApiConnectorServiceImpl service =
+        new TargetApiConnectorServiceImpl(
+            connectorRepository(savedConnector),
+            projectRepository(Optional.of(project), new AtomicReference<>()),
+            userRepository(Optional.of(creator), new AtomicReference<>()),
+            new TargetApiConnectorMapper(),
+            geminiClient(),
+            noOpSecretService(),
+            new CurlParser(new com.fasterxml.jackson.databind.ObjectMapper()),
+            new ConnectorSecretDetector(),
+            new ResponseSelectorDetector());
+
+    CreateConnectorFromCurlResponse response =
+        service.createConnectorFromCurl(
+            project.getPublicId(),
+            new CreateConnectorFromCurlRequest(
+                "Gemini",
+                "curl -X POST 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent' "
+                    + "-H 'Content-Type: application/json' "
+                    + "-H 'x-goog-api-key: real-api-key' "
+                    + "-d '{\"contents\":[{\"parts\":[{\"text\":\" Hi\"}]}]}'",
+                null,
+                null,
+                null,
+                null),
+            "qc.demo@example.com");
+
+    assertThat(savedConnector.get().getHeaders()).containsEntry("x-goog-api-key", "{{secret:X_GOOG_API_KEY}}");
+    assertThat(savedConnector.get().getBodyTemplate())
+        .isEqualTo(Map.of("contents", java.util.List.of(Map.of("parts", java.util.List.of(Map.of("text", "{{question}}"))))));
+    assertThat(savedConnector.get().getResponseSelector())
+        .isEqualTo("$.candidates[0].content.parts[0].text");
+    assertThat(savedConnector.get().getResponseSchema()).isNotNull();
+    assertThat(savedConnector.get().getResponseSchema().toString()).doesNotContain("Hi there");
+    assertThat(response.testExtractedAnswer()).isEqualTo("Hi there! How can I help you today?");
   }
 
   private CreateTargetApiConnectorRequest request() {
@@ -509,6 +554,25 @@ class TargetApiConnectorServiceImplTest {
       return new TargetConnectorClientResult(
           Map.of("answer", "Today you walked 8,200 steps."), 120);
     };
+  }
+
+  private TargetConnectorClient geminiClient() {
+    return (request, timeoutSeconds, retryCount) ->
+        new TargetConnectorClientResult(
+            Map.of(
+                "candidates",
+                java.util.List.of(
+                    Map.of(
+                        "content",
+                        Map.of(
+                            "parts",
+                            java.util.List.of(
+                                Map.of("text", "Hi there! How can I help you today?")),
+                            "role",
+                            "model"),
+                        "finishReason",
+                        "STOP"))),
+            1212);
   }
 
   private ConnectorSecretService noOpSecretService() {

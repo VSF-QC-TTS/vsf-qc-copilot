@@ -32,6 +32,17 @@ public class ResponseSelectorDetector {
       return "$";
     }
 
+    for (String knownSelector : List.of(
+        "$.candidates[0].content.parts[0].text",
+        "$.choices[0].message.content",
+        "$.choices[0].text",
+        "$.content[0].text")) {
+      String extracted = JsonPathLite.extractString(rawResponse, knownSelector);
+      if (extracted != null && !extracted.isBlank()) {
+        return knownSelector;
+      }
+    }
+
     // Try common answer keys first; if the value is a nested map, check inside it
     for (String key : COMMON_ANSWER_KEYS) {
       Object value = rawResponse.get(key);

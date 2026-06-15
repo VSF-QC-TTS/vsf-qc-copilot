@@ -13,9 +13,12 @@ import me.nghlong3004.vqc.api.project.repository.ProjectRepository;
 import me.nghlong3004.vqc.api.targetconnector.client.TargetConnectorClient;
 import me.nghlong3004.vqc.api.targetconnector.client.TargetConnectorClientRequest;
 import me.nghlong3004.vqc.api.targetconnector.client.TargetConnectorClientResult;
+import me.nghlong3004.vqc.api.targetconnector.curl.ConnectorInferenceResult;
+import me.nghlong3004.vqc.api.targetconnector.curl.ConnectorInferenceService;
 import me.nghlong3004.vqc.api.targetconnector.curl.ConnectorSecretDetector;
 import me.nghlong3004.vqc.api.targetconnector.curl.CurlParseResult;
 import me.nghlong3004.vqc.api.targetconnector.curl.CurlParser;
+import me.nghlong3004.vqc.api.targetconnector.curl.JsonPathLite;
 import me.nghlong3004.vqc.api.targetconnector.curl.ResponseSelectorDetector;
 import me.nghlong3004.vqc.api.targetconnector.curl.SecretDetectionResult;
 import me.nghlong3004.vqc.api.targetconnector.entity.TargetApiConnector;
@@ -40,6 +43,7 @@ import me.nghlong3004.vqc.api.targetconnector.service.ConnectorSecretService;
 import me.nghlong3004.vqc.api.targetconnector.service.TargetApiConnectorService;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -63,6 +67,9 @@ public class TargetApiConnectorServiceImpl implements TargetApiConnectorService 
   private final CurlParser curlParser;
   private final ConnectorSecretDetector connectorSecretDetector;
   private final ResponseSelectorDetector responseSelectorDetector;
+
+  @Autowired(required = false)
+  private ConnectorInferenceService connectorInferenceService;
 
   @Override
   @Transactional
@@ -287,11 +294,17 @@ public class TargetApiConnectorServiceImpl implements TargetApiConnectorService 
       throw new ResourceException(ErrorCode.TARGET_CONNECTOR_TEST_FAILED);
     }
 
-    // 8. Detect response selector
-    String responseSelector =
-        (request.responseSelector() != null && !request.responseSelector().isBlank())
-            ? request.responseSelector().trim()
-            : responseSelectorDetector.detect(clientResult.rawResponse());
+    // 8. Infer body template, response selector, and response schema from the validated test-call.
+    ConnectorInferenceResult inference =
+        connectorInferenceService()
+            .infer(parsed, clientResult.rawResponse(), request.responseSelector());
+    bodyTemplate = inference.bodyTemplate();
+    bodyTemplateText = inference.bodyTemplateText();
+    String responseSelector = inference.responseSelector();
+    String extractedAnswer = extractAnswer(clientResult.rawResponse(), responseSelector);
+    if (extractedAnswer == null || extractedAnswer.isBlank()) {
+      throw new ResourceException(ErrorCode.TARGET_CONNECTOR_RESPONSE_EXTRACTION_FAILED);
+    }
 
     // 9. Build and save connector
     TargetApiConnector connector =
@@ -311,6 +324,7 @@ public class TargetApiConnectorServiceImpl implements TargetApiConnectorService 
             .secretRefs(secretRefs(secretResult.secretValues()))
             .responseFormat(ResponseFormat.JSON)
             .responseSelector(responseSelector)
+            .responseSchema(inference.responseSchema())
             .streaming(false)
             .timeoutSeconds(timeoutSeconds)
             .retryCount(retryCount)
@@ -325,8 +339,6 @@ public class TargetApiConnectorServiceImpl implements TargetApiConnectorService 
     TargetConnectorRequestPreview preview =
         new TargetConnectorRequestPreview(
             parsed.method(), parsed.url(), maskHeaders(rawHeaders), clientRequest.body());
-    String extractedAnswer =
-        extractAnswer(clientResult.rawResponse(), responseSelector);
 
     return new CreateConnectorFromCurlResponse(
         connectorResponse,
@@ -386,9 +398,17 @@ public class TargetApiConnectorServiceImpl implements TargetApiConnectorService 
         throw new ResourceException(ErrorCode.TARGET_CONNECTOR_TEST_FAILED);
       }
 
-      if (request.responseSelector() == null) {
-        responseSelector = responseSelectorDetector.detect(clientResult.rawResponse());
+      ConnectorInferenceResult inference =
+          connectorInferenceService()
+              .infer(parsed, clientResult.rawResponse(), request.responseSelector());
+      bodyTemplate = inference.bodyTemplate();
+      bodyTemplateText = inference.bodyTemplateText();
+      responseSelector = inference.responseSelector();
+      String extracted = extractAnswer(clientResult.rawResponse(), responseSelector);
+      if (extracted == null || extracted.isBlank()) {
+        throw new ResourceException(ErrorCode.TARGET_CONNECTOR_RESPONSE_EXTRACTION_FAILED);
       }
+      connector.setResponseSchema(inference.responseSchema());
     }
 
     // 4. Update connector fields
@@ -567,10 +587,17 @@ public class TargetApiConnectorServiceImpl implements TargetApiConnectorService 
   }
 
   private String extractAnswer(Map<String, Object> rawResponse, String responseSelector) {
-    if ("$.answer".equals(responseSelector) && rawResponse.get("answer") != null) {
-      return rawResponse.get("answer").toString();
+    try {
+      return JsonPathLite.extractString(rawResponse, responseSelector);
+    } catch (IllegalArgumentException ex) {
+      return null;
     }
-    return null;
+  }
+
+  private ConnectorInferenceService connectorInferenceService() {
+    return connectorInferenceService == null
+        ? ConnectorInferenceService.deterministicOnly()
+        : connectorInferenceService;
   }
 
   private String replaceSecrets(String value, Map<String, String> secretValues) {

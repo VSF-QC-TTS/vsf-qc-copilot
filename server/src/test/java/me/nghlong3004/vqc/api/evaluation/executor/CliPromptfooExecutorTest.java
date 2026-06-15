@@ -54,7 +54,7 @@ class CliPromptfooExecutorTest {
     Path runDir = tempDir.resolve("runs").resolve(runPublicId.toString());
     JsonNode config = objectMapper.readTree(runDir.resolve("promptfooconfig.json").toFile());
     assertThat(config.path("providers").get(0).path("config").path("transformResponse").asText())
-        .isEqualTo("json.answer");
+        .isEqualTo("json?.answer");
     assertThat(objectMapper.readTree(runDir.resolve("tests.json").toFile()).size()).isEqualTo(2);
     assertThat(Files.readString(runDir.resolve("logs").resolve("args.log")))
         .contains("validate config")
@@ -91,7 +91,7 @@ class CliPromptfooExecutorTest {
     Path configPath = tempDir.resolve("runs").resolve(runPublicId.toString()).resolve("promptfooconfig.json");
     JsonNode config = objectMapper.readTree(configPath.toFile());
     assertThat(config.path("providers").get(0).path("config").path("transformResponse").asText())
-        .isEqualTo("json.data.answer");
+        .isEqualTo("json?.data?.answer");
   }
 
   @Test
@@ -99,7 +99,7 @@ class CliPromptfooExecutorTest {
     CliPromptfooExecutor executor = executor(tempDir, fakePromptfoo(tempDir, FakeMode.SUCCESS));
 
     assertThatThrownBy(
-            () -> executor.evaluate(run(UUID.randomUUID(), "$.items[0].answer", Map.of()), testCases()))
+            () -> executor.evaluate(run(UUID.randomUUID(), "$.items[*].answer", Map.of()), testCases()))
         .isInstanceOf(PromptfooExecutionException.class)
         .hasMessageContaining("Unsupported response selector");
   }

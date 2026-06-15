@@ -96,6 +96,7 @@ CREATE TABLE target_api_connectors (
     streaming_type VARCHAR(50),
     streaming_event_selector VARCHAR(255),
     response_selector VARCHAR(255) NOT NULL DEFAULT '$.answer',
+
     response_format VARCHAR(50) NOT NULL DEFAULT 'JSON',
     timeout_seconds INTEGER NOT NULL DEFAULT 60,
     retry_count INTEGER NOT NULL DEFAULT 1,

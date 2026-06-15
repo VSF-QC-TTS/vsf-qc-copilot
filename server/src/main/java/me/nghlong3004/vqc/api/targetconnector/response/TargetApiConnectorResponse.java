@@ -40,6 +40,8 @@ public record TargetApiConnectorResponse(
     @Schema(description = "Masked secret references.") List<SecretRefResponse> secretRefs,
     @Schema(description = "Response format.", example = "JSON") ResponseFormat responseFormat,
     @Schema(description = "Response selector.", example = "$.answer") String responseSelector,
+    @Schema(description = "Inferred response schema with values replaced by JSON types.", nullable = true)
+        Map<String, Object> responseSchema,
     @Schema(description = "Whether the target streams responses.") Boolean isStreaming,
     @Schema(description = "Streaming type.", nullable = true) StreamingType streamingType,
     @Schema(description = "Streaming event selector.", nullable = true) String streamingEventSelector,

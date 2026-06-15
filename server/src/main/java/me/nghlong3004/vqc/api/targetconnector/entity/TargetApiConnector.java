@@ -144,6 +144,10 @@ public class TargetApiConnector {
   @Builder.Default
   private String responseSelector = "$.answer";
 
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(name = "response_schema_json", columnDefinition = "jsonb")
+  private Map<String, Object> responseSchema;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "response_format", nullable = false, length = 50)
   @Builder.Default
