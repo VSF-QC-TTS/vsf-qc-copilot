@@ -93,7 +93,7 @@ export function Header() {
       </Button>
 
       {/* Breadcrumb */}
-      <div className="flex-1 px-4 hidden md:flex items-center gap-1.5 text-xs text-muted-foreground select-none">
+      <div className="flex-1 px-4 hidden md:flex items-center gap-1.5 text-sm text-muted-foreground select-none">
         {pathSegments.map((segment, index) => {
           const label = getSegmentLabel(segment);
           if (!label) return null;

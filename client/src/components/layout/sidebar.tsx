@@ -29,25 +29,45 @@ const items = [
 export function Sidebar() {
   const { isCollapsed, isMobileOpen, toggle, setMobileOpen } = useSidebarStore();
   const [isHovered, setIsHovered] = useState(false);
+  const [ignoreHover, setIgnoreHover] = useState(false);
   const pathname = usePathname();
   const tNav = useTranslations('navigation');
   const tSidebar = useTranslations('sidebar');
 
-  const isExpanded = !isCollapsed || isHovered;
+  const isExpanded = !isCollapsed || (isHovered && !ignoreHover);
+
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Avoid triggering hover events
+    if (!isCollapsed) {
+      setIgnoreHover(true);
+    }
+    toggle();
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    setIgnoreHover(false);
+  };
 
   const renderNavContent = (expanded: boolean) => (
     <>
       {/* Logo */}
-      <div className="flex h-16 items-center justify-center border-b px-4">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg overflow-hidden bg-card border shadow-xs">
+      <div className="flex h-16 items-center border-b px-3 gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg overflow-hidden bg-card border shadow-xs">
           <Image 
             src="/logo.png" 
             alt="Logo" 
-            width={32} 
-            height={32} 
+            width={40} 
+            height={40} 
             className="object-cover" 
           />
         </div>
+        <span className={cn(
+          'font-bold text-sm text-foreground truncate transition-[opacity,width] duration-300 ease-in-out',
+          expanded ? 'opacity-100 w-auto' : 'lg:opacity-0 lg:w-0 lg:overflow-hidden opacity-100 w-auto'
+        )}>
+          VSF QC Copilot
+        </span>
       </div>
 
       {/* Navigation items */}
@@ -61,18 +81,17 @@ export function Sidebar() {
               title={!expanded ? tNav(key) : undefined}
               onClick={() => setMobileOpen(false)}
               className={cn(
-                'flex items-center rounded-md font-medium transition-colors relative group whitespace-nowrap',
+                'flex w-full items-center rounded-md font-medium transition-colors relative group whitespace-nowrap h-10',
                 'hover:bg-accent hover:text-accent-foreground',
                 isActive ? 'bg-accent text-accent-foreground' : 'text-muted-foreground',
-                expanded ? 'px-3 py-2 gap-3' : 'justify-center p-2',
               )}
             >
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+              <span className="w-12 h-10 flex items-center justify-center flex-shrink-0">
                 <Icon size={20} weight={isActive ? 'fill' : 'regular'} />
               </span>
               <span className={cn(
-                'truncate transition-all duration-300',
-                expanded ? 'opacity-100 w-auto' : 'lg:opacity-0 lg:w-0 lg:overflow-hidden opacity-100 w-auto'
+                'truncate transition-[opacity,width] duration-300 ease-in-out',
+                expanded ? 'opacity-100 w-auto pr-3' : 'opacity-0 w-0 overflow-hidden pr-0'
               )}>
                 {tNav(key)}
               </span>
@@ -80,20 +99,6 @@ export function Sidebar() {
           );
         })}
       </nav>
-
-      {/* Collapse toggle (desktop only) */}
-      <div className="hidden border-t p-2 lg:block">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={toggle}
-          className={cn('w-full', !expanded ? 'justify-center' : 'justify-start gap-2')}
-          aria-label={isCollapsed ? tSidebar('expand') : tSidebar('collapse')}
-        >
-          {isCollapsed ? <CaretRightIcon size={16} /> : <CaretLeftIcon size={16} />}
-          {expanded && <span>{tSidebar('collapse')}</span>}
-        </Button>
-      </div>
     </>
   );
 
@@ -102,15 +107,26 @@ export function Sidebar() {
       {/* Desktop sidebar */}
       <aside
         onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        onMouseLeave={handleMouseLeave}
         className={cn(
-          'hidden lg:flex lg:flex-col',
+          'hidden lg:flex lg:flex-col relative overflow-visible group',
           'absolute inset-y-0 left-0 z-40',
           'min-h-[100dvh] shrink-0 border-r bg-card transition-[width,box-shadow] duration-300 ease-in-out',
           isExpanded ? 'w-60 shadow-lg' : 'w-16',
         )}
       >
-        {renderNavContent(isExpanded)}
+        <div className="w-full h-full flex flex-col overflow-hidden">
+          {renderNavContent(isExpanded)}
+        </div>
+
+        {/* Floating edge toggle button (only visible on hover) */}
+        <button
+          onClick={handleToggle}
+          className="hidden lg:flex absolute top-5 -right-2.5 z-50 h-5 w-5 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-xs hover:bg-accent hover:text-foreground transition-all duration-200 cursor-pointer opacity-0 group-hover:opacity-100"
+          aria-label={isCollapsed ? tSidebar('expand') : tSidebar('collapse')}
+        >
+          {isCollapsed ? <CaretRightIcon size={10} weight="bold" /> : <CaretLeftIcon size={10} weight="bold" />}
+        </button>
       </aside>
 
       {/* Mobile overlay */}
@@ -147,7 +163,9 @@ export function Sidebar() {
                   <XIcon size={20} />
                 </Button>
               </div>
-              {renderNavContent(true)}
+              <div className="w-full h-full flex flex-col overflow-hidden">
+                {renderNavContent(true)}
+              </div>
             </motion.aside>
           </div>
         )}
