@@ -29,8 +29,8 @@ type TestCaseRow = {
   publicId: string;
   question: string;
   groundTruth: string | null;
-  precondition: string | null;
-  metadata: string | null;
+  precondition: Record<string, unknown> | null;
+  metadata: Record<string, unknown> | null;
   status: TestCaseStatus;
   createdAt: string;
   updatedAt: string;

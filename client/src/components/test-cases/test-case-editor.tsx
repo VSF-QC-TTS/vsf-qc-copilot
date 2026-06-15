@@ -26,8 +26,8 @@ type TestCaseResponse = {
   publicId: string;
   question: string;
   groundTruth: string | null;
-  precondition: string | null;
-  metadata: string | null;
+  precondition: Record<string, unknown> | null;
+  metadata: Record<string, unknown> | null;
   status: TestCaseStatus;
   createdAt: string;
   updatedAt: string;
@@ -99,8 +99,8 @@ export function TestCaseEditor({
       reset({
         question: testCase?.question ?? '',
         groundTruth: testCase?.groundTruth ?? '',
-        precondition: testCase?.precondition ?? '',
-        metadata: testCase?.metadata ?? '',
+        precondition: testCase?.precondition ? JSON.stringify(testCase.precondition, null, 2) : '',
+        metadata: testCase?.metadata ? JSON.stringify(testCase.metadata, null, 2) : '',
       });
       setServerError(null);
     });
@@ -140,15 +140,21 @@ export function TestCaseEditor({
     setServerError(null);
 
     try {
+      const payload = {
+        ...values,
+        precondition: values.precondition ? JSON.parse(values.precondition) : null,
+        metadata: values.metadata ? JSON.parse(values.metadata) : null,
+      };
+
       if (isEditMode) {
         await apiClient.patch(
           `/api/v1/test-cases/${testCase.publicId}`,
-          values,
+          payload,
         );
       } else {
         await apiClient.post(
           `/api/v1/datasets/${datasetId}/test-cases`,
-          values,
+          payload,
         );
       }
 

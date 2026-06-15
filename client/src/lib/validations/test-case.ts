@@ -3,7 +3,10 @@ import { z } from 'zod';
 export const createTestCaseSchema = z.object({
   question: z.string().min(1, 'Question is required').max(5000),
   groundTruth: z.string().max(5000).optional().or(z.literal('')),
-  precondition: z.string().max(2000).optional().or(z.literal('')),
+  precondition: z.string().max(2000).optional().or(z.literal('')).refine(
+    (val) => { if (!val || val === '') return true; try { JSON.parse(val); return true; } catch { return false; } },
+    { message: 'Must be valid JSON' }
+  ),
   metadata: z.string().optional().or(z.literal('')).refine(
     (val) => { if (!val || val === '') return true; try { JSON.parse(val); return true; } catch { return false; } },
     { message: 'Must be valid JSON' }
