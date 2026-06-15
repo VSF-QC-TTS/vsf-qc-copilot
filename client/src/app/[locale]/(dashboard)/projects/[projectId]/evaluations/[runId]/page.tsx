@@ -25,18 +25,30 @@ import { ExportDialog } from '@/components/evaluations/export-dialog';
 
 type EvaluationRunDetail = {
   publicId: string;
-  name: string | null;
-  status: string;
+  datasetPublicId: string;
   datasetName: string | null;
+  rubricVersionPublicId: string;
   rubricName: string | null;
+  rubricVersionNumber: number;
+  targetConnectorPublicId: string;
   connectorName: string | null;
+  judgeModelPublicId: string | null;
+  judgeModelDisplayName: string | null;
   jobPublicId: string | null;
-  totalResults: number | null;
-  passCount: number | null;
-  failCount: number | null;
-  reviewedCount: number | null;
-  createdAt: string;
+  status: string;
+  description: string | null;
+  totalCases: number;
+  completedCases: number;
+  passedCases: number;
+  failedCases: number;
+  warningCases: number;
+  errorCases: number;
+  passRate: number;
+  maxConcurrency: number;
+  startedAt: string | null;
   completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 type RunEvent = {
@@ -106,14 +118,14 @@ export default function RunDetailPage() {
   );
 
   const progressPercent =
-    job?.progress !== null && job?.progress !== undefined
-      ? `${job.progress}%`
+    job?.progress !== null && job?.progress !== undefined && job?.progressTotal
+      ? `${Math.round((job.progress / job.progressTotal) * 100)}%`
       : null;
 
   return (
     <>
     <PageShell
-      title={run?.name ?? t('runDetail')}
+      title={run?.publicId ?? t('runDetail')}
       backHref={`/projects/${projectId}/evaluations`}
       backLabel={tCommon('back')}
       actions={
@@ -151,26 +163,26 @@ export default function RunDetailPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           label={t('totalResults')}
-          value={run?.totalResults ?? null}
+          value={run?.totalCases ?? null}
           loading={runLoading}
         />
         <MetricCard
           label={t('passRate')}
-          value={safePercent(run?.passCount ?? null, run?.totalResults ?? null)}
-          loading={runLoading}
-        />
-        <MetricCard
-          label={t('failRate')}
-          value={safePercent(run?.failCount ?? null, run?.totalResults ?? null)}
-          loading={runLoading}
-        />
-        <MetricCard
-          label={t('reviewProgress')}
           value={
-            run?.totalResults
-              ? `${run.reviewedCount ?? 0} / ${run.totalResults}`
+            run?.passRate !== undefined && run?.passRate !== null
+              ? `${Math.round(run.passRate * 100)}%`
               : null
           }
+          loading={runLoading}
+        />
+        <MetricCard
+          label={t('passed')}
+          value={run?.passedCases ?? null}
+          loading={runLoading}
+        />
+        <MetricCard
+          label={t('failed')}
+          value={run?.failedCases ?? null}
           loading={runLoading}
         />
       </div>

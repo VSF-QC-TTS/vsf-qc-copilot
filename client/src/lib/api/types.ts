@@ -107,6 +107,7 @@ export type JobResponse = {
   status: JobStatus;
   resourcePublicId: string | null;
   progress: number | null;
+  progressTotal: number | null;
   errorMessage: string | null;
   createdAt: string;
   updatedAt: string;

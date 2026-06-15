@@ -23,11 +23,17 @@ import { useRouter } from '@/i18n/navigation';
 
 type EvaluationRunRow = {
   publicId: string;
-  name: string | null;
-  status: string;
+  datasetPublicId: string;
   datasetName: string | null;
+  rubricVersionPublicId: string;
   rubricName: string | null;
-  progress: number | null;
+  targetApiConnectorPublicId: string;
+  judgeModelPublicId: string | null;
+  status: string;
+  totalCases: number;
+  completedCases: number;
+  passedCases: number;
+  failedCases: number;
   createdAt: string;
 };
 const PAGE_SIZE = 10;
@@ -79,7 +85,7 @@ export default function EvaluationsPage() {
         header: t('columns.name'),
         cell: ({ row }) => (
           <span className="font-medium">
-            {row.original.name ?? row.original.publicId}
+            {row.original.publicId}
           </span>
         ),
       },
@@ -114,12 +120,12 @@ export default function EvaluationsPage() {
         header: t('columns.progress'),
         size: 100,
         cell: ({ row }) => {
-          const progress = row.original.progress;
+          const total = row.original.totalCases;
+          const completed = row.original.completedCases;
+          const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
           return (
             <span className="text-muted-foreground">
-              {progress !== null && progress !== undefined
-                ? `${progress}%`
-                : tCommon('notAvailable')}
+              {pct}%
             </span>
           );
         },

@@ -21,7 +21,7 @@ export type EvaluationResultRow = {
   actualAnswer: string | null;
   judgeStatus: string | null;
   judgeScore: number | null;
-  criteriaResultJson: string | null;
+  criteriaResultsJson: string | null;
   qcStatus: string;
   qcNote: string | null;
 };
@@ -117,7 +117,7 @@ export function ResultDetailPanel({
 
   if (!result) return null;
 
-  const criteria = parseCriteriaJson(result.criteriaResultJson);
+  const criteria = parseCriteriaJson(result.criteriaResultsJson);
 
   return (
     <>
