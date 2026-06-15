@@ -22,6 +22,8 @@ import { apiClient } from '@/lib/api/client';
 import type { ApiError, PageResponse, RubricVersionStatus } from '@/lib/api/types';
 import { getErrorMessageKey } from '@/lib/utils/error-messages';
 import { useRouter } from '@/i18n/navigation';
+import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'motion/react';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -368,66 +370,94 @@ export default function RubricDetailPage({
       backLabel={tCommon('back')}
     >
       {/* Metadata edit section */}
-      <div className="rounded-md border bg-card p-4">
-        {isEditing ? (
-          <div className="space-y-3">
-            {metaError && (
-              <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                {metaError}
+      <motion.div
+        initial={{ opacity: 0, y: 5 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-xl border bg-card/50 shadow-sm backdrop-blur-sm p-5"
+      >
+        <AnimatePresence mode="wait">
+          {isEditing ? (
+            <motion.div
+              key="editing"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-4 overflow-hidden"
+            >
+              {metaError && (
+                <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                  {metaError}
+                </div>
+              )}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="text-sm font-medium text-foreground">
+                    {t('rubricName')}
+                  </label>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className={inputClassName}
+                  />
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="text-sm font-medium text-foreground">
+                    {t('rubricDescription')}
+                  </label>
+                  <textarea
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    className={textareaClassName}
+                  />
+                </div>
               </div>
-            )}
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-foreground">
-                {t('rubricName')}
-              </label>
-              <input
-                type="text"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className={inputClassName}
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-foreground">
-                {t('rubricDescription')}
-              </label>
-              <textarea
-                value={editDescription}
-                onChange={(e) => setEditDescription(e.target.value)}
-                className={textareaClassName}
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                disabled={metaMutation.isPending}
-                onClick={handleSaveMeta}
-              >
-                {metaMutation.isPending ? tCommon('loading') : tCommon('save')}
+              <div className="flex gap-2 pt-2">
+                <Button
+                  size="sm"
+                  disabled={metaMutation.isPending}
+                  onClick={handleSaveMeta}
+                >
+                  {metaMutation.isPending ? tCommon('loading') : tCommon('save')}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditing(false)}
+                >
+                  {tCommon('cancel')}
+                </Button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="viewing"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="flex flex-col sm:flex-row sm:items-start justify-between gap-4"
+            >
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <span className="font-semibold">{t('columns.project')}:</span>
+                  {rubric?.projectName ?? tCommon('notAvailable')}
+                </p>
+                {rubric?.description && (
+                  <p className="text-sm text-foreground mt-2 max-w-2xl leading-relaxed">
+                    {rubric.description}
+                  </p>
+                )}
+              </div>
+              <Button variant="outline" size="sm" onClick={startEdit} className="shrink-0">
+                <PencilSimpleIcon weight="bold" className="mr-2 size-4" />
+                {tCommon('edit')}
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditing(false)}
-              >
-                {tCommon('cancel')}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                {rubric?.projectName ?? tCommon('notAvailable')}
-              </p>
-            </div>
-            <Button variant="outline" size="sm" onClick={startEdit}>
-              <PencilSimpleIcon weight="bold" className="mr-1 size-4" />
-              {tCommon('edit')}
-            </Button>
-          </div>
-        )}
-      </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       {/* Versions section */}
       <div className="space-y-4">
@@ -559,11 +589,14 @@ function CreateVersionDialog({
               {tCommon('loading')}
             </div>
           ) : versions.length > 0 ? (
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-1">
               {versions.map((version) => (
                 <label
                   key={version.publicId}
-                  className="flex cursor-pointer items-center justify-between gap-3 rounded-md border bg-background px-3 py-2"
+                  className={cn(
+                    "flex cursor-pointer items-center justify-between gap-3 rounded-md border px-4 py-3 transition-colors",
+                    selectedVersionId === version.publicId ? "bg-accent border-accent-foreground/20" : "bg-background hover:bg-muted/50"
+                  )}
                 >
                   <span className="flex items-center gap-3">
                     <input
@@ -586,7 +619,7 @@ function CreateVersionDialog({
               ))}
             </div>
           ) : (
-            <label className="flex cursor-pointer items-start gap-3 rounded-md border bg-background px-3 py-2">
+            <label className="flex cursor-pointer items-start gap-3 rounded-md border bg-background px-4 py-3">
               <input
                 type="radio"
                 name="sourceVersionPublicId"

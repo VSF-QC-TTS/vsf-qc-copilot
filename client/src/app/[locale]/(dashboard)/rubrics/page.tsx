@@ -12,6 +12,8 @@ import { PageShell } from '@/components/layout/page-shell';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { CreateRubricDialog } from '@/components/rubrics/create-rubric-dialog';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { motion, AnimatePresence } from 'motion/react';
 import { apiClient } from '@/lib/api/client';
 import type { PageResponse } from '@/lib/api/types';
 import { useRouter } from '@/i18n/navigation';
@@ -215,53 +217,61 @@ export default function RubricsPage() {
         </Button>
       }
     >
-      {/* Tab bar */}
-      <div className="flex items-center gap-1">
-        {tabs.map((tab) => (
-          <Button
-            key={tab.value}
-            variant="outline"
-            size="sm"
-            className={cn(
-              activeTab === tab.value &&
-                'bg-accent text-accent-foreground',
-            )}
-            onClick={() => handleTabChange(tab.value)}
+      <Tabs
+        defaultValue={activeTab}
+        value={activeTab}
+        onValueChange={(v) => handleTabChange(v as TabValue)}
+        className="w-full space-y-6"
+      >
+        <TabsList className="w-full justify-start h-auto p-1 bg-muted/50 rounded-lg overflow-x-auto flex-nowrap mb-6">
+          {tabs.map((tab) => (
+            <TabsTrigger key={tab.value} value={tab.value} className="rounded-md">
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-4"
           >
-            {tab.label}
-          </Button>
-        ))}
-      </div>
+            {/* Data table */}
+            <DataTable
+              columns={columns}
+              data={rubrics}
+              totalItems={totalItems}
+              pageIndex={page}
+              pageSize={PAGE_SIZE}
+              onPaginationChange={handlePaginationChange}
+              loading={isLoading}
+              onRowClick={activeTab === 'my' ? handleRowClick : undefined}
+              emptyMessage={t('noRubrics')}
+              emptyAction={
+                <Button onClick={() => setDialogOpen(true)}>
+                  <ListChecksIcon weight="bold" className="mr-2" />
+                  {t('createRubric')}
+                </Button>
+              }
+            />
 
-      {/* Data table */}
-      <DataTable
-        columns={columns}
-        data={rubrics}
-        totalItems={totalItems}
-        pageIndex={page}
-        pageSize={PAGE_SIZE}
-        onPaginationChange={handlePaginationChange}
-        loading={isLoading}
-        onRowClick={activeTab === 'my' ? handleRowClick : undefined}
-        emptyMessage={t('noRubrics')}
-        emptyAction={
-          <Button onClick={() => setDialogOpen(true)}>
-            <ListChecksIcon weight="bold" />
-            {t('createRubric')}
-          </Button>
-        }
-      />
-
-      {/* Pagination */}
-      {totalItems > 0 && (
-        <DataTablePagination
-          pageIndex={page}
-          pageSize={PAGE_SIZE}
-          totalItems={totalItems}
-          totalPages={totalPages}
-          onPageChange={setPage}
-        />
-      )}
+            {/* Pagination */}
+            {totalItems > 0 && (
+              <DataTablePagination
+                pageIndex={page}
+                pageSize={PAGE_SIZE}
+                totalItems={totalItems}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </Tabs>
 
       {/* Create rubric dialog */}
       <CreateRubricDialog open={dialogOpen} onOpenChange={setDialogOpen} />
