@@ -143,6 +143,35 @@ class TestCaseServiceImplTest {
   }
 
   @Test
+  void createTestCaseRejectsLimitExceeded() {
+    User creator = user();
+    Dataset dataset = dataset(project(creator), creator, DatasetStatus.DRAFT);
+    TestCaseServiceImpl testCaseService =
+        new TestCaseServiceImpl(
+            proxy(
+                TestCaseRepository.class,
+                (proxy, method, args) -> {
+                  if ("countByDatasetAndStatus".equals(method.getName())) {
+                    return 100L;
+                  }
+                  throw new UnsupportedOperationException(method.getName());
+                }),
+            datasetRepository(new AtomicReference<>(), Optional.of(dataset)),
+            userRepository(Optional.of(creator)),
+            new TestCaseMapper());
+
+    assertThatThrownBy(
+            () ->
+                testCaseService.createTestCase(
+                    dataset.getPublicId(),
+                    new CreateTestCaseRequest(null, "Question?", null, null, null, null, null),
+                    "qc.demo@example.com"))
+        .isInstanceOf(ResourceException.class)
+        .extracting(error -> ((ResourceException) error).getResponse().code())
+        .isEqualTo("IMPORT_TOO_MANY_ROWS");
+  }
+
+  @Test
   void listTestCasesLoadsOwnedDatasetAndReturnsFilteredPage() {
     User creator = user();
     Dataset dataset = dataset(project(creator), creator, DatasetStatus.DRAFT);
@@ -412,6 +441,9 @@ class TestCaseServiceImplTest {
     return proxy(
         TestCaseRepository.class,
         (proxy, method, args) -> {
+          if ("countByDatasetAndStatus".equals(method.getName())) {
+            return 0L;
+          }
           if ("save".equals(method.getName())) {
             TestCase testCase = (TestCase) args[0];
             savedTestCase.set(testCase);
