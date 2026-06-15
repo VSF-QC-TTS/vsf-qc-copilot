@@ -45,13 +45,16 @@ public class MockPromptfooExecutor implements PromptfooExecutor {
 
   private JudgeStatus randomStatus() {
     int value = ThreadLocalRandom.current().nextInt(100);
-    if (value < 70) {
+    if (value < 65) {
       return JudgeStatus.PASS;
     }
-    if (value < 90) {
+    if (value < 85) {
       return JudgeStatus.FAIL;
     }
-    return JudgeStatus.WARNING;
+    if (value < 95) {
+      return JudgeStatus.WARNING;
+    }
+    return JudgeStatus.ERROR;
   }
 
   private BigDecimal randomScoreFor(JudgeStatus status) {

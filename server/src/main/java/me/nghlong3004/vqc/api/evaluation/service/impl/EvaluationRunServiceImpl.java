@@ -359,7 +359,7 @@ public class EvaluationRunServiceImpl implements EvaluationRunService {
       datasetId = approved.getContent().getFirst().getPublicId();
     }
 
-    UUID connectorId = request.connectorPublicId();
+    UUID connectorId = request.targetConnectorPublicId();
     if (connectorId == null) {
       Page<TargetApiConnector> connectors =
           targetApiConnectorRepository.findByProject(project, PageRequest.of(0, 2));

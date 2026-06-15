@@ -20,7 +20,7 @@ public record QuickEvaluateRequest(
             description = "Connector to call. Auto-resolved if omitted.",
             example = "b1c2d3e4-f5a6-7b8c-9d0e-1f2a3b4c5d6e",
             nullable = true)
-        UUID connectorPublicId,
+        UUID targetConnectorPublicId,
     @Schema(
             description = "Judge model for scoring. Auto-resolved if omitted.",
             example = "8d2f6a2a-4974-4e9c-83ad-f2e1e58d39f0",
