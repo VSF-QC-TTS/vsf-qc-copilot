@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { SignOutIcon, GearSixIcon, ListIcon } from '@phosphor-icons/react';
 import Link from 'next/link';
@@ -24,8 +24,33 @@ function getInitials(name: string): string {
 
 export function Header() {
   const t = useTranslations('header');
+  const tNav = useTranslations('navigation');
   const router = useRouter();
+  const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
+
+  const segments = pathname.split('/').filter(Boolean);
+  const pathSegments = segments[0] && segments[0].length === 2 ? segments.slice(1) : segments;
+
+  const getSegmentLabel = (segment: string) => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidRegex.test(segment)) {
+      return null;
+    }
+    const map: Record<string, string> = {
+      projects: tNav('projects') || 'Projects',
+      rubrics: tNav('rubrics') || 'Rubrics',
+      settings: tNav('settings') || 'Settings',
+      dashboard: tNav('dashboard') || 'Dashboard',
+      connectors: 'Connectors',
+      datasets: 'Datasets',
+      evaluations: 'Evaluations',
+      'judge-models': 'Judge Models',
+      new: 'New',
+      results: 'Results',
+    };
+    return map[segment.toLowerCase()] || segment.charAt(0).toUpperCase() + segment.slice(1);
+  };
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -67,9 +92,21 @@ export function Header() {
         <ListIcon size={24} />
       </Button>
 
-      {/* Breadcrumb placeholder */}
-      <div className="flex-1 px-4">
-        {/* Breadcrumb will be implemented later */}
+      {/* Breadcrumb */}
+      <div className="flex-1 px-4 hidden md:flex items-center gap-1.5 text-xs text-muted-foreground select-none">
+        {pathSegments.map((segment, index) => {
+          const label = getSegmentLabel(segment);
+          if (!label) return null;
+          
+          return (
+            <div key={segment} className="flex items-center gap-1.5">
+              {index > 0 && <span className="text-muted-foreground/30">/</span>}
+              <span className={cn(index === pathSegments.length - 1 ? "font-medium text-foreground" : "")}>
+                {label}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
       {/* Right side controls */}

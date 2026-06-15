@@ -10,7 +10,6 @@ import {
   GearIcon,
   CaretLeftIcon,
   CaretRightIcon,
-  ListIcon,
   XIcon,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -18,6 +17,7 @@ import { useSidebarStore } from '@/lib/store/sidebar-store';
 import { Button } from '@/components/ui/button';
 import { APP_NAME } from '@/lib/branding';
 import Image from 'next/image';
+import { motion, AnimatePresence } from 'motion/react';
 
 const items = [
   { key: 'dashboard', href: '/dashboard', icon: HouseIcon },
@@ -100,43 +100,44 @@ export function Sidebar() {
       </aside>
 
       {/* Mobile overlay */}
-      {isMobileOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/50"
-            onClick={() => setMobileOpen(false)}
-            aria-hidden="true"
-          />
+      <AnimatePresence>
+        {isMobileOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/50"
+              onClick={() => setMobileOpen(false)}
+              aria-hidden="true"
+            />
 
-          {/* Slide-in panel */}
-          <aside className="fixed left-0 top-0 z-50 flex min-h-[100dvh] w-60 flex-col border-r bg-card shadow-lg animate-in slide-in-from-left duration-200">
-            {/* Close button */}
-            <div className="absolute right-2 top-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setMobileOpen(false)}
-                aria-label={tSidebar('collapse')}
-              >
-                <XIcon size={20} />
-              </Button>
-            </div>
-            {navContent}
-          </aside>
-        </div>
-      )}
-
-      {/* Mobile hamburger button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="fixed left-3 top-3 z-40 lg:hidden"
-        onClick={() => setMobileOpen(true)}
-        aria-label={tSidebar('expand')}
-      >
-        <ListIcon size={24} />
-      </Button>
+            {/* Slide-in panel */}
+            <motion.aside
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'tween', ease: 'easeInOut', duration: 0.25 }}
+              className="fixed left-0 top-0 z-50 flex min-h-[100dvh] w-60 flex-col border-r bg-card shadow-lg"
+            >
+              {/* Close button */}
+              <div className="absolute right-2 top-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setMobileOpen(false)}
+                  aria-label={tSidebar('collapse')}
+                >
+                  <XIcon size={20} />
+                </Button>
+              </div>
+              {navContent}
+            </motion.aside>
+          </div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
+  PlusIcon,
   PlugsIcon,
   DatabaseIcon,
   ListChecksIcon,
@@ -27,6 +28,8 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmptyState } from '@/components/feedback/empty-state';
 import { PageShell } from '@/components/layout/page-shell';
 import { Skeleton, SkeletonText } from '@/components/feedback/loading-skeleton';
+import { StartEvaluationDialog } from '@/components/evaluations/start-evaluation-dialog';
+import { motion } from 'motion/react';
 
 // ---------------------------------------------------------------------------
 // Quick-link definitions
@@ -122,6 +125,7 @@ function ProjectDetailSkeleton() {
 // ---------------------------------------------------------------------------
 export default function ProjectDetailPage() {
   const t = useTranslations('projects');
+  const tEval = useTranslations('evaluations');
   const tCommon = useTranslations('common');
   const params = useParams();
   const router = useRouter();
@@ -129,6 +133,7 @@ export default function ProjectDetailPage() {
   const projectId = params.projectId as string;
 
   const [archiveOpen, setArchiveOpen] = React.useState(false);
+  const [startDialogOpen, setStartDialogOpen] = React.useState(false);
 
   // --- Fetch project ---
   const {
@@ -220,6 +225,7 @@ export default function ProjectDetailPage() {
       ready: (publishedRubricsData?.totalItems ?? 0) > 0,
     },
   ];
+  const allReady = readinessItems.every((item) => item.ready);
 
   // --- Loading state ---
   if (projectLoading) {
@@ -252,7 +258,13 @@ export default function ProjectDetailPage() {
         ) : undefined
       }
     >
-      {/* ---- Project info card ---- */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="space-y-6"
+      >
+        {/* ---- Project info card ---- */}
       <div className="rounded-lg border bg-card p-6 space-y-4">
         <div className="flex items-center gap-3">
           <StatusBadge status={project.status} />
@@ -282,9 +294,17 @@ export default function ProjectDetailPage() {
 
       {/* ---- Evaluation readiness ---- */}
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold tracking-tight">
-          {t('readiness')}
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold tracking-tight">
+            {t('readiness')}
+          </h2>
+          {allReady && (
+            <Button size="sm" onClick={() => setStartDialogOpen(true)}>
+              <PlusIcon className="mr-2 h-4 w-4" weight="bold" />
+              {tEval('startEvaluation')}
+            </Button>
+          )}
+        </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {readinessItems.map((item) => (
             <Link
@@ -352,6 +372,14 @@ export default function ProjectDetailPage() {
           <EmptyState
             title={t('noEvaluations')}
             icon={<ChartBarIcon size={48} weight="duotone" />}
+            action={
+              allReady ? (
+                <Button onClick={() => setStartDialogOpen(true)}>
+                  <PlusIcon className="mr-2 h-4 w-4" weight="bold" />
+                  {tEval('startEvaluation')}
+                </Button>
+              ) : undefined
+            }
           />
         ) : (
           <div className="divide-y rounded-lg border bg-card">
@@ -385,6 +413,14 @@ export default function ProjectDetailPage() {
         variant="destructive"
         loading={archiveMutation.isPending}
         onConfirm={() => archiveMutation.mutate()}
+      />
+      </motion.div>
+
+      {/* ---- Start Evaluation Dialog ---- */}
+      <StartEvaluationDialog
+        open={startDialogOpen}
+        onOpenChange={setStartDialogOpen}
+        projectId={projectId}
       />
     </PageShell>
   );
