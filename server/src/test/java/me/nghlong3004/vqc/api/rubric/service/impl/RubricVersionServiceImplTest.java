@@ -416,7 +416,7 @@ class RubricVersionServiceImplTest {
     Rubric rubric = new Rubric();
     rubric.setId(100L);
     rubric.setPublicId(UUID.fromString("3c5582c5-96d8-40e4-9aa1-168f6d27c9dc"));
-    rubric.setProject(project);
+
     rubric.setName("Health Answer Quality Rubric");
     rubric.setStatus(RubricStatus.ACTIVE);
     rubric.setCreatedBy(creator);

@@ -21,7 +21,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import me.nghlong3004.vqc.api.project.entity.Project;
+
 import me.nghlong3004.vqc.api.rubric.enums.RubricStatus;
 import me.nghlong3004.vqc.api.user.entity.User;
 
@@ -33,7 +33,6 @@ import me.nghlong3004.vqc.api.user.entity.User;
 @Table(
     name = "rubrics",
     indexes = {
-      @Index(name = "idx_rubrics_project_id", columnList = "project_id"),
       @Index(name = "idx_rubrics_status", columnList = "status"),
       @Index(name = "idx_rubrics_created_by", columnList = "created_by"),
       @Index(name = "idx_rubrics_is_template", columnList = "is_template")
@@ -52,10 +51,6 @@ public class Rubric {
   @Column(name = "public_id", nullable = false, updatable = false, unique = true)
   @Builder.Default
   private UUID publicId = UUID.randomUUID();
-
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "project_id")
-  private Project project;
 
   @Column(nullable = false)
   private String name;

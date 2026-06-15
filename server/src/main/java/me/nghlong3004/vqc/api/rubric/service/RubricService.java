@@ -14,11 +14,6 @@ import org.springframework.data.domain.Pageable;
  */
 public interface RubricService {
 
-  RubricResponse createRubric(UUID projectPublicId, CreateRubricRequest request, String username);
-
-  RubricPageResponse listRubrics(
-      UUID projectPublicId, RubricStatus status, Pageable pageable, String username);
-
   RubricPageResponse listMyRubrics(RubricStatus status, Pageable pageable, String username);
 
   RubricPageResponse listTemplates(Pageable pageable, String username);

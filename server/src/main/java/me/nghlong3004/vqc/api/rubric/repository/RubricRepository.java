@@ -2,7 +2,6 @@ package me.nghlong3004.vqc.api.rubric.repository;
 
 import java.util.Optional;
 import java.util.UUID;
-import me.nghlong3004.vqc.api.project.entity.Project;
 import me.nghlong3004.vqc.api.rubric.entity.Rubric;
 import me.nghlong3004.vqc.api.rubric.enums.RubricStatus;
 import me.nghlong3004.vqc.api.user.entity.User;
@@ -16,9 +15,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
  */
 public interface RubricRepository extends JpaRepository<Rubric, Long> {
 
-  Page<Rubric> findByProject(Project project, Pageable pageable);
 
-  Page<Rubric> findByProjectAndStatus(Project project, RubricStatus status, Pageable pageable);
 
   Optional<Rubric> findByPublicIdAndCreatedBy(UUID publicId, User createdBy);
 

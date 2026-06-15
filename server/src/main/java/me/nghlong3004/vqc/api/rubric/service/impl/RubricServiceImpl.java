@@ -7,8 +7,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.nghlong3004.vqc.api.exception.ErrorCode;
 import me.nghlong3004.vqc.api.exception.ResourceException;
-import me.nghlong3004.vqc.api.project.entity.Project;
-import me.nghlong3004.vqc.api.project.repository.ProjectRepository;
 import me.nghlong3004.vqc.api.rubric.entity.Rubric;
 import me.nghlong3004.vqc.api.rubric.enums.RubricStatus;
 import me.nghlong3004.vqc.api.rubric.mapper.RubricMapper;
@@ -36,55 +34,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class RubricServiceImpl implements RubricService {
 
   private final RubricRepository rubricRepository;
-  private final ProjectRepository projectRepository;
   private final UserRepository userRepository;
   private final RubricMapper rubricMapper;
 
   @Override
-  @Transactional
-  public RubricResponse createRubric(
-      UUID projectPublicId, CreateRubricRequest request, String username) {
-    User creator = findCreator(username);
-    Project project = findProject(projectPublicId, creator);
-    Rubric rubric =
-        Rubric.builder()
-            .project(project)
-            .name(request.name().trim())
-            .description(trimToNull(request.description()))
-            .status(RubricStatus.ACTIVE)
-            .createdBy(creator)
-            .build();
-    Rubric saved = rubricRepository.save(rubric);
-    log.info(
-        "Created rubric {} under project {} by user {}",
-        saved.getPublicId(),
-        project.getPublicId(),
-        creator.getPublicId());
-    return rubricMapper.toResponse(saved);
-  }
-
-  @Override
   @Transactional(readOnly = true)
-  public RubricPageResponse listRubrics(
-      UUID projectPublicId, RubricStatus status, Pageable pageable, String username) {
-    User creator = findCreator(username);
-    Project project = findProject(projectPublicId, creator);
-    Page<Rubric> rubrics =
-        status == null
-            ? rubricRepository.findByProject(project, pageable)
-            : rubricRepository.findByProjectAndStatus(project, status, pageable);
-    List<RubricListItemResponse> items =
-        rubrics.getContent().stream().map(rubricMapper::toListItemResponse).toList();
-    return new RubricPageResponse(
-        items,
-        rubrics.getNumber(),
-        rubrics.getSize(),
-        rubrics.getTotalElements(),
-        rubrics.getTotalPages());
-  }
 
-  @Override
-  @Transactional(readOnly = true)
   public RubricResponse getRubric(UUID rubricPublicId, String username) {
     return rubricMapper.toResponse(findRubric(rubricPublicId, username));
   }
@@ -168,7 +123,6 @@ public class RubricServiceImpl implements RubricService {
 
     Rubric cloned =
         Rubric.builder()
-            .project(source.getProject())
             .name(source.getName() + " (Copy)")
             .description(source.getDescription())
             .isTemplate(false)
@@ -189,12 +143,6 @@ public class RubricServiceImpl implements RubricService {
     return rubricRepository
         .findByPublicIdAndCreatedBy(rubricPublicId, creator)
         .orElseThrow(() -> new ResourceException(ErrorCode.RUBRIC_NOT_FOUND));
-  }
-
-  private Project findProject(UUID projectPublicId, User creator) {
-    return projectRepository
-        .findByPublicIdAndCreatedBy(projectPublicId, creator)
-        .orElseThrow(() -> new ResourceException(ErrorCode.PROJECT_NOT_FOUND));
   }
 
   private User findCreator(String username) {

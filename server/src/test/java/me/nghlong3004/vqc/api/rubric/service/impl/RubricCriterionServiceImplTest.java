@@ -344,7 +344,7 @@ class RubricCriterionServiceImplTest {
     project.setPublicId(UUID.fromString("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"));
     Rubric rubric = new Rubric();
     rubric.setPublicId(UUID.fromString("3c5582c5-96d8-40e4-9aa1-168f6d27c9dc"));
-    rubric.setProject(project);
+
     rubric.setStatus(RubricStatus.ACTIVE);
     rubric.setCreatedBy(creator);
     RubricVersion version = new RubricVersion();

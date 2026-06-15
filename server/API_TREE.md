@@ -125,9 +125,13 @@ Auth
 |       |   `-- Chi tiết dataset
 |       |-- PATCH /
 |       |   `-- Update dataset; approve cần 1-100 active test cases
+|       |-- POST /generate
+|       |   `-- Queue DATASET_GENERATION job để tạo test cases qua Gemini AI
 |       `-- /test-cases [auth]
 |           |-- POST /
 |           |   `-- Tạo test case dưới dataset; reject nếu dataset archived
+|           |-- POST /import
+|           |   `-- Import test cases hàng loạt từ file Excel/CSV
 |           `-- GET /
 |               `-- List test case của dataset; filter: status; pageable/sortable
 |
@@ -296,6 +300,10 @@ User
 9. POST /api/v1/datasets/{datasetPublicId}/test-cases
 10. PATCH /api/v1/datasets/{datasetPublicId}
     `-- approve dataset sau khi có active test cases
+10b. POST /api/v1/datasets/{datasetPublicId}/test-cases/import
+    `-- alternative: bulk import test cases từ excel/csv
+10c. POST /api/v1/datasets/{datasetPublicId}/generate
+    `-- alternative: auto-generate test cases qua AI
 11. POST /api/v1/rubrics/generate-preview
     `-- AI tạo preview content/schema/criteria để QC chỉnh trước khi lưu
 12. POST /api/v1/rubrics

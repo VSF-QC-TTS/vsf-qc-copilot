@@ -2,7 +2,7 @@
 
 Date: 2026-06-15
 Repo area: `server/`
-Last full-suite pass: 371 tests, 0 failures (2026-06-13). Focused rubric/evaluation/frontend checks passed on 2026-06-15 after rubric workflow + judge model changes.
+Last full-suite pass: 393 tests, 0 failures (2026-06-15). Focused rubric/evaluation/frontend checks passed on 2026-06-15 after rubric workflow + judge model changes.
 
 Purpose: this is the server bootstrap handoff. If a user only says "read `server/SERVER_CONTEXT.md`", the agent must use this file to discover the next files to read without asking for more pointers. Current code is the source of truth when docs and implementation differ. The full product target lives in `docs/`; treat docs as roadmap/contract intent unless the user explicitly asks to migrate current code toward them.
 
@@ -273,8 +273,8 @@ Code conventions:
 ## [TESTS] Focused Tests
 
 Focused tests:
-- Full server suite passed on 2026-06-13 after QC Productivity Features:
-  `rtk bash mvnw test` -> 371 tests, 0 failures/errors.
+- Full server suite passed on 2026-06-15 after QC Productivity Features:
+  `rtk bash mvnw test` -> 393 tests, 0 failures/errors.
 - `ServerApplicationTests` injects dummy test properties for JWT/OAuth/Gemini/base URLs because the full context uses `dev` profile but does not load `server/.env`.
 - Existing safe server suite:
   `rtk bash mvnw -Dtest=RoleTest,UserMapperTest,UserServiceImplTest,HtmlMailTemplateRendererTest,EmailVerificationMailStrategyTest,PasswordResetMailStrategyTest,ErrorResponseTest,AuthServiceImplTest,EmailVerificationServiceImplTest,PasswordResetServiceImplTest,AuthControllerTest,JwtTokenServiceImplTest,RefreshTokenCookieFactoryTest test`

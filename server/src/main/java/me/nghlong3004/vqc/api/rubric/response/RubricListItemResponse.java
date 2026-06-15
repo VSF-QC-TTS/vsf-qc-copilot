@@ -12,8 +12,6 @@ import me.nghlong3004.vqc.api.rubric.enums.RubricStatus;
 @Schema(name = "RubricListItemResponse", description = "Rubric list item response")
 public record RubricListItemResponse(
     @Schema(description = "Public rubric identifier.") UUID publicId,
-    @Schema(description = "Public project identifier.", nullable = true) UUID projectPublicId,
-    @Schema(description = "Project name.", nullable = true) String projectName,
     @Schema(description = "Whether this rubric is a system template.") Boolean isTemplate,
     @Schema(description = "Rubric name.") String name,
     @Schema(description = "Current published version.", nullable = true) Integer currentVersion,

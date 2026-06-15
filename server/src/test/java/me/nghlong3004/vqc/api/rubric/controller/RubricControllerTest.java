@@ -120,68 +120,14 @@ class RubricControllerTest {
     assertThat(RecordingRubricWorkflowService.username).isEqualTo("qc.demo@example.com");
   }
 
-  @Test
-  void createRubricReturnsCreatedRubric() throws Exception {
-    RecordingRubricService.rubricResponse = rubricResponse();
-
-    mockMvc
-        .perform(
-            post("/api/v1/projects/5a4edcc1-cd1e-44ef-a144-31f5f3d2f653/rubrics")
-                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    """
-                    {
-                      "name": "Health Answer Quality Rubric",
-                      "description": "Checks correctness and safety."
-                    }
-                    """))
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.publicId").value("3c5582c5-96d8-40e4-9aa1-168f6d27c9dc"))
-        .andExpect(
-            jsonPath("$.projectPublicId").value("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"))
-        .andExpect(jsonPath("$.name").value("Health Answer Quality Rubric"))
-        .andExpect(jsonPath("$.description").value("Checks correctness and safety."))
-        .andExpect(jsonPath("$.currentVersion").isEmpty())
-        .andExpect(jsonPath("$.status").value("ACTIVE"));
-
-    assertThat(RecordingRubricService.projectPublicId)
-        .isEqualTo(UUID.fromString("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"));
-    assertThat(RecordingRubricService.createRubricRequest.name())
-        .isEqualTo("Health Answer Quality Rubric");
-    assertThat(RecordingRubricService.username).isEqualTo("qc.demo@example.com");
-  }
 
   @Test
-  void createRubricReturnsValidationProblemDetails() throws Exception {
-    mockMvc
-        .perform(
-            post("/api/v1/projects/5a4edcc1-cd1e-44ef-a144-31f5f3d2f653/rubrics")
-                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    """
-                    {
-                      "name": " "
-                    }
-                    """))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
-        .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
-        .andExpect(jsonPath("$.errors[*].field", hasItem("name")));
-
-    assertThat(RecordingRubricService.createRubricRequest).isNull();
-  }
-
-  @Test
-  void listRubricsReturnsRubricPage() throws Exception {
+  void listMyRubricsReturnsRubricPage() throws Exception {
     RecordingRubricService.rubricPageResponse =
         new RubricPageResponse(
             List.of(
                 new RubricListItemResponse(
                     UUID.fromString("3c5582c5-96d8-40e4-9aa1-168f6d27c9dc"),
-                    UUID.fromString("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"),
-                    "Health Project",
                     false,
                     "Health Answer Quality Rubric",
                     null,
@@ -194,7 +140,7 @@ class RubricControllerTest {
 
     mockMvc
         .perform(
-            get("/api/v1/projects/5a4edcc1-cd1e-44ef-a144-31f5f3d2f653/rubrics")
+            get("/api/v1/rubrics")
                 .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
                 .queryParam("status", "ACTIVE"))
         .andExpect(status().isOk())
@@ -229,8 +175,6 @@ class RubricControllerTest {
     RecordingRubricService.rubricResponse =
         new RubricResponse(
             UUID.fromString("3c5582c5-96d8-40e4-9aa1-168f6d27c9dc"),
-            UUID.fromString("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"),
-            "Health Project",
             false,
             "Updated Rubric",
             "Updated description",
@@ -275,8 +219,6 @@ class RubricControllerTest {
   private RubricResponse rubricResponse() {
     return new RubricResponse(
         UUID.fromString("3c5582c5-96d8-40e4-9aa1-168f6d27c9dc"),
-        UUID.fromString("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"),
-        "Health Project",
         false,
         "Health Answer Quality Rubric",
         "Checks correctness and safety.",
@@ -394,24 +336,6 @@ class RubricControllerTest {
       rubricPageResponse = null;
     }
 
-    @Override
-    public RubricResponse createRubric(
-        UUID projectPublicId, CreateRubricRequest request, String username) {
-      RecordingRubricService.projectPublicId = projectPublicId;
-      RecordingRubricService.createRubricRequest = request;
-      RecordingRubricService.username = username;
-      return rubricResponse;
-    }
-
-    @Override
-    public RubricPageResponse listRubrics(
-        UUID projectPublicId, RubricStatus status, Pageable pageable, String username) {
-      RecordingRubricService.projectPublicId = projectPublicId;
-      RecordingRubricService.status = status;
-      RecordingRubricService.pageable = pageable;
-      RecordingRubricService.username = username;
-      return rubricPageResponse;
-    }
 
     @Override
     public RubricResponse getRubric(UUID rubricPublicId, String username) {

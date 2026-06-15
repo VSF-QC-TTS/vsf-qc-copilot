@@ -2,7 +2,7 @@ package me.nghlong3004.vqc.api.rubric.mapper;
 
 import java.util.List;
 import java.util.UUID;
-import me.nghlong3004.vqc.api.project.entity.Project;
+
 import me.nghlong3004.vqc.api.rubric.entity.Rubric;
 import me.nghlong3004.vqc.api.rubric.entity.RubricCriterion;
 import me.nghlong3004.vqc.api.rubric.entity.RubricVersion;
@@ -21,11 +21,8 @@ import org.springframework.stereotype.Component;
 public class RubricMapper {
 
   public RubricResponse toResponse(Rubric rubric) {
-    Project project = rubric.getProject();
     return new RubricResponse(
         rubric.getPublicId(),
-        projectPublicId(project),
-        projectName(project),
         Boolean.TRUE.equals(rubric.getIsTemplate()),
         rubric.getName(),
         rubric.getDescription(),
@@ -37,11 +34,8 @@ public class RubricMapper {
   }
 
   public RubricListItemResponse toListItemResponse(Rubric rubric) {
-    Project project = rubric.getProject();
     return new RubricListItemResponse(
         rubric.getPublicId(),
-        projectPublicId(project),
-        projectName(project),
         Boolean.TRUE.equals(rubric.getIsTemplate()),
         rubric.getName(),
         rubric.getCurrentVersion(),
@@ -95,11 +89,4 @@ public class RubricMapper {
         criterion.getUpdatedAt());
   }
 
-  private UUID projectPublicId(Project project) {
-    return project == null ? null : project.getPublicId();
-  }
-
-  private String projectName(Project project) {
-    return project == null ? null : project.getName();
-  }
 }

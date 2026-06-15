@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
-import me.nghlong3004.vqc.api.project.entity.Project;
 import me.nghlong3004.vqc.api.rubric.entity.Rubric;
 import me.nghlong3004.vqc.api.rubric.entity.RubricCriterion;
 import me.nghlong3004.vqc.api.rubric.entity.RubricVersion;
@@ -33,8 +32,6 @@ class RubricMapperTest {
     RubricResponse response = rubricMapper.toResponse(rubric);
 
     assertThat(response.publicId()).isEqualTo(rubric.getPublicId());
-    assertThat(response.projectPublicId()).isEqualTo(rubric.getProject().getPublicId());
-    assertThat(response.projectName()).isEqualTo("Health Project");
     assertThat(response.isTemplate()).isFalse();
     assertThat(response.name()).isEqualTo("Health Answer Quality Rubric");
     assertThat(response.description()).isEqualTo("Checks correctness and safety.");
@@ -51,8 +48,6 @@ class RubricMapperTest {
     RubricListItemResponse response = rubricMapper.toListItemResponse(rubric);
 
     assertThat(response.publicId()).isEqualTo(rubric.getPublicId());
-    assertThat(response.projectPublicId()).isEqualTo(rubric.getProject().getPublicId());
-    assertThat(response.projectName()).isEqualTo("Health Project");
     assertThat(response.isTemplate()).isFalse();
     assertThat(response.name()).isEqualTo("Health Answer Quality Rubric");
     assertThat(response.currentVersion()).isEqualTo(2);
@@ -93,19 +88,6 @@ class RubricMapperTest {
   }
 
   @Test
-  void toResponseSupportsUserScopedTemplateWithoutProject() {
-    Rubric rubric = rubric();
-    rubric.setProject(null);
-    rubric.setIsTemplate(true);
-
-    RubricResponse response = rubricMapper.toResponse(rubric);
-
-    assertThat(response.projectPublicId()).isNull();
-    assertThat(response.projectName()).isNull();
-    assertThat(response.isTemplate()).isTrue();
-  }
-
-  @Test
   void toCriterionResponseMapsCriterionPublicFields() {
     RubricVersion version = version(rubric());
     RubricCriterion criterion = criterion(version);
@@ -125,12 +107,8 @@ class RubricMapperTest {
   }
 
   private Rubric rubric() {
-    Project project = new Project();
-    project.setPublicId(UUID.fromString("5a4edcc1-cd1e-44ef-a144-31f5f3d2f653"));
-    project.setName("Health Project");
     Rubric rubric = new Rubric();
     rubric.setPublicId(UUID.fromString("3c5582c5-96d8-40e4-9aa1-168f6d27c9dc"));
-    rubric.setProject(project);
     rubric.setName("Health Answer Quality Rubric");
     rubric.setDescription("Checks correctness and safety.");
     rubric.setCurrentVersion(2);
