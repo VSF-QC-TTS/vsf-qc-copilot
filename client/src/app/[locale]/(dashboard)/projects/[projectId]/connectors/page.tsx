@@ -16,6 +16,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { apiClient } from '@/lib/api/client';
 import type { PageResponse } from '@/lib/api/types';
 import { useRouter } from '@/i18n/navigation';
+import { motion, AnimatePresence } from 'motion/react';
 
 // ---------------------------------------------------------------------------
 // Connector row type (minimal for listing)
@@ -25,8 +26,9 @@ type ConnectorRow = {
   publicId: string;
   name: string;
   method: string;
-  baseUrl: string;
+  baseUrl: string | null;
   path: string | null;
+  url: string | null;
   active: boolean;
   createdAt: string;
 };
@@ -100,7 +102,6 @@ export default function ConnectorsPage() {
       {
         accessorKey: 'method',
         header: t('columns.method'),
-        size: 100,
         cell: ({ row }) => {
           const method = row.original.method.toUpperCase();
           return (
@@ -116,14 +117,14 @@ export default function ConnectorsPage() {
         },
       },
       {
-        accessorKey: 'baseUrl',
+        accessorKey: 'url',
         header: t('columns.url'),
         cell: ({ row }) => {
           const full =
-            row.original.baseUrl + (row.original.path ?? '');
+            row.original.url || ((row.original.baseUrl || '') + (row.original.path || ''));
           return (
             <span
-              className="text-muted-foreground font-mono text-xs"
+              className="text-muted-foreground font-mono text-xs whitespace-nowrap"
               title={full}
             >
               {truncateUrl(full)}
@@ -178,35 +179,46 @@ export default function ConnectorsPage() {
         </Button>
       }
     >
-      {/* Data table */}
-      <DataTable
-        columns={columns}
-        data={connectors}
-        totalItems={totalItems}
-        pageIndex={page}
-        pageSize={PAGE_SIZE}
-        onPaginationChange={(nextPage) => setPage(nextPage)}
-        loading={isLoading}
-        onRowClick={handleRowClick}
-        emptyMessage={t('noConnectors')}
-        emptyAction={
-          <Button onClick={handleCreate}>
-            <PlusIcon weight="bold" />
-            {t('createConnector')}
-          </Button>
-        }
-      />
+      <AnimatePresence mode="wait">
+        <motion.div
+          key="connectors-table"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.2 }}
+          className="space-y-4"
+        >
+          {/* Data table */}
+          <DataTable
+            columns={columns}
+            data={connectors}
+            totalItems={totalItems}
+            pageIndex={page}
+            pageSize={PAGE_SIZE}
+            onPaginationChange={(nextPage) => setPage(nextPage)}
+            loading={isLoading}
+            onRowClick={handleRowClick}
+            emptyMessage={t('noConnectors')}
+            emptyAction={
+              <Button onClick={handleCreate}>
+                <PlusIcon weight="bold" />
+                {t('createConnector')}
+              </Button>
+            }
+          />
 
-      {/* Pagination */}
-      {totalItems > 0 && (
-        <DataTablePagination
-          pageIndex={page}
-          pageSize={PAGE_SIZE}
-          totalItems={totalItems}
-          totalPages={totalPages}
-          onPageChange={setPage}
-        />
-      )}
+          {/* Pagination */}
+          {totalItems > 0 && (
+            <DataTablePagination
+              pageIndex={page}
+              pageSize={PAGE_SIZE}
+              totalItems={totalItems}
+              totalPages={totalPages}
+              onPageChange={(nextPage) => setPage(nextPage)}
+            />
+          )}
+        </motion.div>
+      </AnimatePresence>
     </PageShell>
   );
 }
