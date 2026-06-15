@@ -177,6 +177,9 @@ export function ImportDialog({
       await queryClient.invalidateQueries({
         queryKey: ['test-cases', datasetId],
       });
+      await queryClient.invalidateQueries({
+        queryKey: ['dataset', datasetId],
+      });
     } catch (err: unknown) {
       setError(
         err instanceof Error ? err.message : t('importUploadError'),

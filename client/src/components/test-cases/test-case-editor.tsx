@@ -161,6 +161,9 @@ export function TestCaseEditor({
       await queryClient.invalidateQueries({
         queryKey: ['test-cases', datasetId],
       });
+      await queryClient.invalidateQueries({
+        queryKey: ['dataset', datasetId],
+      });
       onClose();
     } catch (error: unknown) {
       if (
@@ -189,6 +192,9 @@ export function TestCaseEditor({
       await apiClient.del(`/api/v1/test-cases/${testCase.publicId}`);
       await queryClient.invalidateQueries({
         queryKey: ['test-cases', datasetId],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ['dataset', datasetId],
       });
       setConfirmDeleteOpen(false);
       onClose();

@@ -91,6 +91,9 @@ export function AIGenerateDialog({
       queryClient.invalidateQueries({
         queryKey: ['test-cases', datasetId],
       });
+      queryClient.invalidateQueries({
+        queryKey: ['dataset', datasetId],
+      });
     },
   });
 
@@ -355,14 +358,18 @@ export function AIGenerateDialog({
                     </div>
                   </div>
                   {/* Progress bar */}
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full rounded-full bg-primary transition-all duration-300"
-                      style={{ width: `${progressPercent}%` }}
-                    />
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-muted relative">
+                    {progressPercent === 0 ? (
+                      <div className="h-full w-full rounded-full bg-primary/40 animate-pulse" />
+                    ) : (
+                      <div
+                        className="h-full rounded-full bg-primary transition-all duration-300"
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    )}
                   </div>
                   <p className="text-right text-xs text-muted-foreground">
-                    {progressPercent}%
+                    {progressPercent === 0 ? t('aiGenerating') : `${progressPercent}%`}
                   </p>
                 </div>
               )}
