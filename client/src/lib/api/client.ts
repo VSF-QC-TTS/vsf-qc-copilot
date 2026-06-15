@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
-import createAuthRefreshInterceptor from 'axios-auth-refresh';
+import createAuthRefresh from 'axios-auth-refresh';
 import type { ApiError, RefreshTokenResponse } from './types';
 
 // ---------------------------------------------------------------------------
@@ -73,7 +73,7 @@ const refreshAuthLogic = async (failedRequest: AxiosError) => {
 };
 
 // 3. Register Auth Refresh Interceptor
-createAuthRefreshInterceptor(axiosInstance, refreshAuthLogic, {
+createAuthRefresh(axiosInstance, refreshAuthLogic, {
   statusCodes: [401],
   shouldRefresh: (error: AxiosError) => {
     const body = error.response?.data as ProblemDetailsBody | undefined;
