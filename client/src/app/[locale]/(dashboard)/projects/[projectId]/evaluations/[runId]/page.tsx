@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   TableIcon,
   ExportIcon,
@@ -72,11 +72,6 @@ function formatDateTime(iso: string): string {
   });
 }
 
-function safePercent(count: number | null, total: number | null): string | null {
-  if (total === null || total === 0 || count === null) return null;
-  return `${Math.round((count / total) * 100)}%`;
-}
-
 // ---------------------------------------------------------------------------
 // Page component
 // ---------------------------------------------------------------------------
@@ -85,6 +80,7 @@ export default function RunDetailPage() {
   const t = useTranslations('evaluations');
   const tCommon = useTranslations('common');
   const router = useRouter();
+  const queryClient = useQueryClient();
   const params = useParams();
   const projectId = params.projectId as string;
   const runId = params.runId as string;
@@ -112,14 +108,24 @@ export default function RunDetailPage() {
   // Poll job progress when active
   const isActive =
     run?.status === 'RUNNING' || run?.status === 'PENDING';
+  const refreshRunState = React.useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ['evaluation-run', runId] });
+    void queryClient.invalidateQueries({ queryKey: ['evaluation-run-events', runId] });
+    void queryClient.invalidateQueries({ queryKey: ['evaluation-runs', projectId] });
+  }, [projectId, queryClient, runId]);
+
   const { job, isPolling } = useJobProgress(
     isActive ? (run?.jobPublicId ?? null) : null,
-    { enabled: isActive },
+    {
+      enabled: isActive,
+      onCompleted: refreshRunState,
+      onFailed: refreshRunState,
+    },
   );
 
   const progressPercent =
-    job?.progress !== null && job?.progress !== undefined && job?.progressTotal
-      ? `${Math.round((job.progress / job.progressTotal) * 100)}%`
+    job && job.progressTotal > 0
+      ? `${Math.round((job.progressCurrent / job.progressTotal) * 100)}%`
       : null;
 
   return (

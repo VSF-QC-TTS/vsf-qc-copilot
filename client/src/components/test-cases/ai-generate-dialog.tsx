@@ -167,7 +167,10 @@ export function AIGenerateDialog({
   if (!open) return null;
 
   const showForm = !jobPublicId;
-  const progressPercent = job?.progress ?? 0;
+  const progressPercent =
+    job && job.progressTotal > 0
+      ? Math.round((job.progressCurrent / job.progressTotal) * 100)
+      : 0;
 
   return (
     <div

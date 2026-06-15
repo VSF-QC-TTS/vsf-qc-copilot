@@ -164,7 +164,7 @@ Implemented API slices after auth:
   - `GET /api/v1/jobs/{jobPublicId}` returns job detail with resolved `resourcePublicId` (flat path, owner-scoped).
   - All evaluation/job endpoints are owner-scoped through the project `createdBy` chain.
   - `EvaluationRunStatus`: `PENDING`, `RUNNING`, `COMPLETED`, `FAILED`, `CANCELLED`. `JobStatus`: `PENDING`, `RUNNING`, `COMPLETED`, `FAILED`, `CANCELLED`. `JudgeStatus`: `PASS`, `FAIL`, `WARNING`, `ERROR`.
-  - Redis is used as a job queue (`vqc:jobs:queue` list). `JobQueuePublisher` pushes job public IDs and `JobWorker` consumes them when `vqc.worker.enabled=true`.
+  - Redis is used as a job queue (`vqc:jobs:queue` list). `JobQueuePublisher` pushes job public IDs only after the surrounding transaction commits when transaction synchronization is active, preventing `JobWorker` from consuming a job before the database row is visible; `JobWorker` consumes messages when `vqc.worker.enabled=true`.
   - `PromptfooExecutor` is Strategy-based: `MockPromptfooExecutor` for `vqc.promptfoo.mode=mock` and `CliPromptfooExecutor` for `vqc.promptfoo.mode=cli`.
   - CLI mode runs only inside the Redis-backed worker path after `JobWorker` consumes a queued evaluation job; HTTP request handlers still only enqueue jobs and never run promptfoo directly.
   - CLI mode writes isolated run artifacts under `vqc.promptfoo.work-dir/{runPublicId}`: `promptfooconfig.json`, `tests.json`, `results.json`, validation/eval stdout/stderr logs, `.promptfoo/`, and `logs/`.

@@ -107,6 +107,11 @@ export function ExportDialog({
     },
   );
 
+  const progressPercent =
+    job && job.progressTotal > 0
+      ? Math.round((job.progressCurrent / job.progressTotal) * 100)
+      : null;
+
   const isSubmitting = startExportMutation.isPending || isPolling;
 
   // Reset on close
@@ -258,11 +263,11 @@ export function ExportDialog({
             <p className="text-sm text-muted-foreground animate-pulse">
               {t('exporting')}
             </p>
-            {job?.progress !== null && job?.progress !== undefined && (
+            {progressPercent !== null && (
               <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
                 <div
                   className="h-full rounded-full bg-primary transition-all"
-                  style={{ width: `${job.progress}%` }}
+                  style={{ width: `${progressPercent}%` }}
                 />
               </div>
             )}

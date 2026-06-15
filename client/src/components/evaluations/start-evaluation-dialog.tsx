@@ -299,6 +299,10 @@ export function StartEvaluationDialog({
     rubricVersionsLoading ||
     connectorsLoading ||
     judgeModelsLoading;
+  const jobProgressPercent =
+    job && job.progressTotal > 0
+      ? Math.round((job.progressCurrent / job.progressTotal) * 100)
+      : 0;
   const canQuickEvaluate =
     datasets.length === 1 &&
     rubricVersions.length === 1 &&
@@ -377,7 +381,7 @@ export function StartEvaluationDialog({
         {jobPublicId ? (
           <div className="mt-4 space-y-2">
             <p className="text-sm text-muted-foreground animate-pulse">
-              {t('progress')}: {job?.progress ?? 0}%
+              {t('progress')}: {jobProgressPercent}%
             </p>
           </div>
         ) : (
