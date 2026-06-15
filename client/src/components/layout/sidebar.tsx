@@ -15,7 +15,6 @@ import {
 import { cn } from '@/lib/utils';
 import { useSidebarStore } from '@/lib/store/sidebar-store';
 import { Button } from '@/components/ui/button';
-import { APP_NAME } from '@/lib/branding';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -35,29 +34,16 @@ export function Sidebar() {
   const navContent = (
     <>
       {/* Logo */}
-      <div className={cn(
-        "flex border-b px-4 transition-all duration-200",
-        isCollapsed 
-          ? "h-16 items-center justify-center" 
-          : "flex-col items-center justify-center py-6 gap-2 text-center"
-      )}>
-        <div className={cn(
-          "flex items-center justify-center rounded-lg overflow-hidden shrink-0 transition-all duration-200 bg-card border shadow-xs",
-          isCollapsed ? "h-8 w-8" : "h-12 w-12"
-        )}>
+      <div className="flex h-16 items-center justify-center border-b px-4">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg overflow-hidden bg-card border shadow-xs">
           <Image 
             src="/logo.png" 
             alt="Logo" 
-            width={isCollapsed ? 32 : 48} 
-            height={isCollapsed ? 32 : 48} 
+            width={32} 
+            height={32} 
             className="object-cover" 
           />
         </div>
-        {!isCollapsed && (
-          <span className="text-sm font-semibold leading-tight tracking-tight text-foreground">
-            {APP_NAME}
-          </span>
-        )}
       </div>
 
       {/* Navigation items */}
