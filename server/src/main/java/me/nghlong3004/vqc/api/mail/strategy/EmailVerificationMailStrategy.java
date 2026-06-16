@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 public class EmailVerificationMailStrategy implements MailStrategy {
 
   private static final String TEMPLATE_PATH = "templates/mail/email-verification.html";
-  private static final String SUBJECT = "Verify your VSF QC Copilot account";
+  private static final String SUBJECT = "Verify your VF QC Copilot account";
 
   @Override
   public MailType type() {
@@ -29,11 +29,11 @@ public class EmailVerificationMailStrategy implements MailStrategy {
         .templatePath(TEMPLATE_PATH)
         .model(
             Map.of(
-                "appName", "VSF QC Copilot",
+                "appName", "VF QC Copilot",
                 "displayName", request.displayName(),
                 "verificationUrl", request.actionUrl(),
                 "preheader",
-                    "Verify your email address to activate your VSF QC Copilot account."))
+                    "Verify your email address to activate your VF QC Copilot account."))
         .build();
   }
 }

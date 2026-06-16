@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "Vinsmart Future QC Copilot",
+    "appName": "VinFast QC Copilot",
     "loading": "Loading...",
     "notAvailable": "Not available",
     "save": "Save",
@@ -905,7 +905,7 @@
     "themeSystem": "System"
   },
   "placeholder": {
-    "title": "Vinsmart Future QC Copilot",
+    "title": "VinFast QC Copilot",
     "description": "Internal QC dashboard for chatbot evaluation workflows. Project scaffolding complete - design tokens and fonts active.",
     "buttons": {
       "primary": "Primary",
@@ -923,5 +923,62 @@
     "failed": "Failed",
     "cancelled": "Cancelled",
     "progress": "Progress: {percent}%"
+  },
+  "redTeam": {
+    "title": "Security Testing (Red-Teaming)",
+    "description": "Automatically detect and test security vulnerabilities, prompt injection, and PII leaks for your AI applications.",
+    "startScan": "Start Security Scan",
+    "createScanTitle": "Configure New Security Scan",
+    "scanName": "Scan Name",
+    "scanNamePlaceholder": "E.g., Weekly safety check",
+    "fields": {
+      "connector": "Target API Connector",
+      "connectorPlaceholder": "Select Target API Connector",
+      "judgeModel": "Judge Model",
+      "judgeModelPlaceholder": "Judge Model (System default if blank)",
+      "purpose": "Chatbot Application Purpose",
+      "purposePlaceholder": "Enter the context of your chatbot (E.g., Chatbot answering student questions about class schedules and grades...)",
+      "plugins": "Vulnerability Plugins",
+      "numTests": "Number of Attacks per Plugin",
+      "strategy": "Attack Strategy"
+    },
+    "plugins": {
+      "privacy": "Privacy Violations (harmful:privacy)",
+      "extraction": "System Prompt Extraction (prompt-extraction)",
+      "pii": "Direct PII Harvesting (pii:direct)"
+    },
+    "status": {
+      "PENDING": "Pending",
+      "RUNNING": "Scanning",
+      "COMPLETED": "Scan Completed",
+      "FAILED": "Scan Failed",
+      "CANCELLED": "Cancelled"
+    },
+    "results": {
+      "vulnerabilityScore": "Vulnerability Rate",
+      "totalTests": "Total Attack Vectors",
+      "exploited": "Vulnerabilities Found",
+      "shielded": "Shielded Successfully",
+      "errors": "System Errors",
+      "remediation": "Remediation Advice",
+      "poc": "Proof of Concept (PoC)",
+      "promptInjected": "Adversarial Prompt",
+      "modelResponse": "Model Response",
+      "gradingReason": "Grading Reason",
+      "severity": "Severity",
+      "vulnerabilityFound": "Vulnerability Found",
+      "remediationTitle": "Security Remediation Advice",
+      "remediationDesc": "Based on the attack vector and the actual response, here is the suggested fix:",
+      "table": {
+        "threat": "Threat / Plugin",
+        "prompt": "Adversarial Input",
+        "response": "Model Response",
+        "status": "Result",
+        "statusShielded": "Shielded",
+        "statusVulnerable": "Vulnerable",
+        "statusError": "Grader Error"
+      }
+    }
   }
 }
+

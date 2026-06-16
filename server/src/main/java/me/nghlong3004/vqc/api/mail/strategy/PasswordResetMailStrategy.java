@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 public class PasswordResetMailStrategy implements MailStrategy {
 
   private static final String TEMPLATE_PATH = "templates/mail/password-reset.html";
-  private static final String SUBJECT = "Reset your VSF QC Copilot password";
+  private static final String SUBJECT = "Reset your VF QC Copilot password";
 
   @Override
   public MailType type() {
@@ -29,10 +29,10 @@ public class PasswordResetMailStrategy implements MailStrategy {
         .templatePath(TEMPLATE_PATH)
         .model(
             Map.of(
-                "appName", "VSF QC Copilot",
+                "appName", "VF QC Copilot",
                 "displayName", request.displayName(),
                 "resetUrl", request.actionUrl(),
-                "preheader", "Use this secure link to reset your VSF QC Copilot password."))
+                "preheader", "Use this secure link to reset your VF QC Copilot password."))
         .build();
   }
 }

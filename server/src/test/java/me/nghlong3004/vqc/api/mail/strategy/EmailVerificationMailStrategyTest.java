@@ -27,7 +27,7 @@ class EmailVerificationMailStrategyTest {
 
     assertThat(strategy.type()).isEqualTo(MailType.EMAIL_VERIFICATION);
     assertThat(message.to()).isEqualTo("qc.demo@example.com");
-    assertThat(message.subject()).isEqualTo("Verify your VSF QC Copilot account");
+    assertThat(message.subject()).isEqualTo("Verify your VF QC Copilot account");
     assertThat(message.templatePath()).isEqualTo("templates/mail/email-verification.html");
     assertThat(message.model().get("displayName")).isEqualTo("QC Demo");
     assertThat(message.model().get("verificationUrl"))

@@ -182,3 +182,118 @@ export type DatasetDetailResponse = {
   createdAt: string;
   updatedAt: string;
 };
+
+// ---------------------------------------------------------------------------
+// Red-Team
+// ---------------------------------------------------------------------------
+export type RedTeamRunStatus =
+  | 'PENDING'
+  | 'RUNNING'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'CANCELLED';
+
+export type CreateRedTeamRunRequest = {
+  name?: string;
+  targetConnectorPublicId: string;
+  judgeModelPublicId?: string | null;
+  purpose: string;
+  plugins?: string[];
+  strategies?: string[];
+  numTests?: number;
+};
+
+export type CreateRedTeamRunResponse = {
+  runPublicId: string;
+  jobPublicId: string;
+  status: string;
+  message: string;
+};
+
+export type RedTeamRunResponse = {
+  publicId: string;
+  projectPublicId: string;
+  targetConnectorPublicId: string;
+  connectorName: string | null;
+  judgeModelPublicId: string | null;
+  judgeModelDisplayName: string | null;
+  jobPublicId: string | null;
+  name: string;
+  purpose: string;
+  plugins: string[];
+  strategies: string[];
+  numTests: number;
+  status: RedTeamRunStatus;
+  totalCases: number;
+  passedCases: number;
+  failedCases: number;
+  errorCases: number;
+  errorMessage: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RedTeamResultItem = {
+  pluginId: string;
+  prompt: string;
+  response: string;
+  score: number;
+  pass: boolean;
+  reason: string;
+  graderName?: string;
+};
+
+export type RedTeamResultResponse = {
+  runPublicId: string;
+  status: string;
+  summary: {
+    successes: number;
+    failures: number;
+    errors: number;
+    tokenUsage?: {
+      total: number;
+      prompt: number;
+      completion: number;
+    };
+  };
+  results: {
+    stats: {
+      successes: number;
+      failures: number;
+      errors: number;
+      tokenUsage?: {
+        total: number;
+        prompt: number;
+        completion: number;
+      };
+    };
+    results: Array<{
+      pluginId: string;
+      prompt: {
+        raw: string;
+        label: string;
+      } | string;
+      vars: Record<string, unknown>;
+      response: {
+        raw: string;
+        data?: unknown;
+      } | string;
+      success: boolean;
+      score: number;
+      latencyMs?: number;
+      gradingResult?: {
+        pass: boolean;
+        score: number;
+        reason: string;
+        componentResults?: unknown[];
+        assertion?: unknown;
+      };
+      provider?: {
+        id: string;
+      };
+    }>;
+  } | null;
+};
+

@@ -49,6 +49,8 @@ export function Header() {
       datasets: 'Datasets',
       evaluations: 'Evaluations',
       'judge-models': 'Judge Models',
+      'red-team': 'Red-Teaming',
+      'red-team-runs': 'Red-Teaming',
       new: 'New',
       results: 'Results',
     };

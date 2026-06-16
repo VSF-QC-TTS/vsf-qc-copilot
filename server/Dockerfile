@@ -1,5 +1,5 @@
 # ============================================================
-# VSF QC Copilot — Backend Dockerfile
+# VF QC Copilot — Backend Dockerfile
 # Multi-stage build: Maven build → Promptfoo runner → runtime
 # ============================================================
 
@@ -50,7 +50,7 @@ RUN node --version \
 FROM eclipse-temurin:21-jre
 
 LABEL maintainer="nghlong3004"
-LABEL description="VSF QC Copilot Backend API"
+LABEL description="VF QC Copilot Backend API"
 
 WORKDIR /app
 

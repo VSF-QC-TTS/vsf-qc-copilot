@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "Vinsmart Future QC Copilot",
+    "appName": "VinFast QC Copilot",
     "loading": "Đang tải...",
     "notAvailable": "Không có dữ liệu",
     "save": "Lưu",
@@ -905,7 +905,7 @@
     "themeSystem": "Hệ thống"
   },
   "placeholder": {
-    "title": "Vinsmart Future QC Copilot",
+    "title": "VinFast QC Copilot",
     "description": "Bảng điều khiển QC nội bộ dành cho quy trình đánh giá chatbot. Cấu hình dự án hoàn tất - token thiết kế và font đã kích hoạt.",
     "buttons": {
       "primary": "Chính",
@@ -923,5 +923,62 @@
     "failed": "Thất bại",
     "cancelled": "Đã hủy",
     "progress": "Tiến trình: {percent}%"
+  },
+  "redTeam": {
+    "title": "Kiểm thử bảo mật (Red-Teaming)",
+    "description": "Tự động phát hiện và kiểm thử các lỗ hổng bảo mật, rò rỉ thông tin cá nhân và nguy cơ tấn công prompt của ứng dụng AI.",
+    "startScan": "Bắt đầu quét bảo mật",
+    "createScanTitle": "Cấu hình quét bảo mật mới",
+    "scanName": "Tên lượt quét",
+    "scanNamePlaceholder": "Ví dụ: Quét bảo mật định kỳ",
+    "fields": {
+      "connector": "API Connector mục tiêu",
+      "connectorPlaceholder": "Chọn API Connector cần quét bảo mật",
+      "judgeModel": "Mô hình đánh giá (Judge Model)",
+      "judgeModelPlaceholder": "Mô hình chấm điểm (Mặc định nếu bỏ trống)",
+      "purpose": "Mục đích sử dụng của Chatbot",
+      "purposePlaceholder": "Nhập ngữ cảnh ứng dụng (Ví dụ: Chatbot trả lời câu hỏi của sinh viên về lịch học và điểm số...)",
+      "plugins": "Loại lỗ hổng muốn kiểm tra",
+      "numTests": "Số lượng đòn tấn công mỗi loại",
+      "strategy": "Chiến lược tấn công"
+    },
+    "plugins": {
+      "privacy": "Rò rỉ dữ liệu riêng tư (harmful:privacy)",
+      "extraction": "Trích xuất/Đánh cắp System Prompt (prompt-extraction)",
+      "pii": "Thu thập thông tin cá nhân trực tiếp (pii:direct)"
+    },
+    "status": {
+      "PENDING": "Chờ thực thi",
+      "RUNNING": "Đang quét bảo mật",
+      "COMPLETED": "Quét hoàn tất",
+      "FAILED": "Quét thất bại",
+      "CANCELLED": "Đã hủy"
+    },
+    "results": {
+      "vulnerabilityScore": "Tỷ lệ rủi ro bảo mật",
+      "totalTests": "Đòn tấn công thử nghiệm",
+      "exploited": "Lỗ hổng bị khai thác",
+      "shielded": "Đã chặn thành công",
+      "errors": "Lỗi hệ thống",
+      "remediation": "Khuyến nghị khắc phục",
+      "poc": "Bằng chứng (PoC)",
+      "promptInjected": "Prompt tấn công",
+      "modelResponse": "Phản hồi thực tế",
+      "gradingReason": "Lý do đánh giá",
+      "severity": "Mức độ nghiêm trọng",
+      "vulnerabilityFound": "Tìm thấy lỗ hổng",
+      "remediationTitle": "Khuyến nghị khắc phục lỗi bảo mật",
+      "remediationDesc": "Dựa trên đòn tấn công và phản hồi thực tế, dưới đây là đề xuất để khắc phục lỗ hổng này:",
+      "table": {
+        "threat": "Mối đe dọa / Plugin",
+        "prompt": "Câu hỏi tấn công",
+        "response": "Phản hồi thực tế",
+        "status": "Kết quả",
+        "statusShielded": "Đã chặn",
+        "statusVulnerable": "Bị khai thác",
+        "statusError": "Lỗi chấm điểm"
+      }
+    }
   }
 }
+

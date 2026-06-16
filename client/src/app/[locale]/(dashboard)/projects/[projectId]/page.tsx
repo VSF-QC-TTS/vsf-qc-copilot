@@ -13,6 +13,7 @@ import {
   ArchiveIcon,
   BrainIcon,
   ArrowRightIcon,
+  ShieldCheckIcon,
 } from '@phosphor-icons/react';
 
 import { Link, useRouter } from '@/i18n/navigation';
@@ -408,6 +409,33 @@ export default function ProjectDetailPage() {
           </div>
         </motion.section>
       )}
+
+      {/* ---- Red-Teaming (Security Testing) Banner ---- */}
+      <motion.section variants={itemVariants} className="space-y-3">
+        <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-5 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden">
+          <div className="absolute -right-6 -top-6 text-red-500/10 rotate-12 pointer-events-none">
+            <ShieldCheckIcon size={110} weight="fill" />
+          </div>
+          <div className="flex items-start gap-3 relative z-10">
+            <div className="p-2 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 shrink-0 hidden sm:block">
+              <ShieldCheckIcon size={24} weight="duotone" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <h3 className="text-base font-bold tracking-tight text-red-700 dark:text-red-400">
+                Kiểm thử bảo mật (Red-Teaming)
+              </h3>
+              <p className="text-xs text-red-700/80 dark:text-red-400/80 max-w-[55ch] leading-relaxed">
+                Tự động giả lập các đòn tấn công xâm nhập bằng Promptfoo để đánh giá độ an toàn của chatbot trước nguy cơ rò rỉ dữ liệu hoặc Prompt Injection.
+              </p>
+            </div>
+          </div>
+          <Button variant="outline" asChild className="w-full sm:w-auto shrink-0 border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/10 z-10">
+            <Link href={`/projects/${projectId}/red-team`}>
+              Quản lý quét bảo mật <ArrowRightIcon className="ml-1.5 size-4" />
+            </Link>
+          </Button>
+        </div>
+      </motion.section>
 
       {/* ---- Recent evaluations ---- */}
       <motion.section variants={itemVariants} className="space-y-3">

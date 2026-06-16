@@ -66,7 +66,7 @@ export function Sidebar() {
           'font-bold text-sm text-foreground truncate transition-[opacity,width] duration-300 ease-in-out',
           expanded ? 'opacity-100 w-auto' : 'lg:opacity-0 lg:w-0 lg:overflow-hidden opacity-100 w-auto'
         )}>
-          VSF QC Copilot
+          VF QC Copilot
         </span>
       </div>
 

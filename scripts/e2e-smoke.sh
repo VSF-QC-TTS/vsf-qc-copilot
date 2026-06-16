@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# VSF QC Copilot — E2E Smoke Test
+# VF QC Copilot — E2E Smoke Test
 # Full flow: register → project → connector → dataset →
 #            rubric → evaluation → export XLSX
 # ============================================================

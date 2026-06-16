@@ -1,5 +1,5 @@
 # ============================================================
-# VSF QC Copilot — Local Docker Compose
+# VF QC Copilot — Local Docker Compose
 # Frontend (Next.js standalone) + Backend (Spring Boot) + DB + Redis
 # All ports bound to 127.0.0.1 only
 # ============================================================

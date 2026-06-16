@@ -27,7 +27,7 @@ class PasswordResetMailStrategyTest {
 
     assertThat(strategy.type()).isEqualTo(MailType.PASSWORD_RESET);
     assertThat(message.to()).isEqualTo("qc.demo@example.com");
-    assertThat(message.subject()).isEqualTo("Reset your VSF QC Copilot password");
+    assertThat(message.subject()).isEqualTo("Reset your VF QC Copilot password");
     assertThat(message.templatePath()).isEqualTo("templates/mail/password-reset.html");
     assertThat(message.model().get("displayName")).isEqualTo("QC Demo");
     assertThat(message.model().get("resetUrl"))

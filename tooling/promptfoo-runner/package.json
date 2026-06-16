@@ -2,7 +2,7 @@
   "name": "vqc-promptfoo-runner",
   "version": "0.0.0",
   "private": true,
-  "description": "Pinned local promptfoo CLI runner for VSF QC Copilot.",
+  "description": "Pinned local promptfoo CLI runner for VF QC Copilot.",
   "engines": {
     "node": ">=22"
   },
