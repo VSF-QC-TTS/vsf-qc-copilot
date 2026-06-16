@@ -158,7 +158,12 @@ export function Header() {
                 <p className="text-sm font-medium">{user?.displayName ?? ''}</p>
                 <p className="text-xs text-muted-foreground">{user?.email ?? ''}</p>
                 {user?.role && (
-                  <p className="mt-0.5 text-xs text-muted-foreground">{user.role}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {user.role === 'QC_MEMBER' && 'QC Member'}
+                    {user.role === 'QC_LEAD' && 'QC Lead'}
+                    {user.role === 'ADMIN' && 'System Admin'}
+                    {!['QC_MEMBER', 'QC_LEAD', 'ADMIN'].includes(user.role) && user.role}
+                  </p>
                 )}
               </div>
 
