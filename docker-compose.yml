@@ -72,9 +72,6 @@ services:
       VQC_PROMPTFOO_MODE: cli
       VQC_PROMPTFOO_WORK_DIR: /app/runs
       VQC_PROMPTFOO_BINARY_PATH: /app/tooling/promptfoo-runner/node_modules/.bin/promptfoo
-
-      WEB_BASE_URL: http://localhost:3000
-      SERVER_BASE_URL: http://localhost:8080
     volumes:
       - app-runs:/app/runs
       - app-exports:/app/exports
@@ -88,11 +85,13 @@ services:
       context: ./client
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: "http://localhost:8080"
+        NEXT_PUBLIC_API_URL: ""
     restart: unless-stopped
     init: true
     ports:
       - "127.0.0.1:3000:3000"
+    environment:
+      BACKEND_API_URL: "http://api:8080"
     depends_on:
       - api
 
