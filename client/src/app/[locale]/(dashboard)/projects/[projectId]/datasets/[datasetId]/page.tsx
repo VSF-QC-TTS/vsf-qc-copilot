@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCircleIcon, ArchiveIcon } from '@phosphor-icons/react';
+import { motion } from 'motion/react';
 
 import { apiClient } from '@/lib/api/client';
 import type { DatasetDetailResponse } from '@/lib/api/types';
@@ -28,6 +29,20 @@ function formatDate(iso: string): string {
     day: 'numeric',
   });
 }
+
+// ---------------------------------------------------------------------------
+// Motion Variants
+// ---------------------------------------------------------------------------
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.1 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 100, damping: 15 } },
+};
 
 // ---------------------------------------------------------------------------
 // Loading skeleton
@@ -163,57 +178,64 @@ export default function DatasetDetailPage() {
         ) : undefined
       }
     >
-      {/* ---- Dataset info card ---- */}
-      <div className="rounded-lg border bg-card p-6 space-y-4">
-        <div className="flex items-center gap-3">
-          <StatusBadge status={dataset.status} />
-        </div>
-
-        {dataset.description && (
-          <p className="text-sm text-muted-foreground">
-            {dataset.description}
-          </p>
-        )}
-
-        <div className="grid gap-4 sm:grid-cols-2 text-sm text-muted-foreground">
-          <div>
-            <span className="font-medium text-foreground">
-              {t('columns.testCaseCount')}:
-            </span>{' '}
-            {dataset.testCaseCount}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="space-y-6"
+      >
+        {/* ---- Dataset info card ---- */}
+        <motion.div variants={itemVariants} className="rounded-lg border bg-card p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <StatusBadge status={dataset.status} />
           </div>
-          <div>
-            <span className="font-medium text-foreground">
-              {t('columns.createdAt')}:
-            </span>{' '}
-            {formatDate(dataset.createdAt)}
-          </div>
-          <div>
-            <span className="font-medium text-foreground">
-              {t('updatedAt')}:
-            </span>{' '}
-            {formatDate(dataset.updatedAt)}
-          </div>
-        </div>
 
-        {/* Helper text: cannot approve without active test cases */}
-        {isDraft && !canApprove && (
-          <p className="text-sm text-amber-600 dark:text-amber-400">
-            {t('approveDisabledHint')}
-          </p>
-        )}
-      </div>
+          {dataset.description && (
+            <p className="text-sm text-muted-foreground">
+              {dataset.description}
+            </p>
+          )}
 
-      {/* ---- Test case table (placeholder — Epic 7) ---- */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold tracking-tight">
-          {t('testCases')}
-        </h2>
-        <TestCaseTable
-          datasetId={datasetId as string}
-          datasetStatus={dataset.status}
-        />
-      </section>
+          <div className="grid gap-4 sm:grid-cols-2 text-sm text-muted-foreground">
+            <div>
+              <span className="font-medium text-foreground">
+                {t('columns.testCaseCount')}:
+              </span>{' '}
+              {dataset.testCaseCount}
+            </div>
+            <div>
+              <span className="font-medium text-foreground">
+                {t('columns.createdAt')}:
+              </span>{' '}
+              {formatDate(dataset.createdAt)}
+            </div>
+            <div>
+              <span className="font-medium text-foreground">
+                {t('updatedAt')}:
+              </span>{' '}
+              {formatDate(dataset.updatedAt)}
+            </div>
+          </div>
+
+          {/* Helper text: cannot approve without active test cases */}
+          {isDraft && !canApprove && (
+            <p className="text-sm text-amber-600 dark:text-amber-400">
+              {t('approveDisabledHint')}
+            </p>
+          )}
+        </motion.div>
+
+        {/* ---- Test case table (placeholder — Epic 7) ---- */}
+        <motion.section variants={itemVariants} className="space-y-3">
+          <h2 className="text-lg font-semibold tracking-tight">
+            {t('testCases')}
+          </h2>
+          <TestCaseTable
+            datasetId={datasetId as string}
+            datasetStatus={dataset.status}
+          />
+        </motion.section>
+      </motion.div>
 
       {/* ---- Approve confirm dialog ---- */}
       <ConfirmDialog
