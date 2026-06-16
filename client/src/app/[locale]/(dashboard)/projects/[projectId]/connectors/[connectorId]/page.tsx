@@ -20,6 +20,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { PageShell } from '@/components/layout/page-shell';
+import { useBreadcrumbStore } from '@/lib/store/breadcrumb-store';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Skeleton, SkeletonText } from '@/components/feedback/loading-skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -276,6 +277,12 @@ export default function ConnectorDetailPage() {
         '/api/v1/target-api-connectors/' + connectorId,
       ),
   });
+
+  React.useEffect(() => {
+    if (connector) {
+      useBreadcrumbStore.getState().setMapping(connectorId, connector.name);
+    }
+  }, [connector, connectorId]);
 
   // ---------------------------------------------------------------------------
   // Edit form

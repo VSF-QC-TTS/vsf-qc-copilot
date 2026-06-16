@@ -15,6 +15,8 @@ import {
 
 import { Button } from '@/components/ui/button';
 import { PageShell } from '@/components/layout/page-shell';
+import { useBreadcrumbStore } from '@/lib/store/breadcrumb-store';
+import { Skeleton, SkeletonText } from '@/components/feedback/loading-skeleton';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -204,6 +206,12 @@ export default function RubricDetailPage({
       description: editDescription.trim() || undefined,
     });
   };
+
+  React.useEffect(() => {
+    if (rubric) {
+      useBreadcrumbStore.getState().setMapping(rubricId, rubric.name);
+    }
+  }, [rubric, rubricId]);
 
   // Create version
   const createVersionMutation = useMutation({

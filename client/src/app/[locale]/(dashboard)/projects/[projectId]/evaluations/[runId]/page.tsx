@@ -20,6 +20,7 @@ import { useEvaluationRunEventsStream } from '@/hooks/use-evaluation-run-events-
 import { apiClient } from '@/lib/api/client';
 import { useRouter } from '@/i18n/navigation';
 import { ExportDialog } from '@/components/evaluations/export-dialog';
+import { useBreadcrumbStore } from '@/lib/store/breadcrumb-store';
 import type { JobEventResponse, PageResponse, EvaluationRunDetail } from '@/lib/api/types';
 import type { CriterionResult } from '@/components/panels/result-detail-panel';
 import dynamic from 'next/dynamic';
@@ -146,6 +147,12 @@ export default function RunDetailPage() {
     const index = runsListData.items.findIndex((item) => item.publicId === runId);
     return index !== -1 ? index + 1 : null;
   }, [runsListData, runId]);
+
+  React.useEffect(() => {
+    if (run) {
+      useBreadcrumbStore.getState().setMapping(runId, `Eval ${run.publicId.slice(0, 8)}`);
+    }
+  }, [run, runId]);
 
   // Fetch results to aggregate criteria performance
   const { data: resultsData, isLoading: resultsLoading } = useQuery({

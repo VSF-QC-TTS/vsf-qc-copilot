@@ -179,6 +179,25 @@ public class EvaluationRunServiceImpl implements EvaluationRunService {
 
   @Override
   @Transactional(readOnly = true)
+  public EvaluationRunPageResponse listGlobalEvaluationRuns(Pageable pageable, String username) {
+    User creator = findCreator(username);
+    Page<EvaluationRun> runs =
+        evaluationRunRepository.findByCreatedBy(creator, pageable);
+    List<EvaluationRunListItemResponse> items =
+        runs.getContent().stream()
+            .map(evaluationRunMapper::toListItemResponse)
+            .toList();
+    log.info(
+        "Listed global evaluation runs for user {} page {} size {}",
+        creator.getPublicId(),
+        runs.getNumber(),
+        runs.getSize());
+    return new EvaluationRunPageResponse(
+        items, runs.getNumber(), runs.getSize(), runs.getTotalElements(), runs.getTotalPages());
+  }
+
+  @Override
+  @Transactional(readOnly = true)
   public EvaluationRunDetailResponse getEvaluationRun(UUID runPublicId, String username) {
     User creator = findCreator(username);
     EvaluationRun run =

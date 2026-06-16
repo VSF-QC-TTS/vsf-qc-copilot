@@ -61,4 +61,14 @@ public interface EvaluationRunRepository extends JpaRepository<EvaluationRun, Lo
    */
   @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"dataset", "rubricVersion", "rubricVersion.rubric", "targetApiConnector", "judgeModel", "job", "project"})
   Optional<EvaluationRun> findByPublicIdAndCreatedBy(UUID publicId, User createdBy);
+
+  /**
+   * Finds evaluation runs created by a specific user across all projects.
+   *
+   * @param createdBy creator {@link User}
+   * @param pageable page and sort request
+   * @return page of matching {@link EvaluationRun} entities
+   */
+  @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"dataset", "rubricVersion", "rubricVersion.rubric", "targetApiConnector", "judgeModel", "job", "project"})
+  Page<EvaluationRun> findByCreatedBy(User createdBy, Pageable pageable);
 }

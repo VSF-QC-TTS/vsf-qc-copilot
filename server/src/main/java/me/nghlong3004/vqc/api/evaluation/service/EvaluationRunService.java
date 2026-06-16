@@ -33,6 +33,12 @@ public interface EvaluationRunService {
       UUID projectPublicId, Pageable pageable, String username);
 
   /**
+   * Lists all evaluation runs owned by the authenticated user across all projects.
+   */
+  EvaluationRunPageResponse listGlobalEvaluationRuns(
+      Pageable pageable, String username);
+
+  /**
    * Gets a single evaluation run detail by public identifier.
    *
    * @param runPublicId public run identifier

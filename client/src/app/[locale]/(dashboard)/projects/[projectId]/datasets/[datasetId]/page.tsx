@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { PageShell } from '@/components/layout/page-shell';
+import { useBreadcrumbStore } from '@/lib/store/breadcrumb-store';
 import { TestCaseTable } from '@/components/test-cases/test-case-table';
 import { Skeleton, SkeletonText } from '@/components/feedback/loading-skeleton';
 
@@ -114,6 +115,12 @@ export default function DatasetDetailPage() {
       setApproveOpen(false);
     },
   });
+
+  React.useEffect(() => {
+    if (dataset) {
+      useBreadcrumbStore.getState().setMapping(datasetId, dataset.name);
+    }
+  }, [dataset, datasetId]);
 
   // --- ArchiveIcon mutation ---
   const archiveMutation = useMutation({

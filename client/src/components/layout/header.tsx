@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { useSidebarStore } from '@/lib/store/sidebar-store';
 import { logoutUser } from '@/lib/api/auth';
+import { useBreadcrumbStore } from '@/lib/store/breadcrumb-store';
 import { Button } from '@/components/ui/button';
 import { LanguageSwitcher } from '@/components/ui/language-switcher';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
@@ -32,10 +33,12 @@ export function Header() {
   const segments = pathname.split('/').filter(Boolean);
   const pathSegments = segments[0] && segments[0].length === 2 ? segments.slice(1) : segments;
 
+  const { mapping } = useBreadcrumbStore();
+
   const getSegmentLabel = (segment: string) => {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (uuidRegex.test(segment)) {
-      return null;
+      return mapping[segment] || segment.split('-')[0] + '...';
     }
     const map: Record<string, string> = {
       projects: tNav('projects') || 'Projects',

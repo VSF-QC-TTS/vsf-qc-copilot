@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
-import { BriefcaseIcon, ListChecksIcon, ArrowRightIcon, PlusIcon } from '@phosphor-icons/react';
+import { BriefcaseIcon, ListChecksIcon, ArrowRightIcon, PlusIcon, ChartBarIcon } from '@phosphor-icons/react';
 import { motion } from 'motion/react';
 
 import { Link } from '@/i18n/navigation';
@@ -13,7 +13,21 @@ import { PageShell } from '@/components/layout/page-shell';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { apiClient } from '@/lib/api/client';
-import type { PageResponse, ProjectResponse } from '@/lib/api/types';
+import type { PageResponse, ProjectResponse, EvaluationRunStatus } from '@/lib/api/types';
+
+type EvaluationRunSummary = {
+  publicId: string;
+  status: EvaluationRunStatus;
+  createdAt: string;
+  totalCases: number;
+  completedCases: number;
+  passedCases: number;
+  failedCases: number;
+  project: {
+    publicId: string;
+    name: string;
+  };
+};
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -40,14 +54,20 @@ const itemVariants = {
 
 export default function DashboardPage() {
   const t = useTranslations('dashboard');
-  const tCommon = useTranslations('common');
   const user = useAuthStore((s) => s.user);
 
-  // Fetch projects count & list
-  const { data: projectsData, isLoading: projectsLoading } = useQuery({
-    queryKey: ['projects', 'list', { size: 5 }],
+  // Fetch recent global evaluations
+  const { data: evaluationsData, isLoading: evaluationsLoading } = useQuery({
+    queryKey: ['evaluations', 'global', 'recent', { size: 5 }],
     queryFn: () =>
-      apiClient.get<PageResponse<ProjectResponse>>('/api/v1/projects?page=0&size=5&sort=updatedAt,desc'),
+      apiClient.get<PageResponse<EvaluationRunSummary>>('/api/v1/evaluation-runs?page=0&size=5&sort=createdAt,desc'),
+  });
+
+  // Fetch projects count & list (just count is fine if we don't display list)
+  const { data: projectsData, isLoading: projectsLoading } = useQuery({
+    queryKey: ['projects', 'list', { size: 1 }],
+    queryFn: () =>
+      apiClient.get<PageResponse<ProjectResponse>>('/api/v1/projects?page=0&size=1'),
   });
 
   // Fetch rubrics count
@@ -59,9 +79,9 @@ export default function DashboardPage() {
 
   const totalProjects = projectsData?.totalItems ?? 0;
   const totalRubrics = rubricsData?.totalItems ?? 0;
-  const recentProjects = projectsData?.items ?? [];
+  const recentEvaluations = evaluationsData?.items ?? [];
 
-  const isLoading = projectsLoading || rubricsLoading;
+  const isLoading = projectsLoading || rubricsLoading || evaluationsLoading;
 
   return (
     <PageShell
@@ -98,7 +118,7 @@ export default function DashboardPage() {
           className="lg:col-span-2 space-y-4"
         >
           <h2 className="text-lg font-semibold tracking-tight">
-            {t('activeProjects')}
+            Recent Evaluations
           </h2>
 
           {isLoading ? (
@@ -107,14 +127,14 @@ export default function DashboardPage() {
                 <div key={i} className="h-20 animate-pulse rounded-lg border bg-muted/20" />
               ))}
             </div>
-          ) : recentProjects.length === 0 ? (
+          ) : recentEvaluations.length === 0 ? (
             <EmptyState
-              title={t('createFirstProject')}
-              description={t('createFirstProjectDesc')}
-              icon={<BriefcaseIcon size={48} weight="duotone" />}
+              title="No evaluations yet"
+              description="Start your first evaluation run from within a project."
+              icon={<ChartBarIcon size={48} weight="duotone" />}
               action={
                 <Button asChild>
-                  <Link href="/projects">{t('createFirstProject')}</Link>
+                  <Link href="/projects">{t('viewAllProjects')}</Link>
                 </Button>
               }
             />
@@ -125,33 +145,47 @@ export default function DashboardPage() {
               animate="show"
               className="grid gap-4"
             >
-              {recentProjects.map((project) => (
+              {recentEvaluations.map((run) => (
                 <motion.div
-                  key={project.publicId}
+                  key={run.publicId}
                   variants={itemVariants}
                   whileHover={{ y: -3, transition: { duration: 0.2 } }}
                 >
                   <Link
-                    href={`/projects/${project.publicId}`}
+                    href={`/projects/${run.project.publicId}/evaluations/${run.publicId}`}
                     className="group flex flex-col gap-2 rounded-lg border bg-card p-4 transition-colors hover:border-primary/30 hover:shadow-xs duration-200"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                        {project.name}
+                      <span className="font-semibold text-foreground group-hover:text-primary transition-colors flex items-center gap-2">
+                        {run.project.name}
+                        <span className="text-muted-foreground font-normal text-xs font-mono">
+                          #{run.publicId.slice(0, 8)}
+                        </span>
                       </span>
-                      <StatusBadge status={project.status} size="sm" />
+                      <StatusBadge status={run.status} size="sm" />
                     </div>
-                    {project.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-1">
-                        {project.description}
-                      </p>
-                    )}
-                    <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t border-border/50 mt-1">
+                    
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground pt-1">
+                      <div>
+                        <span className="font-medium text-foreground">{run.totalCases}</span> total
+                      </div>
+                      {run.status === 'COMPLETED' && run.totalCases > 0 && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-emerald-500 font-medium">{run.passedCases} pass</span>
+                          <span className="text-destructive font-medium">{run.failedCases} fail</span>
+                          <span className="text-xs px-1.5 py-0.5 rounded-sm bg-muted text-foreground">
+                            {Math.round((run.passedCases / run.totalCases) * 100)}%
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50 mt-1">
                       <span>
-                        {tCommon('back')}: {new Date(project.updatedAt).toLocaleDateString()}
+                        {new Date(run.createdAt).toLocaleString()}
                       </span>
                       <span className="flex items-center gap-1 text-primary/80 group-hover:translate-x-0.5 transition-transform">
-                        {t('quickActions')} <ArrowRightIcon size={12} weight="bold" />
+                        View Details <ArrowRightIcon size={12} weight="bold" />
                       </span>
                     </div>
                   </Link>

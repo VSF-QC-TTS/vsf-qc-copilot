@@ -17,6 +17,7 @@ import {
 
 import { Link, useRouter } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
+import { useBreadcrumbStore } from '@/lib/store/breadcrumb-store';
 import { apiClient } from '@/lib/api/client';
 import type {
   EvaluationRunStatus,
@@ -127,6 +128,12 @@ export default function ProjectDetailPage() {
     queryFn: () =>
       apiClient.get<ProjectResponse>('/api/v1/projects/' + projectId),
   });
+
+  React.useEffect(() => {
+    if (project) {
+      useBreadcrumbStore.getState().setMapping(projectId, project.name);
+    }
+  }, [project, projectId]);
 
   // --- Fetch recent evaluations ---
   const {

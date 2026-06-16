@@ -137,6 +137,30 @@ public class EvaluationRunController {
   }
 
   @Operation(
+      summary = "List global evaluation runs",
+      description = "Returns a paginated list of evaluation runs created by the user across all projects")
+  @ApiResponses(
+      value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Page of evaluation runs",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = EvaluationRunPageResponse.class)))
+      })
+  @GetMapping(
+      value = "/api/v1/evaluation-runs",
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  public EvaluationRunPageResponse listGlobalEvaluationRuns(
+      @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+          Pageable pageable,
+      Principal principal) {
+    return evaluationRunService.listGlobalEvaluationRuns(pageable, principal.getName());
+  }
+
+
+  @Operation(
       summary = "Get evaluation run detail",
       description = "Returns a single evaluation run by public identifier.")
   @ApiResponses({
