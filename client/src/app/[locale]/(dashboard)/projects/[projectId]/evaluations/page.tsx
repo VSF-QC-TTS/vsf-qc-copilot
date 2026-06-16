@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
 import { PlusIcon } from '@phosphor-icons/react';
+import { motion } from 'motion/react';
 
 import { Button } from '@/components/ui/button';
 import { PageShell } from '@/components/layout/page-shell';
@@ -16,6 +17,20 @@ import { StartEvaluationDialog } from '@/components/evaluations/start-evaluation
 import { apiClient } from '@/lib/api/client';
 import type { PageResponse } from '@/lib/api/types';
 import { useRouter } from '@/i18n/navigation';
+
+// ---------------------------------------------------------------------------
+// Motion Variants
+// ---------------------------------------------------------------------------
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.1 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 100, damping: 15 } },
+};
 
 // ---------------------------------------------------------------------------
 // Row type
@@ -126,15 +141,26 @@ export default function EvaluationsPage() {
       {
         accessorKey: 'progress',
         header: t('columns.progress'),
-        size: 100,
+        size: 140,
         cell: ({ row }) => {
           const total = row.original.totalCases;
           const completed = row.original.completedCases;
           const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
           return (
-            <span className="text-muted-foreground">
-              {pct}%
-            </span>
+            <div className="flex flex-col gap-1.5 w-[100px]">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">{completed}/{total}</span>
+                <span className="font-medium text-foreground">{pct}%</span>
+              </div>
+              <div className="h-1.5 w-full bg-secondary overflow-hidden rounded-full">
+                <motion.div 
+                  className="h-full bg-primary" 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${pct}%` }}
+                  transition={{ duration: 1, ease: 'easeOut' }}
+                />
+              </div>
+            </div>
           );
         },
       },
@@ -168,33 +194,44 @@ export default function EvaluationsPage() {
         </Button>
       }
     >
-      <DataTable
-        columns={columns}
-        data={runs}
-        totalItems={totalItems}
-        pageIndex={page}
-        pageSize={PAGE_SIZE}
-        onPaginationChange={(nextPage) => setPage(nextPage)}
-        loading={isLoading}
-        onRowClick={handleRowClick}
-        emptyMessage={t('noEvaluations')}
-        emptyAction={
-          <Button onClick={() => setDialogOpen(true)}>
-            <PlusIcon weight="bold" />
-            {t('startEvaluation')}
-          </Button>
-        }
-      />
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="space-y-4"
+      >
+        <motion.div variants={itemVariants}>
+          <DataTable
+            columns={columns}
+            data={runs}
+            totalItems={totalItems}
+            pageIndex={page}
+            pageSize={PAGE_SIZE}
+            onPaginationChange={(nextPage) => setPage(nextPage)}
+            loading={isLoading}
+            onRowClick={handleRowClick}
+            emptyMessage={t('noEvaluations')}
+            emptyAction={
+              <Button onClick={() => setDialogOpen(true)}>
+                <PlusIcon weight="bold" />
+                {t('startEvaluation')}
+              </Button>
+            }
+          />
+        </motion.div>
 
-      {totalItems > 0 && (
-        <DataTablePagination
-          pageIndex={page}
-          pageSize={PAGE_SIZE}
-          totalItems={totalItems}
-          totalPages={totalPages}
-          onPageChange={setPage}
-        />
-      )}
+        {totalItems > 0 && (
+          <motion.div variants={itemVariants}>
+            <DataTablePagination
+              pageIndex={page}
+              pageSize={PAGE_SIZE}
+              totalItems={totalItems}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
+          </motion.div>
+        )}
+      </motion.div>
 
       <StartEvaluationDialog
         open={dialogOpen}
