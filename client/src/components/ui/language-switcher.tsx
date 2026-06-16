@@ -2,6 +2,7 @@
 
 import { useLocale } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
+import { useRouter as useNextRouter } from "next/navigation";
 import { TranslateIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import type { Locale } from "@/i18n/config";
@@ -15,12 +16,14 @@ const localeLabels: Record<Locale, string> = {
 export function LanguageSwitcher() {
   const locale = useLocale() as Locale;
   const router = useRouter();
+  const nextRouter = useNextRouter();
   const pathname = usePathname();
 
   const nextLocale = locales.find((l) => l !== locale) ?? locales[0];
 
   function handleSwitch() {
     router.replace(pathname, { locale: nextLocale });
+    nextRouter.refresh();
   }
 
   return (
