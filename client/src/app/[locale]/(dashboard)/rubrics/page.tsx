@@ -6,12 +6,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
 import { PlusIcon, CopyIcon, ListChecksIcon } from '@phosphor-icons/react';
 
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { PageShell } from '@/components/layout/page-shell';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { CreateRubricDialog } from '@/components/rubrics/create-rubric-dialog';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { motion, AnimatePresence } from 'motion/react';
 import { apiClient } from '@/lib/api/client';
 import type { PageResponse } from '@/lib/api/types';
@@ -48,6 +48,20 @@ function formatDate(iso: string): string {
     day: 'numeric',
   });
 }
+
+// ---------------------------------------------------------------------------
+// Motion Variants
+// ---------------------------------------------------------------------------
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.1 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 100, damping: 15 } },
+};
 
 // ---------------------------------------------------------------------------
 // Page component
@@ -216,19 +230,36 @@ export default function RubricsPage() {
         </Button>
       }
     >
-      <Tabs
-        defaultValue={activeTab}
-        value={activeTab}
-        onValueChange={(v) => handleTabChange(v as TabValue)}
-        className="w-full space-y-6"
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="space-y-6"
       >
-        <TabsList className="w-full justify-start h-auto p-1 bg-muted/50 rounded-lg overflow-x-auto flex-nowrap mb-6">
-          {tabs.map((tab) => (
-            <TabsTrigger key={tab.value} value={tab.value} className="rounded-md">
-              {tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        <motion.div variants={itemVariants} className="flex items-center gap-1 p-1 bg-muted/40 border border-border/50 rounded-lg w-fit overflow-x-auto flex-nowrap">
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.value;
+            return (
+              <button
+                key={tab.value}
+                onClick={() => handleTabChange(tab.value)}
+                className={cn(
+                  "relative px-4 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap",
+                  isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="rubricsFilterTab"
+                    className="absolute inset-0 bg-background shadow-xs border border-border/50 rounded-md"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10">{tab.label}</span>
+              </button>
+            );
+          })}
+        </motion.div>
 
         <AnimatePresence mode="wait">
           <motion.div
@@ -240,37 +271,41 @@ export default function RubricsPage() {
             className="space-y-4"
           >
             {/* Data table */}
-            <DataTable
-              columns={columns}
-              data={rubrics}
-              totalItems={totalItems}
-              pageIndex={page}
-              pageSize={PAGE_SIZE}
-              onPaginationChange={handlePaginationChange}
-              loading={isLoading}
-              onRowClick={activeTab === 'my' ? handleRowClick : undefined}
-              emptyMessage={t('noRubrics')}
-              emptyAction={
-                <Button onClick={() => setDialogOpen(true)}>
-                  <ListChecksIcon weight="bold" className="mr-2" />
-                  {t('createRubric')}
-                </Button>
-              }
-            />
+            <motion.div variants={itemVariants}>
+              <DataTable
+                columns={columns}
+                data={rubrics}
+                totalItems={totalItems}
+                pageIndex={page}
+                pageSize={PAGE_SIZE}
+                onPaginationChange={handlePaginationChange}
+                loading={isLoading}
+                onRowClick={activeTab === 'my' ? handleRowClick : undefined}
+                emptyMessage={t('noRubrics')}
+                emptyAction={
+                  <Button onClick={() => setDialogOpen(true)}>
+                    <ListChecksIcon weight="bold" className="mr-2" />
+                    {t('createRubric')}
+                  </Button>
+                }
+              />
+            </motion.div>
 
             {/* Pagination */}
             {totalItems > 0 && (
-              <DataTablePagination
-                pageIndex={page}
-                pageSize={PAGE_SIZE}
-                totalItems={totalItems}
-                totalPages={totalPages}
-                onPageChange={setPage}
-              />
+              <motion.div variants={itemVariants}>
+                <DataTablePagination
+                  pageIndex={page}
+                  pageSize={PAGE_SIZE}
+                  totalItems={totalItems}
+                  totalPages={totalPages}
+                  onPageChange={setPage}
+                />
+              </motion.div>
             )}
           </motion.div>
         </AnimatePresence>
-      </Tabs>
+      </motion.div>
 
       {/* Create rubric dialog */}
       <CreateRubricDialog open={dialogOpen} onOpenChange={setDialogOpen} />

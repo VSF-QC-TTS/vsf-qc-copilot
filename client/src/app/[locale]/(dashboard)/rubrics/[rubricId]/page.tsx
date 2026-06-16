@@ -85,6 +85,20 @@ function errorMessage(error: unknown, tErrors: (key: string) => string): string 
 }
 
 // ---------------------------------------------------------------------------
+// Motion Variants
+// ---------------------------------------------------------------------------
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.1 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 100, damping: 15 } },
+};
+
+// ---------------------------------------------------------------------------
 // Page component
 // ---------------------------------------------------------------------------
 
@@ -369,152 +383,158 @@ export default function RubricDetailPage({
       backHref="/rubrics"
       backLabel={tCommon('back')}
     >
-      {/* Metadata edit section */}
       <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-xl border bg-card/50 shadow-sm backdrop-blur-sm p-5"
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="space-y-6"
       >
-        <AnimatePresence mode="wait">
-          {isEditing ? (
-            <motion.div
-              key="editing"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-4 overflow-hidden"
-            >
-              {metaError && (
-                <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                  {metaError}
-                </div>
-              )}
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5 sm:col-span-2">
-                  <label className="text-sm font-medium text-foreground">
-                    {t('rubricName')}
-                  </label>
-                  <input
-                    type="text"
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    className={inputClassName}
-                  />
-                </div>
-                <div className="space-y-1.5 sm:col-span-2">
-                  <label className="text-sm font-medium text-foreground">
-                    {t('rubricDescription')}
-                  </label>
-                  <textarea
-                    value={editDescription}
-                    onChange={(e) => setEditDescription(e.target.value)}
-                    className={textareaClassName}
-                  />
-                </div>
-              </div>
-              <div className="flex gap-2 pt-2">
-                <Button
-                  size="sm"
-                  disabled={metaMutation.isPending}
-                  onClick={handleSaveMeta}
-                >
-                  {metaMutation.isPending ? tCommon('loading') : tCommon('save')}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditing(false)}
-                >
-                  {tCommon('cancel')}
-                </Button>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="viewing"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="flex flex-col sm:flex-row sm:items-start justify-between gap-4"
-            >
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground flex items-center gap-2">
-                  <span className="font-semibold">{t('columns.project')}:</span>
-                  {rubric?.projectName ?? tCommon('notAvailable')}
-                </p>
-                {rubric?.description && (
-                  <p className="text-sm text-foreground mt-2 max-w-2xl leading-relaxed">
-                    {rubric.description}
-                  </p>
+        {/* Metadata edit section */}
+        <motion.div
+          variants={itemVariants}
+          className="rounded-xl border bg-card/50 shadow-sm backdrop-blur-sm p-5"
+        >
+          <AnimatePresence mode="wait">
+            {isEditing ? (
+              <motion.div
+                key="editing"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="space-y-4 overflow-hidden"
+              >
+                {metaError && (
+                  <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                    {metaError}
+                  </div>
                 )}
-              </div>
-              <Button variant="outline" size="sm" onClick={startEdit} className="shrink-0">
-                <PencilSimpleIcon weight="bold" className="mr-2 size-4" />
-                {tCommon('edit')}
-              </Button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <label className="text-sm font-medium text-foreground">
+                      {t('rubricName')}
+                    </label>
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className={inputClassName}
+                    />
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <label className="text-sm font-medium text-foreground">
+                      {t('rubricDescription')}
+                    </label>
+                    <textarea
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      className={textareaClassName}
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    size="sm"
+                    disabled={metaMutation.isPending}
+                    onClick={handleSaveMeta}
+                  >
+                    {metaMutation.isPending ? tCommon('loading') : tCommon('save')}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditing(false)}
+                  >
+                    {tCommon('cancel')}
+                  </Button>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="viewing"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="flex flex-col sm:flex-row sm:items-start justify-between gap-4"
+              >
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground flex items-center gap-2">
+                    <span className="font-semibold">{t('columns.project')}:</span>
+                    {rubric?.projectName ?? tCommon('notAvailable')}
+                  </p>
+                  {rubric?.description && (
+                    <p className="text-sm text-foreground mt-2 max-w-2xl leading-relaxed">
+                      {rubric.description}
+                    </p>
+                  )}
+                </div>
+                <Button variant="outline" size="sm" onClick={startEdit} className="shrink-0">
+                  <PencilSimpleIcon weight="bold" className="mr-2 size-4" />
+                  {tCommon('edit')}
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
 
-      {/* Versions section */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">{t('versions')}</h2>
-          <Button
-            size="sm"
-            disabled={createVersionMutation.isPending}
-            onClick={openCreateVersion}
-          >
-            <PlusIcon weight="bold" />
-            {t('createVersion')}
-          </Button>
-        </div>
-
-        {actionError && (
-          <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-            {actionError}
+        {/* Versions section */}
+        <motion.div variants={itemVariants} className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">{t('versions')}</h2>
+            <Button
+              size="sm"
+              disabled={createVersionMutation.isPending}
+              onClick={openCreateVersion}
+            >
+              <PlusIcon weight="bold" />
+              {t('createVersion')}
+            </Button>
           </div>
-        )}
 
-        <DataTable
-          columns={versionColumns}
-          data={versions}
-          totalItems={totalVersions}
-          pageIndex={vPage}
-          pageSize={PAGE_SIZE}
-          onPaginationChange={(nextPage) => {
-            setVPage(nextPage);
-          }}
-          loading={versionsLoading}
-          onRowClick={handleVersionRowClick}
-          emptyMessage={t('noRubrics')}
-        />
+          {actionError && (
+            <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {actionError}
+            </div>
+          )}
 
-        {totalVersions > 0 && (
-          <DataTablePagination
+          <DataTable
+            columns={versionColumns}
+            data={versions}
+            totalItems={totalVersions}
             pageIndex={vPage}
             pageSize={PAGE_SIZE}
-            totalItems={totalVersions}
-            totalPages={totalVersionPages}
-            onPageChange={setVPage}
+            onPaginationChange={(nextPage) => {
+              setVPage(nextPage);
+            }}
+            loading={versionsLoading}
+            onRowClick={handleVersionRowClick}
+            emptyMessage={t('noRubrics')}
           />
-        )}
-      </div>
 
-      <CreateVersionDialog
-        open={createVersionOpen}
-        versions={sourceVersions}
-        selectedVersionId={effectiveSelectedSourceVersionId}
-        loadingVersions={allVersionsLoading}
-        submitting={createVersionMutation.isPending}
-        error={createVersionError}
-        onSelect={setSelectedSourceVersionId}
-        onSubmit={submitCreateVersion}
-        onClose={closeCreateVersion}
-      />
+          {totalVersions > 0 && (
+            <DataTablePagination
+              pageIndex={vPage}
+              pageSize={PAGE_SIZE}
+              totalItems={totalVersions}
+              totalPages={totalVersionPages}
+              onPageChange={setVPage}
+            />
+          )}
+        </motion.div>
+
+        <CreateVersionDialog
+          open={createVersionOpen}
+          versions={sourceVersions}
+          selectedVersionId={effectiveSelectedSourceVersionId}
+          loadingVersions={allVersionsLoading}
+          submitting={createVersionMutation.isPending}
+          error={createVersionError}
+          onSelect={setSelectedSourceVersionId}
+          onSubmit={submitCreateVersion}
+          onClose={closeCreateVersion}
+        />
+      </motion.div>
     </PageShell>
   );
 }
