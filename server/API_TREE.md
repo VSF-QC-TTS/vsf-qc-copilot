@@ -206,6 +206,8 @@ Auth
         `-- Target API fallback public cho demo
 
 |-- /api/v1/evaluation-runs [auth]
+|   |-- GET /
+|   |   `-- List toàn bộ evaluation runs của user (across all projects)
 |   `-- /{runPublicId}
 |       |-- GET /
 |       |   `-- Chi tiết evaluation run
@@ -334,6 +336,8 @@ User
     `-- cấu hình provider/model/API key cho AI judge của project
 17. POST /api/v1/projects/{projectPublicId}/evaluation-runs
     `-- tạo evaluation run + job, trả 202
+17b. GET /api/v1/evaluation-runs
+    `-- list toàn bộ runs của user across projects
 17. GET  /api/v1/jobs/{jobPublicId}
     `-- poll job progress
 18. GET  /api/v1/evaluation-runs/{runPublicId}

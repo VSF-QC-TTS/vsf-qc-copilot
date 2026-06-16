@@ -158,6 +158,7 @@ Implemented API slices after auth:
 - Evaluation runs and jobs:
   - `POST /api/v1/projects/{projectPublicId}/evaluation-runs` creates an evaluation run + job, validates that the referenced dataset is `APPROVED`, rubric version is `PUBLISHED`, connector is active, and judge model is active under the same project, then pushes a job message to a Redis queue and returns `202 Accepted` with `runPublicId` and `jobPublicId`.
   - `GET /api/v1/projects/{projectPublicId}/evaluation-runs` lists runs under a project with pagination.
+  - `GET /api/v1/evaluation-runs` lists all evaluation runs owned by the authenticated user across all projects with pagination.
   - `GET /api/v1/evaluation-runs/{runPublicId}` returns run detail (flat path, owner-scoped).
   - `GET /api/v1/evaluation-runs/{runPublicId}/results` lists evaluation results with optional `judgeStatus` and `qcStatus` filters, pagination, test-case review context, and QC fields (`qcStatus`, `qcNote`, `picBug`).
   - Result list responses include `criteriaResults`: one structured row per rubric criterion result with `metricKey`, criterion `name`, criterion-level `status`, `score`, `reason`, and `graderError`. Keep this structure for QC UI; `criteriaResultsJson` remains for compatibility/raw inspection.
