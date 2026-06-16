@@ -23,10 +23,10 @@ type EvaluationRunSummary = {
   completedCases: number;
   passedCases: number;
   failedCases: number;
-  project: {
+  project?: {
     publicId: string;
     name: string;
-  };
+  } | null;
 };
 
 const containerVariants = {
@@ -152,12 +152,12 @@ export default function DashboardPage() {
                   whileHover={{ y: -3, transition: { duration: 0.2 } }}
                 >
                   <Link
-                    href={`/projects/${run.project.publicId}/evaluations/${run.publicId}`}
+                    href={run.project?.publicId ? `/projects/${run.project.publicId}/evaluations/${run.publicId}` : '#'}
                     className="group flex flex-col gap-2 rounded-lg border bg-card p-4 transition-colors hover:border-primary/30 hover:shadow-xs duration-200"
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-foreground group-hover:text-primary transition-colors flex items-center gap-2">
-                        {run.project.name}
+                        {run.project?.name || 'Unknown Project'}
                         <span className="text-muted-foreground font-normal text-xs font-mono">
                           #{run.publicId.slice(0, 8)}
                         </span>
