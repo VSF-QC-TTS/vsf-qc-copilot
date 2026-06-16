@@ -15,7 +15,7 @@ export default function DashboardLayout({
 
   return (
     <AuthGuard>
-      <div className="relative flex min-h-[100dvh] overflow-hidden">
+      <div className="relative flex h-[100dvh] overflow-hidden">
         <Sidebar />
         <div className={cn(
           "flex flex-1 flex-col overflow-hidden transition-[margin] duration-300 ease-in-out",

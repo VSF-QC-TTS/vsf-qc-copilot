@@ -109,9 +109,9 @@ export function Sidebar() {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={handleMouseLeave}
         className={cn(
-          'hidden lg:flex lg:flex-col relative overflow-visible group',
-          'absolute inset-y-0 left-0 z-40',
-          'min-h-[100dvh] shrink-0 border-r bg-card transition-[width,box-shadow] duration-300 ease-in-out',
+          'hidden lg:flex lg:flex-col overflow-visible group',
+          'fixed inset-y-0 left-0 z-40',
+          'h-[100dvh] shrink-0 border-r bg-card transition-[width,box-shadow] duration-300 ease-in-out',
           isExpanded ? 'w-60 shadow-lg' : 'w-16',
         )}
       >
