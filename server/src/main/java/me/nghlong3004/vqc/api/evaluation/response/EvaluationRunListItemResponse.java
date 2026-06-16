@@ -25,4 +25,11 @@ public record EvaluationRunListItemResponse(
     @Schema(description = "Completed test cases.", example = "8") int completedCases,
     @Schema(description = "Passed test cases.", example = "6") int passedCases,
     @Schema(description = "Failed test cases.", example = "2") int failedCases,
-    @Schema(description = "Run creation time.") OffsetDateTime createdAt) {}
+    @Schema(description = "Run creation time.") OffsetDateTime createdAt,
+    @Schema(description = "Project summary.", nullable = true) ProjectSummary project) {
+
+  @Schema(name = "ProjectSummary", description = "Summary of the project")
+  public record ProjectSummary(
+      @Schema(description = "Project public identifier.") UUID publicId,
+      @Schema(description = "Project name.") String name) {}
+}

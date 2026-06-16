@@ -60,7 +60,9 @@ public class EvaluationRunMapper {
             + safeInt(run.getWarningCases()) + safeInt(run.getErrorCases()),
         safeInt(run.getPassedCases()),
         safeInt(run.getFailedCases()),
-        run.getCreatedAt());
+        run.getCreatedAt(),
+        run.getProject() != null ? new EvaluationRunListItemResponse.ProjectSummary(
+            run.getProject().getPublicId(), run.getProject().getName()) : null);
   }
 
   /**
