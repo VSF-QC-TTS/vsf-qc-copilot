@@ -1,13 +1,7 @@
 # ============================================================
 # VSF QC Copilot — Local Docker Compose
-# Frontend (Next.js + nginx) + Backend (Spring Boot) + DB + Redis
+# Frontend (Next.js standalone) + Backend (Spring Boot) + DB + Redis
 # All ports bound to 127.0.0.1 only
-# ============================================================
-# Usage:
-#   docker compose up --build          # Start all services
-#   docker compose up --build api db redis  # Backend only (FE runs natively)
-#   docker compose down -v             # Stop + remove volumes
-#   docker compose logs -f api         # Tail API logs
 # ============================================================
 
 services:
@@ -20,13 +14,13 @@ services:
     ports:
       - "127.0.0.1:5432:5432"
     environment:
-      POSTGRES_DB: vqc_dev
-      POSTGRES_USER: vqc
-      POSTGRES_PASSWORD: vqc
+      POSTGRES_DB: ${POSTGRES_DB:-vqc_dev}
+      POSTGRES_USER: ${POSTGRES_USER:-vqc}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vqc}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vqc -d vqc_dev"]
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -61,18 +55,21 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    env_file: server/.env
+    env_file:
+      - server/.env
     environment:
-      # Override to point to compose services
-      SPRING_PROFILES_ACTIVE: dev
+      SPRING_PROFILES_ACTIVE: prod
+
       DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-vqc_dev}
       DB_USERNAME: ${POSTGRES_USER:-vqc}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-vqc}
+
       REDIS_HOST: redis
+
       VQC_PROMPTFOO_MODE: cli
       VQC_PROMPTFOO_WORK_DIR: /app/runs
       VQC_PROMPTFOO_BINARY_PATH: /app/tooling/promptfoo-runner/node_modules/.bin/promptfoo
-      # CORS: allow client dev server
+
       WEB_BASE_URL: http://localhost:3000
       SERVER_BASE_URL: http://localhost:8080
     volumes:
@@ -81,17 +78,18 @@ services:
       - app-logs:/app/logs
 
   # ---------------------------------------------------------
-  # Frontend (Next.js + nginx)
+  # Frontend (Next.js standalone)
   # ---------------------------------------------------------
   client:
     build:
       context: ./client
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:8080
+        NEXT_PUBLIC_API_URL: "http://localhost:8080"
     restart: unless-stopped
+    init: true
     ports:
-      - "127.0.0.1:3000:80"
+      - "127.0.0.1:3000:3000"
     depends_on:
       - api
 

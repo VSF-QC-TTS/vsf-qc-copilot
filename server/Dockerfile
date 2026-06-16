@@ -10,7 +10,6 @@ FROM eclipse-temurin:21-jdk AS builder
 
 WORKDIR /build
 
-# Cache Maven wrapper + pom first
 COPY server/.mvn .mvn
 COPY server/mvnw mvnw
 COPY server/pom.xml pom.xml
@@ -21,7 +20,11 @@ RUN chmod +x mvnw \
 COPY server/src src
 
 RUN ./mvnw package -DskipTests -B -q \
-    && mv target/*.jar app.jar
+    && find target -maxdepth 1 -type f -name "*.jar" \
+        ! -name "*sources.jar" \
+        ! -name "*javadoc.jar" \
+        -exec cp {} app.jar \; \
+        -quit
 
 # -----------------------------------------------------------
 # Stage 2: Install pinned Promptfoo runner
@@ -34,6 +37,13 @@ COPY tooling/promptfoo-runner/package.json tooling/promptfoo-runner/package-lock
 
 RUN npm ci --omit=dev --no-audit --no-fund
 
+# Copy runner source/config too, if any
+COPY tooling/promptfoo-runner/ ./
+
+# Optional sanity check
+RUN node --version \
+    && ./node_modules/.bin/promptfoo --version
+
 # -----------------------------------------------------------
 # Stage 3: Production runtime
 # -----------------------------------------------------------
@@ -44,18 +54,22 @@ LABEL description="VSF QC Copilot Backend API"
 
 WORKDIR /app
 
-COPY --from=builder /build/app.jar app.jar
-COPY --from=promptfoo /usr/local/bin/node /usr/local/bin/node
-COPY --from=promptfoo /promptfoo-runner /app/tooling/promptfoo-runner
-
-# Default Spring profile
 ENV SPRING_PROFILES_ACTIVE=prod
 ENV HOME=/app
+ENV PATH="/app/tooling/promptfoo-runner/node_modules/.bin:${PATH}"
 
-# Create runtime directories + non-root user
 RUN mkdir -p /app/runs /app/exports /app/logs \
     && addgroup --system vqc \
-    && adduser --system --ingroup vqc vqc \
+    && adduser --system --ingroup vqc vqc
+
+COPY --chown=vqc:vqc --from=builder /build/app.jar /app/app.jar
+COPY --from=promptfoo /usr/local/bin/node /usr/local/bin/node
+COPY --chown=vqc:vqc --from=promptfoo /promptfoo-runner /app/tooling/promptfoo-runner
+
+# Validate Node + Promptfoo in the final runtime image
+RUN node --version \
+    && cd /app/tooling/promptfoo-runner \
+    && ./node_modules/.bin/promptfoo --version \
     && chown -R vqc:vqc /app
 
 USER vqc
