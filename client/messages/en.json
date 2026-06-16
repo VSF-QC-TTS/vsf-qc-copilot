@@ -409,6 +409,10 @@
     "noConnectorsDesc": "Create the first API connector for this project.",
     "saving": "Saving...",
     "connectorDetail": "Connector Detail",
+    "tabs": {
+      "overview": "Overview & Config",
+      "testRun": "Test Run"
+    },
     "sections": {
       "basicInfo": "Basic Info",
       "requestConfig": "Request Configuration",

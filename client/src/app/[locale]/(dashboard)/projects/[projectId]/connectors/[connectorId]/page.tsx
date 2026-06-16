@@ -97,8 +97,8 @@ function FormSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-6">
-      <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+    <section className="space-y-5 rounded-xl border border-border/50 bg-card p-6 shadow-sm transition-all hover:shadow-md">
+      <h2 className="text-base font-semibold tracking-tight text-foreground">{title}</h2>
       {children}
     </section>
   );
@@ -556,9 +556,9 @@ export default function ConnectorDetailPage() {
             className="w-full"
           >
             <Tabs defaultValue="overview" className="w-full space-y-6">
-          <TabsList className="w-full justify-start h-auto p-1 bg-muted/50 rounded-lg overflow-x-auto flex-nowrap">
-            <TabsTrigger value="overview" className="rounded-md">Overview & Config</TabsTrigger>
-            <TabsTrigger value="test" className="rounded-md">Test Run</TabsTrigger>
+          <TabsList className="w-full justify-start h-11 p-1 bg-muted/50 rounded-lg overflow-x-auto flex-nowrap">
+            <TabsTrigger value="overview" className="rounded-md px-4">{t('tabs.overview')}</TabsTrigger>
+            <TabsTrigger value="test" className="rounded-md px-4">{t('tabs.testRun')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6 m-0 outline-none">
@@ -738,9 +738,9 @@ export default function ConnectorDetailPage() {
                 {t('testRun.description')}
               </p>
 
-              <div className="grid gap-8 lg:grid-cols-2">
+              <div className="grid gap-6 lg:grid-cols-2">
                 {/* Form Side */}
-                <div className="rounded-lg border bg-card p-6 shadow-sm">
+                <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm transition-all hover:shadow-md">
                   <form
                     onSubmit={testForm.handleSubmit(onTestRun)}
                     className="space-y-4"
@@ -819,7 +819,7 @@ export default function ConnectorDetailPage() {
                 </div>
 
                 {/* Result Side */}
-                <div className="rounded-lg border bg-muted/30 p-6 shadow-inner backdrop-blur-sm">
+                <div className="rounded-xl border border-border/50 bg-muted/30 p-6 shadow-inner backdrop-blur-sm transition-all hover:shadow-md">
                   {testRunning ? (
                     <div className="flex h-full min-h-[200px] flex-col items-center justify-center space-y-4 text-muted-foreground">
                       <SpinnerGapIcon className="size-8 animate-spin" />

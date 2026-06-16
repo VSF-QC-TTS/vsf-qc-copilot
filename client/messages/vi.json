@@ -409,6 +409,10 @@
     "noConnectorsDesc": "Hãy tạo kết nối API đầu tiên để bắt đầu kết nối với chatbot.",
     "saving": "Đang lưu...",
     "connectorDetail": "Chi tiết connector",
+    "tabs": {
+      "overview": "Tổng quan & Cấu hình",
+      "testRun": "Chạy thử nghiệm"
+    },
     "sections": {
       "basicInfo": "Thông tin cơ bản",
       "requestConfig": "Cấu hình request",
