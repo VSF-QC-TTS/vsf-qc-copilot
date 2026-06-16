@@ -11,7 +11,7 @@ import {
   ListChecksIcon,
   ChartBarIcon,
   ArchiveIcon,
-  RobotIcon,
+  BrainIcon,
   ArrowRightIcon,
 } from '@phosphor-icons/react';
 
@@ -221,7 +221,7 @@ export default function ProjectDetailPage() {
       key: 'readinessJudgeModel',
       href: `/projects/${projectId}/judge-models`,
       ready: (activeJudgeModelsData?.totalItems ?? 0) > 0,
-      icon: RobotIcon,
+      icon: BrainIcon,
     },
     {
       key: 'readinessRubric',
