@@ -33,6 +33,9 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:6379:6379"
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
