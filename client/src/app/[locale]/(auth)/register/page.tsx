@@ -32,6 +32,7 @@ export default function RegisterPage() {
     register,
     handleSubmit,
     control,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -88,6 +89,18 @@ export default function RegisterPage() {
   }
 
   if (isSuccess) {
+    const email = getValues("email");
+    const domain = email.split("@")[1] || "";
+    let mailUrl = `https://${domain}`;
+    
+    if (domain === "gmail.com") {
+      mailUrl = "https://mail.google.com/";
+    } else if (domain.includes("yahoo")) {
+      mailUrl = "https://mail.yahoo.com/";
+    } else if (domain === "outlook.com" || domain === "hotmail.com") {
+      mailUrl = "https://outlook.live.com/";
+    }
+
     return (
       <div className="flex flex-col items-center gap-4 text-center py-4 animate-in zoom-in-95 duration-400">
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 shadow-xs">
@@ -97,11 +110,18 @@ export default function RegisterPage() {
           <h3 className="text-lg font-bold text-foreground">Đăng ký tài khoản thành công</h3>
           <p className="text-sm text-muted-foreground max-w-[280px]">{t("registerSuccess")}</p>
         </div>
-        <Button asChild className="mt-2 transition-transform active:scale-[0.98] w-full max-w-[150px]">
-          <Link href="/login">
-            {t("goToLogin")}
-          </Link>
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-3 mt-2 w-full max-w-[300px] justify-center">
+          <Button asChild variant="outline" className="transition-transform active:scale-[0.98] w-full sm:flex-1">
+            <Link href="/login">
+              {t("goToLogin")}
+            </Link>
+          </Button>
+          <Button asChild className="transition-transform active:scale-[0.98] w-full sm:flex-1">
+            <a href={mailUrl} target="_blank" rel="noopener noreferrer">
+              Kiểm tra email
+            </a>
+          </Button>
+        </div>
       </div>
     );
   }
