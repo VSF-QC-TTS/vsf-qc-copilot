@@ -5,6 +5,9 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
+import { FunnelIcon, SortAscendingIcon, CaretDownIcon } from '@phosphor-icons/react';
+
+import { cn } from '@/lib/utils';
 
 import { PageShell } from '@/components/layout/page-shell';
 import { DataTable } from '@/components/data-table/data-table';
@@ -22,14 +25,21 @@ import type { PageResponse } from '@/lib/api/types';
 // Filter constants
 // ---------------------------------------------------------------------------
 
-const JUDGE_STATUS_OPTIONS = ['', 'PASS', 'FAIL', 'WARNING', 'ERROR'] as const;
+const JUDGE_STATUS_OPTIONS = ['ALL', 'PASS', 'FAIL', 'WARNING', 'ERROR'] as const;
 const QC_STATUS_OPTIONS = [
-  '',
+  'ALL',
   'NOT_REVIEWED',
   'PASS',
   'FAIL',
   'NEED_FIX',
   'IGNORED',
+] as const;
+
+const SORT_OPTIONS = [
+  { value: 'createdAt,asc', labelKey: 'sortOldest' },
+  { value: 'createdAt,desc', labelKey: 'sortNewest' },
+  { value: 'judgeScore,desc', labelKey: 'sortHighestScore' },
+  { value: 'judgeScore,asc', labelKey: 'sortLowestScore' },
 ] as const;
 const PAGE_SIZE = 10;
 
@@ -126,17 +136,18 @@ export default function ResultsPage() {
   const runId = params.runId as string;
 
   const [page, setPage] = useState(0);
-  const [judgeFilter, setJudgeFilter] = useState('');
-  const [qcFilter, setQcFilter] = useState('');
+  const [judgeFilter, setJudgeFilter] = useState('ALL');
+  const [qcFilter, setQcFilter] = useState('ALL');
+  const [sortBy, setSortBy] = useState('createdAt,asc');
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
 
   // Build query params
   const queryParams = useMemo(() => {
-    const parts = [`page=${page}`, `size=${PAGE_SIZE}`];
-    if (judgeFilter) parts.push(`judgeStatus=${judgeFilter}`);
-    if (qcFilter) parts.push(`qcStatus=${qcFilter}`);
+    const parts = [`page=${page}`, `size=${PAGE_SIZE}`, `sort=${sortBy}`];
+    if (judgeFilter && judgeFilter !== 'ALL') parts.push(`judgeStatus=${judgeFilter}`);
+    if (qcFilter && qcFilter !== 'ALL') parts.push(`qcStatus=${qcFilter}`);
     return parts.join('&');
-  }, [page, judgeFilter, qcFilter]);
+  }, [page, judgeFilter, qcFilter, sortBy]);
 
   // Fetch results
   const { data, isLoading } = useQuery({
@@ -192,13 +203,25 @@ export default function ResultsPage() {
         accessorKey: 'judgeScore',
         header: tDetail('judgeScore'),
         size: 90,
-        cell: ({ row }) => (
-          <span className="text-muted-foreground">
-            {row.original.judgeScore !== null
-              ? row.original.judgeScore
-              : tCommon('notAvailable')}
-          </span>
-        ),
+        cell: ({ row }) => {
+          const score = row.original.judgeScore;
+          if (score === null || score === undefined) {
+            return <span className="text-muted-foreground">{tCommon('notAvailable')}</span>;
+          }
+          const isPerfectScore = score === 1 || score === 100;
+          const isFailScore = score === 0;
+          return (
+            <span
+              className={cn(
+                'font-semibold text-yellow-600 dark:text-yellow-400',
+                isPerfectScore && 'text-green-600 dark:text-green-400',
+                isFailScore && 'text-red-600 dark:text-red-400'
+              )}
+            >
+              {score}
+            </span>
+          );
+        },
       },
       {
         id: 'criteria',
@@ -229,54 +252,87 @@ export default function ResultsPage() {
       backHref={`/projects/${projectId}/evaluations/${runId}`}
       backLabel={tCommon('back')}
     >
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
+      {/* Filters & Sorting */}
+      <div className="flex flex-wrap items-center gap-4 rounded-lg border bg-card p-2 shadow-xs">
+        {/* Judge Filter */}
         <div className="flex items-center gap-2">
-          <label
-            htmlFor="judge-filter"
-            className="text-sm text-muted-foreground"
-          >
+          <label htmlFor="judge-filter" className="text-sm font-medium text-muted-foreground whitespace-nowrap pl-2">
             {tDetail('judgeStatus')}
           </label>
-          <select
-            id="judge-filter"
-            value={judgeFilter}
-            onChange={(e) => {
-              setJudgeFilter(e.target.value);
-              setPage(0);
-            }}
-            className="h-8 rounded-md border border-input bg-background px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            {JUDGE_STATUS_OPTIONS.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt || tCommon('all')}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <FunnelIcon className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <select
+              id="judge-filter"
+              value={judgeFilter}
+              onChange={(e) => {
+                setJudgeFilter(e.target.value);
+                setPage(0);
+              }}
+              className="h-9 w-[140px] appearance-none cursor-pointer rounded-md border border-input bg-background pl-8 pr-8 text-sm outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {JUDGE_STATUS_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt === 'ALL' ? tCommon('all') : opt}
+                </option>
+              ))}
+            </select>
+            <CaretDownIcon className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          </div>
         </div>
 
+        {/* QC Filter */}
         <div className="flex items-center gap-2">
-          <label
-            htmlFor="qc-filter"
-            className="text-sm text-muted-foreground"
-          >
+          <label htmlFor="qc-filter" className="text-sm font-medium text-muted-foreground whitespace-nowrap pl-2">
             {tDetail('qcStatus')}
           </label>
-          <select
-            id="qc-filter"
-            value={qcFilter}
-            onChange={(e) => {
-              setQcFilter(e.target.value);
-              setPage(0);
-            }}
-            className="h-8 rounded-md border border-input bg-background px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            {QC_STATUS_OPTIONS.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt || tCommon('all')}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <FunnelIcon className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <select
+              id="qc-filter"
+              value={qcFilter}
+              onChange={(e) => {
+                setQcFilter(e.target.value);
+                setPage(0);
+              }}
+              className="h-9 w-[160px] appearance-none cursor-pointer rounded-md border border-input bg-background pl-8 pr-8 text-sm outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {QC_STATUS_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt === 'ALL' ? tCommon('all') : opt}
+                </option>
+              ))}
+            </select>
+            <CaretDownIcon className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          </div>
+        </div>
+
+        <div className="h-6 w-px bg-border hidden sm:block" />
+
+        {/* Sorting */}
+        <div className="flex items-center gap-2">
+          <label htmlFor="sort-select" className="text-sm font-medium text-muted-foreground whitespace-nowrap pl-2 sm:pl-0">
+            {t('sortBy')}
+          </label>
+          <div className="relative">
+            <SortAscendingIcon className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <select
+              id="sort-select"
+              value={sortBy}
+              onChange={(e) => {
+                setSortBy(e.target.value);
+                setPage(0);
+              }}
+              className="h-9 w-[180px] appearance-none cursor-pointer rounded-md border border-input bg-background pl-8 pr-8 text-sm outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {SORT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {t(opt.labelKey as any)}
+                </option>
+              ))}
+            </select>
+            <CaretDownIcon className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          </div>
         </div>
       </div>
 

@@ -13,6 +13,8 @@ import {
   SpinnerGapIcon,
   XIcon,
   InfoIcon,
+  CaretDownIcon,
+  CaretUpIcon,
 } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
@@ -94,14 +96,50 @@ type JsonRecord = Record<string, unknown>;
 function FormSection({
   title,
   children,
+  collapsible = false,
+  defaultOpen = true,
 }: {
   title: string;
   children: React.ReactNode;
+  collapsible?: boolean;
+  defaultOpen?: boolean;
 }) {
+  const [isOpen, setIsOpen] = React.useState(defaultOpen);
+
   return (
-    <section className="space-y-5 rounded-xl border border-border/50 bg-card p-6 shadow-sm transition-all hover:shadow-md">
-      <h2 className="text-base font-semibold tracking-tight text-foreground">{title}</h2>
-      {children}
+    <section className={cn("rounded-xl border border-border/50 bg-card shadow-sm transition-all overflow-hidden", !collapsible && "space-y-5 p-6 hover:shadow-md")}>
+      {collapsible ? (
+        <>
+          <div 
+            className="flex items-center justify-between p-6 cursor-pointer select-none hover:bg-muted/50"
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            <h2 className="text-base font-semibold tracking-tight text-foreground">{title}</h2>
+            <div className="text-muted-foreground flex items-center justify-center rounded-md hover:bg-muted p-1">
+              {isOpen ? <CaretUpIcon weight="bold" /> : <CaretDownIcon weight="bold" />}
+            </div>
+          </div>
+          <AnimatePresence initial={false}>
+            {isOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="px-6 pb-6 pt-0 space-y-5">
+                  {children}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </>
+      ) : (
+        <>
+          <h2 className="text-base font-semibold tracking-tight text-foreground">{title}</h2>
+          {children}
+        </>
+      )}
     </section>
   );
 }
@@ -461,7 +499,7 @@ export default function ConnectorDetailPage() {
           </FormSection>
 
           {/* Advanced */}
-          <FormSection title={t('sections.advanced')}>
+          <FormSection title={t('sections.advanced')} collapsible defaultOpen={false}>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <label
@@ -691,7 +729,7 @@ export default function ConnectorDetailPage() {
             </div>
 
             <div className="grid gap-6 lg:grid-cols-2">
-              <FormSection title={t('sections.advanced')}>
+              <FormSection title={t('sections.advanced')} collapsible defaultOpen={false}>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   <ReadOnlyField
                     label={t('fields.responseFormat')}
