@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { CheckCircleIcon, ArchiveIcon, InfoIcon, SparkleIcon } from '@phosphor-icons/react';
+import { CheckCircleIcon, ArchiveIcon } from '@phosphor-icons/react';
 import { motion } from 'motion/react';
 
 import { apiClient } from '@/lib/api/client';

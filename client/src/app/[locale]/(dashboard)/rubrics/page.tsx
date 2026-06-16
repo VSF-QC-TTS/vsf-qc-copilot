@@ -270,25 +270,80 @@ export default function RubricsPage() {
             transition={{ duration: 0.2 }}
             className="space-y-4"
           >
-            {/* Data table */}
+            {/* Data views */}
             <motion.div variants={itemVariants}>
-              <DataTable
-                columns={columns}
-                data={rubrics}
-                totalItems={totalItems}
-                pageIndex={page}
-                pageSize={PAGE_SIZE}
-                onPaginationChange={handlePaginationChange}
-                loading={isLoading}
-                onRowClick={activeTab === 'my' ? handleRowClick : undefined}
-                emptyMessage={t('noRubrics')}
-                emptyAction={
-                  <Button onClick={() => setDialogOpen(true)}>
-                    <ListChecksIcon weight="bold" className="mr-2" />
-                    {t('createRubric')}
-                  </Button>
-                }
-              />
+              {activeTab === 'my' ? (
+                <DataTable
+                  columns={columns}
+                  data={rubrics}
+                  totalItems={totalItems}
+                  pageIndex={page}
+                  pageSize={PAGE_SIZE}
+                  onPaginationChange={handlePaginationChange}
+                  loading={isLoading}
+                  onRowClick={handleRowClick}
+                  emptyMessage={t('noRubrics')}
+                  emptyAction={
+                    <Button onClick={() => setDialogOpen(true)}>
+                      <ListChecksIcon weight="bold" className="mr-2" />
+                      {t('createRubric')}
+                    </Button>
+                  }
+                />
+              ) : (
+                <>
+                  {isLoading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="h-40 rounded-xl bg-muted/50 border border-border/50"></div>
+                      ))}
+                    </div>
+                  ) : rubrics.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {rubrics.map((template) => (
+                        <div 
+                          key={template.publicId} 
+                          className="group relative flex flex-col justify-between rounded-xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary/50 hover:shadow-md"
+                        >
+                          <div className="space-y-3">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
+                              <ListChecksIcon size={24} weight="duotone" />
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-lg tracking-tight line-clamp-1">{template.name}</h3>
+                              {template.description && (
+                                <p className="mt-1 text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                                  {template.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="mt-6 flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">
+                              {formatDate(template.createdAt)}
+                            </span>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              className="w-full sm:w-auto font-medium"
+                              disabled={cloneMutation.isPending}
+                              onClick={(e) => handleClone(e, template.publicId)}
+                            >
+                              <CopyIcon weight="bold" className="mr-2 size-4" />
+                              {t('clone')}
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/20 py-16 text-center">
+                      <ListChecksIcon className="size-10 text-muted-foreground/50 mb-4" />
+                      <p className="text-sm font-medium text-muted-foreground">{t('noRubrics')}</p>
+                    </div>
+                  )}
+                </>
+              )}
             </motion.div>
 
             {/* Pagination */}

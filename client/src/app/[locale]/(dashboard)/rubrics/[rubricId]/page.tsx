@@ -462,18 +462,37 @@ export default function RubricDetailPage({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="flex flex-col sm:flex-row sm:items-start justify-between gap-4"
+                className="flex flex-col sm:flex-row sm:items-start justify-between gap-6"
               >
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground flex items-center gap-2">
-                    <span className="font-semibold">{t('columns.project')}:</span>
-                    {rubric?.projectName ?? tCommon('notAvailable')}
-                  </p>
-                  {rubric?.description && (
-                    <p className="text-sm text-foreground mt-2 max-w-2xl leading-relaxed">
-                      {rubric.description}
-                    </p>
-                  )}
+                <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-4 w-full">
+                  <div className="sm:col-span-2 md:col-span-3 space-y-1 border-r border-border/50 pr-4">
+                    <p className="text-sm font-medium text-muted-foreground mb-2">{t('rubricDescription')}</p>
+                    {rubric?.description ? (
+                      <p className="text-sm text-foreground max-w-3xl leading-relaxed">
+                        {rubric.description}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">{tCommon('notAvailable')}</p>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-5">
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
+                        {t('columns.project')}
+                      </p>
+                      <p className="text-sm font-medium text-foreground">
+                        {rubric?.projectName ?? tCommon('notAvailable')}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
+                        {t('versions')}
+                      </p>
+                      <p className="text-sm font-medium text-foreground">
+                        {totalVersions}
+                      </p>
+                    </div>
+                  </div>
                 </div>
                 <Button variant="outline" size="sm" onClick={startEdit} className="shrink-0">
                   <PencilSimpleIcon weight="bold" className="mr-2 size-4" />
@@ -486,14 +505,14 @@ export default function RubricDetailPage({
 
         {/* Versions section */}
         <motion.div variants={itemVariants} className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">{t('versions')}</h2>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-lg font-semibold tracking-tight">{t('versions')}</h2>
             <Button
               size="sm"
               disabled={createVersionMutation.isPending}
               onClick={openCreateVersion}
             >
-              <PlusIcon weight="bold" />
+              <PlusIcon weight="bold" className="mr-2 size-4" />
               {t('createVersion')}
             </Button>
           </div>
@@ -504,10 +523,53 @@ export default function RubricDetailPage({
             </div>
           )}
 
+          {/* Active Version Hero Card */}
+          {versions.find((v) => v.status === 'PUBLISHED') && (() => {
+            const activeV = versions.find((v) => v.status === 'PUBLISHED')!;
+            return (
+              <div 
+                className="relative rounded-xl border-2 border-emerald-500/40 bg-emerald-500/5 p-6 flex flex-col sm:flex-row items-center justify-between gap-6 cursor-pointer hover:bg-emerald-500/10 transition-colors group overflow-hidden"
+                onClick={() => handleVersionRowClick(activeV)}
+              >
+                <div className="absolute -right-6 -bottom-6 text-emerald-500/10 rotate-12 transition-transform group-hover:scale-110">
+                  <ChecksIcon size={120} weight="fill" />
+                </div>
+                <div className="flex flex-col gap-2 relative z-10">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl font-bold tracking-tight text-emerald-700 dark:text-emerald-400">
+                      v{activeV.versionNumber}
+                    </span>
+                    <StatusBadge status={activeV.status} size="sm" />
+                  </div>
+                  <p className="text-sm font-medium text-emerald-700/80 dark:text-emerald-400/80">
+                    {t('activeVersionDesc')}
+                  </p>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
+                    <span>{t('criteria')}: {activeV.criteriaCount}</span>
+                    <span>{t('columns.createdAt')}: {formatDate(activeV.createdAt)}</span>
+                  </div>
+                </div>
+                <div className="flex gap-2 relative z-10">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-background/50 backdrop-blur"
+                    disabled={archiveMutation.isPending}
+                    onClick={(e) => handleArchive(e, activeV.publicId)}
+                  >
+                    <ArchiveIcon weight="bold" className="mr-1 size-4" />
+                    {t('archive')}
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Other Versions Table */}
           <DataTable
             columns={versionColumns}
-            data={versions}
-            totalItems={totalVersions}
+            data={versions.filter((v) => v.status !== 'PUBLISHED')}
+            totalItems={totalVersions > 0 ? totalVersions - (versions.some((v) => v.status === 'PUBLISHED') ? 1 : 0) : 0}
             pageIndex={vPage}
             pageSize={PAGE_SIZE}
             onPaginationChange={(nextPage) => {
@@ -605,64 +667,77 @@ function CreateVersionDialog({
           </div>
         )}
 
-        <div className="mt-4 space-y-3">
-          <p className="text-sm text-muted-foreground">
-            {t('createVersionSourceHelp')}
-          </p>
-
+        <div className="mt-4 space-y-4">
           {loadingVersions ? (
             <div className="rounded-md border px-4 py-6 text-center text-sm text-muted-foreground">
               {tCommon('loading')}
             </div>
-          ) : versions.length > 0 ? (
-            <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-1">
-              {versions.map((version) => (
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 max-h-[50vh] overflow-y-auto pr-1">
+              {/* Clone Option */}
+              {versions.length > 0 && (
+                <div className="space-y-2 sm:col-span-2">
+                  <p className="text-sm font-medium text-foreground">{t('cloneFrom')}:</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {versions.map((version) => (
+                      <label
+                        key={version.publicId}
+                        className={cn(
+                          "flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-all hover:border-primary/50 relative",
+                          selectedVersionId === version.publicId ? "bg-primary/5 border-primary ring-1 ring-primary" : "bg-card"
+                        )}
+                      >
+                        <input
+                          type="radio"
+                          name="sourceVersionPublicId"
+                          checked={selectedVersionId === version.publicId}
+                          disabled={submitting}
+                          onChange={() => onSelect(version.publicId)}
+                          className="mt-0.5 size-4 accent-primary"
+                        />
+                        <div className="flex flex-col gap-1">
+                          <span className="text-sm font-semibold text-foreground">
+                            v{version.versionNumber}
+                          </span>
+                          <span className="text-xs text-muted-foreground flex items-center gap-2">
+                            <span>{version.criteriaCount} {t('criteria')}</span>
+                            <StatusBadge status={version.status} size="sm" />
+                          </span>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Blank Option */}
+              <div className="space-y-2 sm:col-span-2 mt-2">
+                <p className="text-sm font-medium text-foreground">{t('createBlank')}:</p>
                 <label
-                  key={version.publicId}
                   className={cn(
-                    "flex cursor-pointer items-center justify-between gap-3 rounded-md border px-4 py-3 transition-colors",
-                    selectedVersionId === version.publicId ? "bg-accent border-accent-foreground/20" : "bg-background hover:bg-muted/50"
+                    "flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-all hover:border-primary/50 relative",
+                    selectedVersionId === null ? "bg-primary/5 border-primary ring-1 ring-primary" : "bg-card"
                   )}
                 >
-                  <span className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="sourceVersionPublicId"
-                      checked={selectedVersionId === version.publicId}
-                      disabled={submitting}
-                      onChange={() => onSelect(version.publicId)}
-                      className="size-4"
-                    />
-                    <span className="text-sm font-medium">
-                      v{version.versionNumber}
+                  <input
+                    type="radio"
+                    name="sourceVersionPublicId"
+                    checked={selectedVersionId === null}
+                    disabled={submitting}
+                    onChange={() => onSelect(null)}
+                    className="mt-0.5 size-4 accent-primary"
+                  />
+                  <div className="flex flex-col gap-1">
+                    <span className="text-sm font-semibold text-foreground">
+                      {t('createBlankVersion')}
                     </span>
-                  </span>
-                  <span className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span>{t('criteria')}: {version.criteriaCount}</span>
-                    <StatusBadge status={version.status} size="sm" />
-                  </span>
+                    <span className="text-xs text-muted-foreground">
+                      {t('createBlankDesc')}
+                    </span>
+                  </div>
                 </label>
-              ))}
+              </div>
             </div>
-          ) : (
-            <label className="flex cursor-pointer items-start gap-3 rounded-md border bg-background px-4 py-3">
-              <input
-                type="radio"
-                name="sourceVersionPublicId"
-                checked={selectedVersionId === null}
-                disabled={submitting}
-                onChange={() => onSelect(null)}
-                className="mt-1 size-4"
-              />
-              <span>
-                <span className="block text-sm font-medium">
-                  {t('createBlankVersion')}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {t('createBlankVersionHelp')}
-                </span>
-              </span>
-            </label>
           )}
         </div>
 
