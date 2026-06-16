@@ -116,6 +116,7 @@ export function CreateDatasetDialog({
         { ...values, sourceType: 'MANUAL' },
       );
       await queryClient.invalidateQueries({ queryKey: ['datasets'] });
+      await queryClient.invalidateQueries({ queryKey: ['project-readiness', projectId] });
       handleClose(false);
       router.push(`/projects/${projectId}/datasets/${result.publicId}`);
     } catch (error: unknown) {

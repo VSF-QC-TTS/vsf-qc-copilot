@@ -86,7 +86,10 @@ export default function CreateConnectorPage() {
         values,
       );
       await queryClient.invalidateQueries({
-        queryKey: ['connectors', projectId],
+        queryKey: ['target-api-connectors', projectId],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ['project-readiness', projectId],
       });
       router.push(`/projects/${projectId}/connectors`);
     } catch {

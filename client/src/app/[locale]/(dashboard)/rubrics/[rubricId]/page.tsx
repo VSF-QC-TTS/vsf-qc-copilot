@@ -254,6 +254,9 @@ export default function RubricDetailPage({
       void queryClient.invalidateQueries({
         queryKey: ['rubric-versions', rubricId],
       });
+      void queryClient.invalidateQueries({
+        queryKey: ['project-readiness'],
+      });
     },
   });
 
@@ -267,6 +270,9 @@ export default function RubricDetailPage({
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ['rubric-versions', rubricId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ['project-readiness'],
       });
     },
   });

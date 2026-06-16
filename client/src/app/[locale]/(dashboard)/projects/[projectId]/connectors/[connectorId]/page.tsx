@@ -278,6 +278,9 @@ export default function ConnectorDetailPage() {
       await queryClient.invalidateQueries({
         queryKey: ['connectors', projectId],
       });
+      await queryClient.invalidateQueries({
+        queryKey: ['project-readiness', projectId],
+      });
       setEditing(false);
     } catch {
       // apiClient emits a localized toast for normalized backend errors.

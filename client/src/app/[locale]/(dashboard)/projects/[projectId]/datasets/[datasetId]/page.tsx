@@ -109,6 +109,7 @@ export default function DatasetDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dataset', datasetId] });
       queryClient.invalidateQueries({ queryKey: ['datasets'] });
+      queryClient.invalidateQueries({ queryKey: ['project-readiness', projectId] });
       setApproveOpen(false);
     },
   });
@@ -120,6 +121,7 @@ export default function DatasetDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dataset', datasetId] });
       queryClient.invalidateQueries({ queryKey: ['datasets'] });
+      queryClient.invalidateQueries({ queryKey: ['project-readiness', projectId] });
       setArchiveOpen(false);
     },
   });

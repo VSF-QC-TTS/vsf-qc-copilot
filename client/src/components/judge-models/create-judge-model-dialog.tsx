@@ -100,6 +100,9 @@ export function CreateJudgeModelDialog({
       await queryClient.invalidateQueries({
         queryKey: ['judge-models-active', projectId],
       });
+      await queryClient.invalidateQueries({
+        queryKey: ['project-readiness', projectId],
+      });
       handleClose(false);
     },
     onError: (error: unknown) => {
