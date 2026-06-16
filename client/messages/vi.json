@@ -570,6 +570,8 @@
     "approveConfirm": "Phê duyệt bộ dữ liệu \"{name}\"? Test case sẽ bị khóa chỉnh sửa.",
     "approveDisabled": "Cần ít nhất 1 test case hoạt động để phê duyệt.",
     "approveDisabledHint": "Thêm ít nhất một test case hoạt động trước khi phê duyệt bộ dữ liệu.",
+    "readyToApprove": "Sẵn sàng phê duyệt",
+    "readyToApproveHint": "Bạn có {count} test cases hoạt động. Vui lòng phê duyệt bộ dữ liệu này để sử dụng trong các đợt chấm điểm.",
     "archive": "Lưu trữ",
     "archiveConfirm": "Lưu trữ bộ dữ liệu \"{name}\"?",
     "updatedAt": "Cập nhật",

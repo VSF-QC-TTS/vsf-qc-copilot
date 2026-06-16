@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { CheckCircleIcon, ArchiveIcon } from '@phosphor-icons/react';
+import { CheckCircleIcon, ArchiveIcon, InfoIcon, SparkleIcon } from '@phosphor-icons/react';
 import { motion } from 'motion/react';
 
 import { apiClient } from '@/lib/api/client';
@@ -61,12 +61,13 @@ function DatasetDetailSkeleton() {
       </div>
 
       {/* Info card skeleton */}
-      <div className="rounded-lg border bg-card p-6 space-y-4">
-        <SkeletonText width="w-3/4" />
-        <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="md:col-span-3 rounded-xl border bg-card p-6 space-y-4">
+          <SkeletonText width="w-3/4" />
           <SkeletonText width="w-1/2" />
+        </div>
+        <div className="rounded-xl border bg-card p-6 space-y-4">
           <SkeletonText width="w-1/2" />
-          <SkeletonText width="w-1/3" />
           <SkeletonText width="w-1/3" />
         </div>
       </div>
@@ -187,45 +188,72 @@ export default function DatasetDetailPage() {
         className="space-y-6"
       >
         {/* ---- Dataset info card ---- */}
-        <motion.div variants={itemVariants} className="rounded-lg border bg-card p-6 space-y-4">
-          <div className="flex items-center gap-3">
-            <StatusBadge status={dataset.status} />
+        <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="md:col-span-3 rounded-xl border bg-card p-6 flex flex-col gap-4 relative overflow-hidden">
+            <div className="flex items-center gap-3">
+              <StatusBadge status={dataset.status} />
+              {isDraft && canApprove && (
+                <div className="px-2 py-1 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-medium border border-amber-500/20 flex items-center gap-1.5">
+                  <CheckCircleIcon weight="fill" className="size-3.5" />
+                  {t('readyToApprove')}
+                </div>
+              )}
+            </div>
+
+            {dataset.description && (
+              <p className="text-sm text-muted-foreground max-w-[65ch]">
+                {dataset.description}
+              </p>
+            )}
+
+            <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2 text-sm text-muted-foreground mt-2">
+              <div>
+                <span className="font-medium text-foreground">
+                  {t('columns.createdAt')}:
+                </span>{' '}
+                {formatDate(dataset.createdAt)}
+              </div>
+              <div>
+                <span className="font-medium text-foreground">
+                  {t('updatedAt')}:
+                </span>{' '}
+                {formatDate(dataset.updatedAt)}
+              </div>
+            </div>
           </div>
 
-          {dataset.description && (
-            <p className="text-sm text-muted-foreground">
-              {dataset.description}
-            </p>
-          )}
-
-          <div className="grid gap-4 sm:grid-cols-2 text-sm text-muted-foreground">
-            <div>
-              <span className="font-medium text-foreground">
-                {t('columns.testCaseCount')}:
-              </span>{' '}
+          <div className="rounded-xl border bg-card p-6 flex flex-col justify-center gap-2">
+            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              {t('columns.testCaseCount')}
+            </div>
+            <div className="text-4xl font-semibold tracking-tight">
               {dataset.testCaseCount}
             </div>
-            <div>
-              <span className="font-medium text-foreground">
-                {t('columns.createdAt')}:
-              </span>{' '}
-              {formatDate(dataset.createdAt)}
-            </div>
-            <div>
-              <span className="font-medium text-foreground">
-                {t('updatedAt')}:
-              </span>{' '}
-              {formatDate(dataset.updatedAt)}
-            </div>
           </div>
-
-          {/* Helper text: cannot approve without active test cases */}
-          {isDraft && !canApprove && (
-            <p className="text-sm text-amber-600 dark:text-amber-400">
-              {t('approveDisabledHint')}
-            </p>
-          )}
         </motion.div>
+
+        {/* Helper text / Alerts */}
+        {isDraft && (
+          <motion.div variants={itemVariants}>
+            {!canApprove ? (
+              <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 flex items-start gap-3 text-blue-700 dark:text-blue-400">
+                <div className="text-sm">
+                  <p className="opacity-90">{t('approveDisabledHint')}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex items-center justify-between gap-4 text-amber-700 dark:text-amber-500 shadow-sm">
+                <div className="text-sm">
+                  <p className="font-medium">{t('readyToApproveHint', { count: dataset.activeTestCaseCount })}</p>
+                </div>
+                <Button size="sm" onClick={() => setApproveOpen(true)} className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white">
+                  <CheckCircleIcon className="mr-1.5 size-4" weight="bold" />
+                  {t('approve')}
+                </Button>
+              </div>
+            )}
+          </motion.div>
+        )}
 
         {/* ---- Test case table (placeholder — Epic 7) ---- */}
         <motion.section variants={itemVariants} className="space-y-3">

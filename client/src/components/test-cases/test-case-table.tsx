@@ -12,7 +12,7 @@ import type { PageResponse, TestCaseStatus } from '@/lib/api/types';
 import {
   PlusIcon,
   UploadSimpleIcon,
-  BrainIcon,
+  MagicWandIcon,
   CaretLeftIcon,
   CaretRightIcon,
 } from '@phosphor-icons/react';
@@ -114,9 +114,9 @@ export function TestCaseTable({
   return (
     <div data-slot="test-case-table" className="space-y-4">
       {/* Toolbar */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         {/* Status filter */}
-        <div className="flex items-center gap-1 p-1 bg-muted/40 border border-border/50 rounded-lg w-fit">
+        <div className="flex items-center gap-1 p-1 bg-muted/40 border border-border/50 rounded-lg w-full sm:w-fit">
           {(['ACTIVE', 'INACTIVE'] as const).map((s) => {
             const isActive = statusFilter === s;
             return (
@@ -146,7 +146,7 @@ export function TestCaseTable({
 
         {/* Actions (DRAFT only) */}
         {isDraft && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto mt-2 sm:mt-0">
             <Button variant="outline" size="sm" onClick={handleCreate}>
               <PlusIcon className="mr-1.5 size-4" />
               {t('create')}
@@ -160,11 +160,11 @@ export function TestCaseTable({
               {t('import')}
             </Button>
             <Button
-              variant="outline"
               size="sm"
               onClick={() => setGenerateOpen(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
-              <BrainIcon className="mr-1.5 size-4" />
+              <MagicWandIcon className="mr-1.5 size-4" weight="fill" />
               {t('aiGenerate')}
             </Button>
           </div>
