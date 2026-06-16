@@ -467,7 +467,7 @@ function CollapsibleSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-2 rounded-xl border bg-card p-4 shadow-sm transition-all">
+    <div className="space-y-2 rounded-xl bg-card p-4 transition-all">
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           {label}
@@ -530,7 +530,7 @@ function Section({
   className?: string;
 }) {
   return (
-    <div className={cn("space-y-3 rounded-xl border bg-card p-4 shadow-sm", className)}>
+    <div className={cn("space-y-3 rounded-xl bg-card p-4", className)}>
       <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </h3>
