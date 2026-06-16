@@ -13,6 +13,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import {
   ResultDetailPanel,
   type EvaluationResultRow,
+  type CriterionResult,
 } from '@/components/panels/result-detail-panel';
 import { apiClient } from '@/lib/api/client';
 import type { PageResponse } from '@/lib/api/types';
@@ -38,6 +39,78 @@ const PAGE_SIZE = 10;
 
 function truncate(str: string, max = 80): string {
   return str.length > max ? str.slice(0, max) + '...' : str;
+}
+
+function parseCriteriaJson(raw: string | null): CriterionResult[] {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((item) => {
+      const obj =
+        typeof item === 'object' && item !== null
+          ? (item as Record<string, unknown>)
+          : {};
+      return {
+        metricKey: typeof obj.metricKey === 'string' ? obj.metricKey : null,
+        name: typeof obj.name === 'string' ? obj.name : '',
+        status: typeof obj.status === 'string' ? obj.status : '',
+        score: typeof obj.score === 'number' ? obj.score : null,
+        reason: typeof obj.reason === 'string' ? obj.reason : null,
+        graderError: obj.graderError === true,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+function getCriteria(row: EvaluationResultRow): CriterionResult[] {
+  if (Array.isArray(row.criteriaResults) && row.criteriaResults.length > 0) {
+    return row.criteriaResults;
+  }
+  return parseCriteriaJson(row.criteriaResultsJson);
+}
+
+function CriteriaSummary({ row }: { row: EvaluationResultRow }) {
+  const criteria = getCriteria(row);
+  if (criteria.length === 0) {
+    return <span className="text-muted-foreground">-</span>;
+  }
+
+  const passCount = criteria.filter((item) => item.status === 'PASS').length;
+  const failLike = criteria.filter(
+    (item) =>
+      item.status === 'FAIL' ||
+      item.status === 'ERROR' ||
+      item.status === 'WARNING' ||
+      item.graderError,
+  );
+  const names = failLike
+    .map((item) => item.name)
+    .filter(Boolean)
+    .slice(0, 2)
+    .join(', ');
+
+  return (
+    <div className="min-w-[160px] space-y-1">
+      <div className="flex flex-wrap gap-1">
+        <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-950 dark:text-green-300">
+          {passCount}P
+        </span>
+        {failLike.length > 0 && (
+          <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:bg-red-950 dark:text-red-300">
+            {failLike.length}F/E
+          </span>
+        )}
+      </div>
+      {names && (
+        <p className="max-w-[220px] truncate text-xs text-muted-foreground">
+          {names}
+        </p>
+      )}
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -126,6 +199,12 @@ export default function ResultsPage() {
               : tCommon('notAvailable')}
           </span>
         ),
+      },
+      {
+        id: 'criteria',
+        header: tDetail('criteriaBreakdown'),
+        size: 190,
+        cell: ({ row }) => <CriteriaSummary row={row.original} />,
       },
       {
         accessorKey: 'qcStatus',

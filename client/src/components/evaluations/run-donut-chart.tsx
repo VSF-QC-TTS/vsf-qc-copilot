@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
+import { ResponsiveContainer, PieChart, Pie, Tooltip } from 'recharts';
 import { useTranslations } from 'next-intl';
 
 interface RunDonutChartProps {
@@ -23,10 +23,10 @@ export default function RunDonutChart({
   const tEval = useTranslations('evaluations');
 
   const data = React.useMemo(() => [
-    { name: t('PASS'), value: passed, color: '#10b981' }, // Emerald
-    { name: t('FAIL'), value: failed, color: '#ef4444' }, // Red
-    { name: t('WARNING'), value: warning, color: '#f59e0b' }, // Amber
-    { name: t('ERROR'), value: error, color: '#71717a' }, // Zinc/Gray
+    { name: t('PASS'), value: passed, fill: '#10b981' }, // Emerald
+    { name: t('FAIL'), value: failed, fill: '#ef4444' }, // Red
+    { name: t('WARNING'), value: warning, fill: '#f59e0b' }, // Amber
+    { name: t('ERROR'), value: error, fill: '#71717a' }, // Zinc/Gray
   ].filter(item => item.value > 0), [t, passed, failed, warning, error]);
 
   const passRatePercent = Math.round(passRate * 100);
@@ -43,11 +43,7 @@ export default function RunDonutChart({
             outerRadius={85}
             paddingAngle={2}
             dataKey="value"
-          >
-            {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} />
-            ))}
-          </Pie>
+          />
           <Tooltip
             contentStyle={{
               backgroundColor: 'hsl(var(--background))',

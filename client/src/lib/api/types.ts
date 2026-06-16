@@ -114,6 +114,13 @@ export type JobResponse = {
   completedAt: string | null;
 };
 
+export type JobEventResponse = {
+  publicId: string;
+  eventType: string;
+  payloadJson: string | null;
+  createdAt: string;
+};
+
 // ---------------------------------------------------------------------------
 // API Error (Problem Details)
 // ---------------------------------------------------------------------------
@@ -129,4 +136,49 @@ export type ApiError = {
   title?: string;
   detail?: string;
   errors?: ApiFieldError[];
+};
+
+// ---------------------------------------------------------------------------
+// Evaluation Run Detail
+// ---------------------------------------------------------------------------
+export type EvaluationRunDetail = {
+  publicId: string;
+  datasetPublicId: string;
+  datasetName: string | null;
+  rubricVersionPublicId: string;
+  rubricName: string | null;
+  rubricVersionNumber: number;
+  targetConnectorPublicId: string;
+  connectorName: string | null;
+  judgeModelPublicId: string | null;
+  judgeModelDisplayName: string | null;
+  jobPublicId: string | null;
+  status: string;
+  description: string | null;
+  totalCases: number;
+  completedCases: number;
+  passedCases: number;
+  failedCases: number;
+  warningCases: number;
+  errorCases: number;
+  passRate: number;
+  maxConcurrency: number;
+  startedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+// ---------------------------------------------------------------------------
+// Dataset Detail Response
+// ---------------------------------------------------------------------------
+export type DatasetDetailResponse = {
+  publicId: string;
+  name: string;
+  description: string | null;
+  status: DatasetStatus;
+  testCaseCount: number;
+  activeTestCaseCount: number;
+  createdAt: string;
+  updatedAt: string;
 };

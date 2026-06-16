@@ -16,10 +16,12 @@ import { PageShell } from '@/components/layout/page-shell';
 import { MetricCard } from '@/components/ui/metric-card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useJobProgress } from '@/hooks/use-job-progress';
+import { useEvaluationRunEventsStream } from '@/hooks/use-evaluation-run-events-stream';
 import { apiClient } from '@/lib/api/client';
 import { useRouter } from '@/i18n/navigation';
 import { ExportDialog } from '@/components/evaluations/export-dialog';
-import type { PageResponse } from '@/lib/api/types';
+import type { JobEventResponse, PageResponse, EvaluationRunDetail } from '@/lib/api/types';
+import type { CriterionResult } from '@/components/panels/result-detail-panel';
 import dynamic from 'next/dynamic';
 
 const RunDonutChart = dynamic(() => import('@/components/evaluations/run-donut-chart'), {
@@ -32,48 +34,12 @@ const CriteriaBarChart = dynamic(() => import('@/components/evaluations/criteria
   loading: () => <div className="h-80 w-full animate-pulse bg-muted/20 rounded-lg" />,
 });
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
-type EvaluationRunDetail = {
-  publicId: string;
-  datasetPublicId: string;
-  datasetName: string | null;
-  rubricVersionPublicId: string;
-  rubricName: string | null;
-  rubricVersionNumber: number;
-  targetConnectorPublicId: string;
-  connectorName: string | null;
-  judgeModelPublicId: string | null;
-  judgeModelDisplayName: string | null;
-  jobPublicId: string | null;
-  status: string;
-  description: string | null;
-  totalCases: number;
-  completedCases: number;
-  passedCases: number;
-  failedCases: number;
-  warningCases: number;
-  errorCases: number;
-  passRate: number;
-  maxConcurrency: number;
-  startedAt: string | null;
-  completedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type RunEvent = {
-  publicId: string;
-  eventType: string;
-  payloadJson: string;
-  createdAt: string;
-};
 
 type EvaluationResultRow = {
   publicId: string;
   criteriaResultsJson: string | null;
+  criteriaResults?: CriterionResult[] | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -88,6 +54,37 @@ function formatDateTime(iso: string): string {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+function parseCriteriaJson(raw: string | null): CriterionResult[] {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((item) => {
+      const obj =
+        typeof item === 'object' && item !== null
+          ? (item as Record<string, unknown>)
+          : {};
+      return {
+        metricKey: typeof obj.metricKey === 'string' ? obj.metricKey : null,
+        name: typeof obj.name === 'string' ? obj.name : '',
+        status: typeof obj.status === 'string' ? obj.status : '',
+        score: typeof obj.score === 'number' ? obj.score : null,
+        reason: typeof obj.reason === 'string' ? obj.reason : null,
+        graderError: obj.graderError === true,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+function getCriteria(row: EvaluationResultRow): CriterionResult[] {
+  if (Array.isArray(row.criteriaResults) && row.criteriaResults.length > 0) {
+    return row.criteriaResults;
+  }
+  return parseCriteriaJson(row.criteriaResultsJson);
 }
 
 const containerVariants = {
@@ -150,15 +147,6 @@ export default function RunDetailPage() {
     return index !== -1 ? index + 1 : null;
   }, [runsListData, runId]);
 
-  // Fetch events
-  const { data: events } = useQuery<RunEvent[]>({
-    queryKey: ['evaluation-run-events', runId],
-    queryFn: () =>
-      apiClient.get<RunEvent[]>(
-        `/api/v1/evaluation-runs/${runId}/events`,
-      ),
-  });
-
   // Fetch results to aggregate criteria performance
   const { data: resultsData, isLoading: resultsLoading } = useQuery({
     queryKey: ['evaluation-results-all', runId],
@@ -171,31 +159,23 @@ export default function RunDetailPage() {
 
   const criteriaData = React.useMemo(() => {
     if (!resultsData) return [];
-    
+
     const results = resultsData.items ?? [];
     const aggMap: Record<string, { total: number; passed: number }> = {};
-    
+
     results.forEach((row) => {
-      if (!row.criteriaResultsJson) return;
-      try {
-        const parsed = JSON.parse(row.criteriaResultsJson);
-        if (Array.isArray(parsed)) {
-          parsed.forEach((crit: { name?: string; status?: string; score?: number }) => {
-            const name = crit.name || 'Unknown';
-            const isPassed = crit.status === 'PASS' || crit.score === 1 || crit.score === 100;
-            
-            if (!aggMap[name]) {
-              aggMap[name] = { total: 0, passed: 0 };
-            }
-            aggMap[name].total += 1;
-            if (isPassed) {
-              aggMap[name].passed += 1;
-            }
-          });
+      getCriteria(row).forEach((crit) => {
+        const name = crit.name || 'Unknown';
+        const isPassed = crit.status === 'PASS' || crit.score === 1 || crit.score === 100;
+
+        if (!aggMap[name]) {
+          aggMap[name] = { total: 0, passed: 0 };
         }
-      } catch {
-        // Ignore json parsing errors
-      }
+        aggMap[name].total += 1;
+        if (isPassed) {
+          aggMap[name].passed += 1;
+        }
+      });
     });
     
     return Object.entries(aggMap).map(([name, stats]) => ({
@@ -206,7 +186,6 @@ export default function RunDetailPage() {
     })).sort((a, b) => a.passRate - b.passRate);
   }, [resultsData]);
 
-  // Poll job progress when active
   const isActive =
     run?.status === 'RUNNING' || run?.status === 'PENDING';
   const refreshRunState = React.useCallback(() => {
@@ -216,10 +195,38 @@ export default function RunDetailPage() {
     void queryClient.invalidateQueries({ queryKey: ['evaluations', projectId] });
   }, [projectId, queryClient, runId]);
 
-  const { job, isPolling } = useJobProgress(
-    isActive ? (run?.jobPublicId ?? null) : null,
+  const handleTerminalEvent = React.useCallback(() => {
+    refreshRunState();
+  }, [refreshRunState]);
+
+  const eventStream = useEvaluationRunEventsStream(
+    isActive ? runId : null,
     {
       enabled: isActive,
+      onTerminal: handleTerminalEvent,
+    },
+  );
+
+  const { data: polledEvents } = useQuery<JobEventResponse[]>({
+    queryKey: ['evaluation-run-events', runId],
+    queryFn: () =>
+      apiClient.get<JobEventResponse[]>(
+        `/api/v1/evaluation-runs/${runId}/events`,
+      ),
+    enabled: !isActive || eventStream.isFallbackRecommended,
+    refetchInterval: eventStream.isFallbackRecommended && isActive ? 3_000 : false,
+  });
+
+  const events =
+    isActive && !eventStream.isFallbackRecommended
+      ? eventStream.events
+      : polledEvents;
+
+  // Poll job detail only as a fallback when the event stream cannot stay open.
+  const { job, isPolling } = useJobProgress(
+    isActive && eventStream.isFallbackRecommended ? (run?.jobPublicId ?? null) : null,
+    {
+      enabled: isActive && eventStream.isFallbackRecommended,
       onCompleted: refreshRunState,
       onFailed: refreshRunState,
     },
@@ -231,7 +238,7 @@ export default function RunDetailPage() {
       : null;
 
   const renderEventMessage = React.useCallback(
-    (evt: RunEvent) => {
+    (evt: JobEventResponse) => {
       try {
         const payload = JSON.parse(evt.payloadJson || '{}');
         return t(`eventTypes.${evt.eventType}`, payload);
@@ -281,6 +288,16 @@ export default function RunDetailPage() {
             {isPolling && progressPercent && (
               <span className="text-sm text-muted-foreground animate-pulse">
                 {progressPercent}
+              </span>
+            )}
+            {isActive && eventStream.status === 'reconnecting' && (
+              <span className="text-sm text-muted-foreground">
+                {t('streamReconnecting')}
+              </span>
+            )}
+            {isActive && eventStream.status === 'error' && (
+              <span className="text-sm text-destructive">
+                {t('streamDisconnected')}
               </span>
             )}
           </motion.div>

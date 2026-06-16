@@ -139,7 +139,7 @@ export function ReviewDecisionForm({ resultPublicId }: ReviewDecisionFormProps) 
       void queryClient.invalidateQueries({
         queryKey: ['review-decision', resultPublicId],
       });
-      void queryClient.invalidateQueries({ queryKey: ['results'] });
+      void queryClient.invalidateQueries({ queryKey: ['evaluation-results'] });
       setSubmitError(null);
     },
     onError: (err: unknown) => {
@@ -166,7 +166,7 @@ export function ReviewDecisionForm({ resultPublicId }: ReviewDecisionFormProps) 
       void queryClient.invalidateQueries({
         queryKey: ['review-decision', resultPublicId],
       });
-      void queryClient.invalidateQueries({ queryKey: ['results'] });
+      void queryClient.invalidateQueries({ queryKey: ['evaluation-results'] });
       setIsEditing(false);
       setSubmitError(null);
     },

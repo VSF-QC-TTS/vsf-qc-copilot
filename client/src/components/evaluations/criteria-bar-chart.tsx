@@ -75,6 +75,7 @@ export default function CriteriaBarChart({ data }: CriteriaBarChartProps) {
               if (entry.passRate >= 80) fill = '#10b981'; // Emerald
               else if (entry.passRate <= 50) fill = '#ef4444'; // Red
               else fill = '#f59e0b'; // Amber
+              // eslint-disable-next-line @typescript-eslint/no-deprecated
               return <Cell key={`cell-${index}`} fill={fill} />;
             })}
           </Bar>

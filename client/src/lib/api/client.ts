@@ -211,3 +211,4 @@ export async function del<T>(path: string, opts?: RequestOptions): Promise<T> {
 }
 
 export const apiClient = { get, post, put, patch, del };
+export const apiBaseUrl = BASE_URL;

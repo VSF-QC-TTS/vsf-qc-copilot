@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
-import { Info } from '@phosphor-icons/react';
+import { InfoIcon } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
 export function TooltipProvider({ children }: { children: React.ReactNode }) {
@@ -27,7 +27,7 @@ export function Tooltip({
             className="text-muted-foreground hover:text-foreground cursor-help focus:outline-none shrink-0"
             aria-label="Information"
           >
-            <Info className="size-4" weight="bold" />
+            <InfoIcon className="size-4" weight="bold" />
           </button>
         )}
       </TooltipPrimitive.Trigger>

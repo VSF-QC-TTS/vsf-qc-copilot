@@ -7,7 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCircleIcon, ArchiveIcon } from '@phosphor-icons/react';
 
 import { apiClient } from '@/lib/api/client';
-import type { DatasetStatus } from '@/lib/api/types';
+import type { DatasetDetailResponse } from '@/lib/api/types';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -15,20 +15,7 @@ import { PageShell } from '@/components/layout/page-shell';
 import { TestCaseTable } from '@/components/test-cases/test-case-table';
 import { Skeleton, SkeletonText } from '@/components/feedback/loading-skeleton';
 
-// ---------------------------------------------------------------------------
-// Dataset detail response type
-// ---------------------------------------------------------------------------
 
-type DatasetDetailResponse = {
-  publicId: string;
-  name: string;
-  description: string | null;
-  status: DatasetStatus;
-  testCaseCount: number;
-  activeTestCaseCount: number;
-  createdAt: string;
-  updatedAt: string;
-};
 
 // ---------------------------------------------------------------------------
 // Date formatter
