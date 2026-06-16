@@ -40,6 +40,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
  * @author nghlong3004 (Long Nguyen Hoang)
@@ -267,6 +269,7 @@ class EvaluationRunControllerTest {
                     120,
                     null,
                     "[]",
+                    List.of(),
                     QcStatus.NEED_FIX,
                     "Needs exact value.",
                     new ReviewUserResponse(
@@ -326,6 +329,27 @@ class EvaluationRunControllerTest {
         .isEqualTo(UUID.fromString("a1b2c3d4-e5f6-7890-abcd-ef1234567890"));
   }
 
+  @Test
+  void streamEvaluationRunEventsStartsSseStream() throws Exception {
+    RecordingEvaluationRunService.sseEmitter = new SseEmitter(1000L);
+
+    MvcResult result =
+        mockMvc
+            .perform(
+                get("/api/v1/evaluation-runs/a1b2c3d4-e5f6-7890-abcd-ef1234567890/events/stream")
+                    .principal(new TestingAuthenticationToken("qc.demo@example.com", null)))
+            .andExpect(status().isOk())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_EVENT_STREAM))
+            .andReturn();
+
+    assertThat(result.getRequest().isAsyncStarted()).isTrue();
+    assertThat(RecordingEvaluationRunService.runPublicId)
+        .isEqualTo(UUID.fromString("a1b2c3d4-e5f6-7890-abcd-ef1234567890"));
+    assertThat(RecordingEvaluationRunService.username).isEqualTo("qc.demo@example.com");
+
+    RecordingEvaluationRunService.sseEmitter.complete();
+  }
+
   // ── MockBeans + RecordingService ──
 
   @TestConfiguration
@@ -352,6 +376,7 @@ class EvaluationRunControllerTest {
     static EvaluationRunDetailResponse detailResponse;
     static EvaluationResultPageResponse resultPageResponse;
     static List<JobEventResponse> eventsResponse;
+    static SseEmitter sseEmitter;
 
     static void reset() {
       projectPublicId = null;
@@ -367,6 +392,7 @@ class EvaluationRunControllerTest {
       detailResponse = null;
       resultPageResponse = null;
       eventsResponse = null;
+      sseEmitter = null;
     }
 
     @Override
@@ -410,6 +436,13 @@ class EvaluationRunControllerTest {
       RecordingEvaluationRunService.runPublicId = runPublicId;
       RecordingEvaluationRunService.username = username;
       return eventsResponse;
+    }
+
+    @Override
+    public SseEmitter streamEvaluationRunEvents(UUID runPublicId, String username) {
+      RecordingEvaluationRunService.runPublicId = runPublicId;
+      RecordingEvaluationRunService.username = username;
+      return sseEmitter;
     }
 
     @Override

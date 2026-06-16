@@ -7,5 +7,6 @@ package me.nghlong3004.vqc.api.job.enums;
 public enum ResourceType {
   EVALUATION_RUN,
   EXPORT_FILE,
-  DATASET
+  DATASET,
+  RED_TEAM_RUN
 }

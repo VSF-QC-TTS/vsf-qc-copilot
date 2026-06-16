@@ -10,6 +10,7 @@ import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunDetailResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunPageResponse;
 import me.nghlong3004.vqc.api.review.enums.QcStatus;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
  * Coordinates evaluation run use cases.
@@ -61,6 +62,15 @@ public interface EvaluationRunService {
    */
   java.util.List<me.nghlong3004.vqc.api.job.response.JobEventResponse> listEvaluationRunEvents(
       UUID runPublicId, String username);
+
+  /**
+   * Streams job events for an evaluation run as Server-Sent Events.
+   *
+   * @param runPublicId public run identifier
+   * @param username authenticated principal username/email
+   * @return SSE emitter that sends existing and newly-created job events
+   */
+  SseEmitter streamEvaluationRunEvents(UUID runPublicId, String username);
 
   /**
    * Quick evaluate with auto-resolve: null fields are resolved to the sole candidate in the

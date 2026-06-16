@@ -44,6 +44,7 @@ import me.nghlong3004.vqc.api.job.enums.ResourceType;
 import me.nghlong3004.vqc.api.job.repository.JobEventRepository;
 import me.nghlong3004.vqc.api.job.repository.JobRepository;
 import me.nghlong3004.vqc.api.project.entity.Project;
+import me.nghlong3004.vqc.api.redteam.handler.RedTeamJobHandler;
 import me.nghlong3004.vqc.api.rubric.entity.RubricVersion;
 import me.nghlong3004.vqc.api.targetconnector.entity.TargetApiConnector;
 import me.nghlong3004.vqc.api.targetconnector.enums.HttpMethodType;
@@ -78,7 +79,8 @@ class PromptfooWorkerSmokeTest {
               jobRepository(fixture.job),
               fixture.handler(promptfooExecutor(smokeRoot)),
               new ExportJobHandler(null, null, null, null, null),
-              new DatasetGenerationJobHandler(null, null, null, null, null, null));
+              new DatasetGenerationJobHandler(null, null, null, null, null, null),
+              new RedTeamJobHandler(null, null, null, null, null, null));
 
       worker.processMessage(fixture.job.getPublicId().toString());
 

@@ -17,4 +17,13 @@ public interface JobEventRepository extends JpaRepository<JobEvent, Long> {
    * @return list of {@link JobEvent} entities in chronological order
    */
   List<JobEvent> findByJobIdOrderByCreatedAtAsc(Long jobId);
+
+  /**
+   * Finds events created after the supplied internal event id.
+   *
+   * @param jobId internal job identifier
+   * @param id last emitted internal event identifier
+   * @return new {@link JobEvent} entities in chronological order
+   */
+  List<JobEvent> findByJobIdAndIdGreaterThanOrderByCreatedAtAscIdAsc(Long jobId, Long id);
 }

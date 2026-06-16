@@ -233,7 +233,7 @@ class EvaluationJobHandlerTest {
           proxy(
               EvaluationRunRepository.class,
               (proxy, method, args) -> {
-                if ("findById".equals(method.getName())) return Optional.of(runRef.get());
+                if ("findWithWorkerContextById".equals(method.getName())) return Optional.of(runRef.get());
                 if ("save".equals(method.getName())) {
                   runRef.set((EvaluationRun) args[0]);
                   return args[0];

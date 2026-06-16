@@ -32,7 +32,6 @@ import me.nghlong3004.vqc.api.testcase.entity.TestCase;
 import me.nghlong3004.vqc.api.testcase.enums.TestCaseStatus;
 import me.nghlong3004.vqc.api.testcase.repository.TestCaseRepository;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author nghlong3004 (Long Nguyen Hoang)
@@ -58,7 +57,6 @@ public class EvaluationJobHandler {
    *
    * @param jobPublicId public job identifier
    */
-  @Transactional
   public void handle(UUID jobPublicId) {
     Job job = jobRepository.findByPublicId(jobPublicId).orElse(null);
     if (job == null) {
@@ -70,7 +68,7 @@ public class EvaluationJobHandler {
       return;
     }
 
-    EvaluationRun run = evaluationRunRepository.findById(job.getResourceId()).orElse(null);
+    EvaluationRun run = evaluationRunRepository.findWithWorkerContextById(job.getResourceId()).orElse(null);
     if (run == null) {
       failJob(job, null, "Evaluation run resource is missing.");
       return;
@@ -78,6 +76,7 @@ public class EvaluationJobHandler {
 
     try {
       start(job, run);
+      emitEvent(job, "LOADING_TEST_CASES", Map.of("runPublicId", run.getPublicId()));
       List<TestCase> testCases =
           testCaseRepository.findByDatasetAndStatusOrderBySortOrderAscIdAsc(
               run.getDataset(), TestCaseStatus.ACTIVE);
@@ -87,14 +86,26 @@ public class EvaluationJobHandler {
 
       List<RubricCriterion> criteria = loadCriteria(run);
 
+      emitEvent(
+          job,
+          "RUNNING_PROMPTFOO",
+          Map.of("runPublicId", run.getPublicId(), "total", testCases.size()));
       List<PromptfooResult> promptfooResults =
           promptfooExecutor.evaluate(run, testCases);
+      emitEvent(
+          job,
+          "PARSING_RESULTS",
+          Map.of("runPublicId", run.getPublicId(), "total", testCases.size()));
       Map<Long, PromptfooResult> resultsByTestCaseId =
           promptfooResults.stream()
               .filter(result -> result.testCaseId() != null)
               .collect(Collectors.toMap(PromptfooResult::testCaseId, Function.identity(), (a, b) -> b));
 
       int completed = 0;
+      emitEvent(
+          job,
+          "PERSISTING_RESULTS",
+          Map.of("runPublicId", run.getPublicId(), "total", testCases.size()));
       for (TestCase testCase : testCases) {
         PromptfooResult promptfooResult = resultsByTestCaseId.get(testCase.getId());
         EvaluationResult result = toEvaluationResult(run, testCase, promptfooResult, criteria);

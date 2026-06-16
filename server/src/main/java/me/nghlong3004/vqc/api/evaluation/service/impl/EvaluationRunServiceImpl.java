@@ -2,6 +2,9 @@ package me.nghlong3004.vqc.api.evaluation.service.impl;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.nghlong3004.vqc.api.dataset.entity.Dataset;
@@ -31,12 +34,14 @@ import me.nghlong3004.vqc.api.job.entity.Job;
 import me.nghlong3004.vqc.api.job.enums.JobStatus;
 import me.nghlong3004.vqc.api.job.enums.JobType;
 import me.nghlong3004.vqc.api.job.enums.ResourceType;
+import me.nghlong3004.vqc.api.job.response.JobEventResponse;
 import me.nghlong3004.vqc.api.job.repository.JobRepository;
 import me.nghlong3004.vqc.api.job.service.JobQueuePublisher;
 import me.nghlong3004.vqc.api.project.entity.Project;
 import me.nghlong3004.vqc.api.project.repository.ProjectRepository;
 import me.nghlong3004.vqc.api.rubric.entity.RubricVersion;
 import me.nghlong3004.vqc.api.rubric.enums.RubricVersionStatus;
+import me.nghlong3004.vqc.api.rubric.repository.RubricCriterionRepository;
 import me.nghlong3004.vqc.api.rubric.repository.RubricVersionRepository;
 import me.nghlong3004.vqc.api.review.enums.QcStatus;
 import me.nghlong3004.vqc.api.targetconnector.entity.TargetApiConnector;
@@ -50,6 +55,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
  * @author nghlong3004 (Long Nguyen Hoang)
@@ -61,6 +67,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class EvaluationRunServiceImpl implements EvaluationRunService {
 
   private static final int MAX_ACTIVE_TEST_CASES = 100;
+  private static final long EVENT_STREAM_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(30);
+  private static final long EVENT_STREAM_POLL_MS = 1_000L;
+  private static final long EVENT_STREAM_HEARTBEAT_MS = 15_000L;
 
   private final EvaluationRunRepository evaluationRunRepository;
   private final EvaluationResultRepository evaluationResultRepository;
@@ -69,6 +78,7 @@ public class EvaluationRunServiceImpl implements EvaluationRunService {
   private final ProjectRepository projectRepository;
   private final DatasetRepository datasetRepository;
   private final RubricVersionRepository rubricVersionRepository;
+  private final RubricCriterionRepository rubricCriterionRepository;
   private final TargetApiConnectorRepository targetApiConnectorRepository;
   private final JudgeModelRepository judgeModelRepository;
   private final TestCaseRepository testCaseRepository;
@@ -194,10 +204,13 @@ public class EvaluationRunServiceImpl implements EvaluationRunService {
             .orElseThrow(() -> new ResourceException(ErrorCode.EVALUATION_RUN_NOT_FOUND));
 
     Page<EvaluationResult> results = findResults(run.getId(), judgeStatus, qcStatus, pageable);
+    var criteria =
+        rubricCriterionRepository.findByRubricVersionOrderBySortOrderAscIdAsc(
+            run.getRubricVersion());
 
     List<EvaluationResultListItemResponse> items =
         results.getContent().stream()
-            .map(evaluationRunMapper::toResultListItem)
+            .map(result -> evaluationRunMapper.toResultListItem(result, criteria))
             .toList();
     log.info(
         "Listed evaluation results for run {} page {} size {}",
@@ -247,9 +260,106 @@ public class EvaluationRunServiceImpl implements EvaluationRunService {
 
     log.info("Listed events for evaluation run {} job {}", run.getPublicId(), run.getJob().getPublicId());
     return jobEventRepository.findByJobIdOrderByCreatedAtAsc(run.getJob().getId()).stream()
-        .map(e -> new me.nghlong3004.vqc.api.job.response.JobEventResponse(
-            e.getPublicId(), e.getEventType(), e.getPayloadJson(), e.getCreatedAt()))
+        .map(this::toJobEventResponse)
         .toList();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public SseEmitter streamEvaluationRunEvents(UUID runPublicId, String username) {
+    User creator = findCreator(username);
+    EvaluationRun run =
+        evaluationRunRepository
+            .findByPublicIdAndCreatedBy(runPublicId, creator)
+            .orElseThrow(() -> new ResourceException(ErrorCode.EVALUATION_RUN_NOT_FOUND));
+
+    SseEmitter emitter = new SseEmitter(EVENT_STREAM_TIMEOUT_MS);
+    if (run.getJob() == null) {
+      emitter.complete();
+      return emitter;
+    }
+
+    Long runId = run.getId();
+    Long jobId = run.getJob().getId();
+    AtomicLong lastEventId = new AtomicLong(0L);
+
+    CompletableFuture.runAsync(
+        () -> streamEvents(emitter, runId, jobId, lastEventId, run.getPublicId()));
+    return emitter;
+  }
+
+  private void streamEvents(
+      SseEmitter emitter, Long runId, Long jobId, AtomicLong lastEventId, UUID runPublicId) {
+    long lastHeartbeatAt = 0L;
+    try {
+      sendExistingEvents(emitter, jobId, lastEventId);
+      while (true) {
+        sendNewEvents(emitter, jobId, lastEventId);
+        EvaluationRunStatus status = currentRunStatus(runId);
+        if (isTerminal(status)) {
+          emitter.complete();
+          return;
+        }
+
+        long now = System.currentTimeMillis();
+        if (now - lastHeartbeatAt >= EVENT_STREAM_HEARTBEAT_MS) {
+          emitter.send(SseEmitter.event().comment("keep-alive"));
+          lastHeartbeatAt = now;
+        }
+        Thread.sleep(EVENT_STREAM_POLL_MS);
+      }
+    } catch (InterruptedException ex) {
+      Thread.currentThread().interrupt();
+      emitter.completeWithError(ex);
+    } catch (Exception ex) {
+      log.debug("Evaluation event stream closed for run {}", runPublicId, ex);
+      emitter.completeWithError(ex);
+    }
+  }
+
+  private void sendExistingEvents(SseEmitter emitter, Long jobId, AtomicLong lastEventId)
+      throws java.io.IOException {
+    for (var event : jobEventRepository.findByJobIdOrderByCreatedAtAsc(jobId)) {
+      sendJobEvent(emitter, event);
+      lastEventId.set(event.getId());
+    }
+  }
+
+  private void sendNewEvents(SseEmitter emitter, Long jobId, AtomicLong lastEventId)
+      throws java.io.IOException {
+    for (var event :
+        jobEventRepository.findByJobIdAndIdGreaterThanOrderByCreatedAtAscIdAsc(
+            jobId, lastEventId.get())) {
+      sendJobEvent(emitter, event);
+      lastEventId.set(event.getId());
+    }
+  }
+
+  private void sendJobEvent(SseEmitter emitter, me.nghlong3004.vqc.api.job.entity.JobEvent event)
+      throws java.io.IOException {
+    emitter.send(
+        SseEmitter.event()
+            .name("job-event")
+            .id(event.getPublicId().toString())
+            .data(toJobEventResponse(event)));
+  }
+
+  private EvaluationRunStatus currentRunStatus(Long runId) {
+    return evaluationRunRepository
+        .findById(runId)
+        .map(EvaluationRun::getStatus)
+        .orElse(EvaluationRunStatus.FAILED);
+  }
+
+  private boolean isTerminal(EvaluationRunStatus status) {
+    return status == EvaluationRunStatus.COMPLETED
+        || status == EvaluationRunStatus.FAILED
+        || status == EvaluationRunStatus.CANCELLED;
+  }
+
+  private JobEventResponse toJobEventResponse(me.nghlong3004.vqc.api.job.entity.JobEvent event) {
+    return new JobEventResponse(
+        event.getPublicId(), event.getEventType(), event.getPayloadJson(), event.getCreatedAt());
   }
 
   // ── Validation helpers ──

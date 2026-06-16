@@ -30,6 +30,7 @@ public class JobServiceImpl implements JobService {
   private final UserRepository userRepository;
   private final EvaluationRunRepository evaluationRunRepository;
   private final ExportFileRepository exportFileRepository;
+  private final me.nghlong3004.vqc.api.redteam.repository.RedTeamRunRepository redTeamRunRepository;
 
   @Override
   @Transactional(readOnly = true)
@@ -80,6 +81,12 @@ public class JobServiceImpl implements JobService {
       return exportFileRepository
           .findById(job.getResourceId())
           .map(exportFile -> exportFile.getPublicId())
+          .orElse(null);
+    }
+    if (job.getResourceType() == ResourceType.RED_TEAM_RUN) {
+      return redTeamRunRepository
+          .findById(job.getResourceId())
+          .map(run -> run.getPublicId())
           .orElse(null);
     }
     return null;

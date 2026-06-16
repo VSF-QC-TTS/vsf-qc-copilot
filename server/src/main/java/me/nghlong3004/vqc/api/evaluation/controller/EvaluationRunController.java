@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
  * @author nghlong3004 (Long Nguyen Hoang)
@@ -227,6 +228,17 @@ public class EvaluationRunController {
   public java.util.List<me.nghlong3004.vqc.api.job.response.JobEventResponse> listEvaluationRunEvents(
       @PathVariable UUID runPublicId, Principal principal) {
     return evaluationRunService.listEvaluationRunEvents(runPublicId, principal.getName());
+  }
+
+  @Operation(
+      summary = "Stream evaluation run events",
+      description = "Streams job events for an evaluation run using Server-Sent Events.")
+  @GetMapping(
+      value = "/api/v1/evaluation-runs/{runPublicId}/events/stream",
+      produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+  public SseEmitter streamEvaluationRunEvents(
+      @PathVariable UUID runPublicId, Principal principal) {
+    return evaluationRunService.streamEvaluationRunEvents(runPublicId, principal.getName());
   }
 
   @Operation(

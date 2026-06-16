@@ -20,6 +20,8 @@ import me.nghlong3004.vqc.api.job.enums.ResourceType;
 import me.nghlong3004.vqc.api.job.repository.JobRepository;
 import me.nghlong3004.vqc.api.job.response.JobDetailResponse;
 import me.nghlong3004.vqc.api.project.entity.Project;
+import me.nghlong3004.vqc.api.redteam.entity.RedTeamRun;
+import me.nghlong3004.vqc.api.redteam.repository.RedTeamRunRepository;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -64,7 +66,8 @@ class JobServiceImplTest {
         jobRepository(Optional.of(job)),
         userRepository(Optional.of(creator)),
         evalRunRepository(Optional.of(evalRun)),
-        exportFileRepository(Optional.empty()));
+        exportFileRepository(Optional.empty()),
+        redTeamRunRepository(Optional.empty()));
 
     JobDetailResponse detail = service.getJob(job.getPublicId(), "qc.demo@example.com");
 
@@ -106,12 +109,48 @@ class JobServiceImplTest {
             jobRepository(Optional.of(job)),
             userRepository(Optional.of(creator)),
             evalRunRepository(Optional.empty()),
-            exportFileRepository(Optional.of(exportFile)));
+            exportFileRepository(Optional.of(exportFile)),
+            redTeamRunRepository(Optional.empty()));
 
     JobDetailResponse detail = service.getJob(job.getPublicId(), creator.getUsername());
 
     assertThat(detail.resourceType()).isEqualTo(ResourceType.EXPORT_FILE);
     assertThat(detail.resourcePublicId()).isEqualTo(exportPublicId);
+  }
+
+  @Test
+  void getJobReturnsRedTeamResourcePublicId() {
+    User creator = user();
+    Project project = project(creator);
+    UUID redTeamPublicId = UUID.randomUUID();
+    RedTeamRun redTeamRun =
+        RedTeamRun.builder().id(7L).publicId(redTeamPublicId).project(project).createdBy(creator).build();
+    Job job =
+        Job.builder()
+            .id(1L)
+            .publicId(UUID.randomUUID())
+            .jobType(JobType.RED_TEAM_RUN)
+            .status(JobStatus.RUNNING)
+            .resourceType(ResourceType.RED_TEAM_RUN)
+            .resourceId(redTeamRun.getId())
+            .project(project)
+            .createdBy(creator)
+            .createdAt(OffsetDateTime.now())
+            .updatedAt(OffsetDateTime.now())
+            .build();
+
+    JobServiceImpl service =
+        new JobServiceImpl(
+            jobRepository(Optional.of(job)),
+            userRepository(Optional.of(creator)),
+            evalRunRepository(Optional.empty()),
+            exportFileRepository(Optional.empty()),
+            redTeamRunRepository(Optional.of(redTeamRun)));
+
+    JobDetailResponse detail = service.getJob(job.getPublicId(), creator.getUsername());
+
+    assertThat(detail.resourceType()).isEqualTo(ResourceType.RED_TEAM_RUN);
+    assertThat(detail.resourcePublicId()).isEqualTo(redTeamPublicId);
   }
 
   @Test
@@ -121,7 +160,8 @@ class JobServiceImplTest {
         jobRepository(Optional.empty()),
         userRepository(Optional.of(creator)),
         evalRunRepository(Optional.empty()),
-        exportFileRepository(Optional.empty()));
+        exportFileRepository(Optional.empty()),
+        redTeamRunRepository(Optional.empty()));
 
     assertThatThrownBy(() -> service.getJob(UUID.randomUUID(), "qc.demo@example.com"))
         .isInstanceOf(ResourceException.class)
@@ -135,7 +175,8 @@ class JobServiceImplTest {
         jobRepository(Optional.empty()),
         userRepository(Optional.empty()),
         evalRunRepository(Optional.empty()),
-        exportFileRepository(Optional.empty()));
+        exportFileRepository(Optional.empty()),
+        redTeamRunRepository(Optional.empty()));
 
     assertThatThrownBy(() -> service.getJob(UUID.randomUUID(), "missing@example.com"))
         .isInstanceOf(ResourceException.class)
@@ -165,7 +206,8 @@ class JobServiceImplTest {
         jobRepository(Optional.of(job)),
         userRepository(Optional.of(creator)),
         evalRunRepository(Optional.empty()),
-        exportFileRepository(Optional.empty()));
+        exportFileRepository(Optional.empty()),
+        redTeamRunRepository(Optional.empty()));
 
     JobDetailResponse detail = service.getJob(job.getPublicId(), "qc.demo@example.com");
 
@@ -197,6 +239,13 @@ class JobServiceImplTest {
 
   private ExportFileRepository exportFileRepository(Optional<ExportFile> result) {
     return proxy(ExportFileRepository.class, (p, m, args) -> {
+      if ("findById".equals(m.getName())) return result;
+      throw new UnsupportedOperationException(m.getName());
+    });
+  }
+
+  private RedTeamRunRepository redTeamRunRepository(Optional<RedTeamRun> result) {
+    return proxy(RedTeamRunRepository.class, (p, m, args) -> {
       if ("findById".equals(m.getName())) return result;
       throw new UnsupportedOperationException(m.getName());
     });

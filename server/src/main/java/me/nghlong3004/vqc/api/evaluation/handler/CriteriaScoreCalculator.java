@@ -76,6 +76,7 @@ public class CriteriaScoreCalculator {
     BigDecimal weightedSum = BigDecimal.ZERO;
     BigDecimal totalWeight = BigDecimal.ZERO;
     boolean anyFailed = false;
+    boolean anyGraderError = false;
 
     for (Map<String, Object> result : results) {
       String metricKey = String.valueOf(result.get("metricKey"));
@@ -85,10 +86,14 @@ public class CriteriaScoreCalculator {
       }
       BigDecimal score = toBigDecimal(result.get("score"));
       boolean pass = toBoolean(result.get("pass"));
+      boolean graderError = toBoolean(result.get("graderError"));
 
       weightedSum = weightedSum.add(weight.multiply(score));
       totalWeight = totalWeight.add(weight);
 
+      if (graderError) {
+        anyGraderError = true;
+      }
       if (!pass) {
         anyFailed = true;
       }
@@ -100,7 +105,7 @@ public class CriteriaScoreCalculator {
 
     BigDecimal judgeScore =
         weightedSum.divide(totalWeight, 4, RoundingMode.HALF_UP);
-    JudgeStatus status = anyFailed ? JudgeStatus.FAIL : JudgeStatus.PASS;
+    JudgeStatus status = anyGraderError ? JudgeStatus.ERROR : (anyFailed ? JudgeStatus.FAIL : JudgeStatus.PASS);
 
     return new ScoringResult(judgeScore, status);
   }

@@ -23,6 +23,25 @@ public interface EvaluationRunRepository extends JpaRepository<EvaluationRun, Lo
   Optional<EvaluationRun> findByPublicId(UUID publicId);
 
   /**
+   * Finds an evaluation run with all associations needed by the async worker.
+   *
+   * @param id internal run identifier
+   * @return {@link Optional} containing the matching {@link EvaluationRun} when present
+   */
+  @org.springframework.data.jpa.repository.EntityGraph(
+      attributePaths = {
+        "project",
+        "dataset",
+        "rubricVersion",
+        "rubricVersion.rubric",
+        "targetApiConnector",
+        "judgeModel",
+        "job",
+        "createdBy"
+      })
+  Optional<EvaluationRun> findWithWorkerContextById(Long id);
+
+  /**
    * Finds evaluation runs for a project created by a specific user.
    *
    * @param projectId internal project identifier

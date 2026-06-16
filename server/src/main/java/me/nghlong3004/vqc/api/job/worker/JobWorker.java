@@ -10,6 +10,7 @@ import me.nghlong3004.vqc.api.evaluation.handler.EvaluationJobHandler;
 import me.nghlong3004.vqc.api.export.handler.ExportJobHandler;
 import me.nghlong3004.vqc.api.job.enums.JobType;
 import me.nghlong3004.vqc.api.job.repository.JobRepository;
+import me.nghlong3004.vqc.api.redteam.handler.RedTeamJobHandler;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -33,6 +34,7 @@ public class JobWorker implements SmartLifecycle {
   private final EvaluationJobHandler evaluationJobHandler;
   private final ExportJobHandler exportJobHandler;
   private final DatasetGenerationJobHandler datasetGenerationJobHandler;
+  private final RedTeamJobHandler redTeamJobHandler;
 
   private volatile boolean running;
   private Thread workerThread;
@@ -82,6 +84,8 @@ public class JobWorker implements SmartLifecycle {
         exportJobHandler.handle(jobPublicId);
       } else if (jobType == JobType.DATASET_GENERATION) {
         datasetGenerationJobHandler.handle(jobPublicId);
+      } else if (jobType == JobType.RED_TEAM_RUN) {
+        redTeamJobHandler.handle(jobPublicId);
       } else {
         log.warn("Discarding unsupported job queue message {} with type {}", message, jobType);
       }

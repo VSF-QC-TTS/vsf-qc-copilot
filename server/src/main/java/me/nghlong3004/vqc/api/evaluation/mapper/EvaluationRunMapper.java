@@ -1,15 +1,24 @@
 package me.nghlong3004.vqc.api.evaluation.mapper;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import me.nghlong3004.vqc.api.evaluation.entity.EvaluationResult;
 import me.nghlong3004.vqc.api.evaluation.entity.EvaluationRun;
+import me.nghlong3004.vqc.api.evaluation.enums.JudgeStatus;
+import me.nghlong3004.vqc.api.evaluation.response.EvaluationCriteriaResultResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationResultListItemResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunDetailResponse;
 import me.nghlong3004.vqc.api.evaluation.response.EvaluationRunListItemResponse;
 import me.nghlong3004.vqc.api.review.entity.ReviewDecision;
 import me.nghlong3004.vqc.api.review.enums.QcStatus;
 import me.nghlong3004.vqc.api.review.response.ReviewUserResponse;
+import me.nghlong3004.vqc.api.rubric.entity.RubricCriterion;
 import me.nghlong3004.vqc.api.testcase.entity.TestCase;
 import me.nghlong3004.vqc.api.user.entity.User;
 import org.springframework.stereotype.Component;
@@ -20,6 +29,9 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class EvaluationRunMapper {
+
+  private static final TypeReference<List<Map<String, Object>>> CRITERIA_LIST_TYPE =
+      new TypeReference<>() {};
 
   private final ObjectMapper objectMapper;
 
@@ -95,6 +107,18 @@ public class EvaluationRunMapper {
    * @return result list item response
    */
   public EvaluationResultListItemResponse toResultListItem(EvaluationResult result) {
+    return toResultListItem(result, List.of());
+  }
+
+  /**
+   * Maps an {@link EvaluationResult} entity to a list item response with criterion metadata.
+   *
+   * @param result evaluation result entity
+   * @param criteria rubric criteria for the result run
+   * @return result list item response
+   */
+  public EvaluationResultListItemResponse toResultListItem(
+      EvaluationResult result, List<RubricCriterion> criteria) {
     ReviewDecision reviewDecision = result.getReviewDecision();
     TestCase tc = result.getTestCase();
     return new EvaluationResultListItemResponse(
@@ -112,10 +136,72 @@ public class EvaluationRunMapper {
         result.getLatencyMs(),
         result.getErrorMessage(),
         result.getCriteriaResultsJson(),
+        toCriteriaResults(result.getCriteriaResultsJson(), criteria),
         reviewDecision == null ? QcStatus.NOT_REVIEWED : reviewDecision.getQcStatus(),
         reviewDecision == null ? null : reviewDecision.getQcNote(),
         reviewDecision == null ? null : toReviewUserResponse(reviewDecision.getPicBugUser()),
         result.getCreatedAt());
+  }
+
+  private List<EvaluationCriteriaResultResponse> toCriteriaResults(
+      String rawJson, List<RubricCriterion> criteria) {
+    if (rawJson == null || rawJson.isBlank()) {
+      return List.of();
+    }
+    Map<String, RubricCriterion> criteriaByMetric =
+        criteria == null
+            ? Map.of()
+            : criteria.stream()
+                .filter(c -> c.getMetricKey() != null)
+                .collect(Collectors.toMap(RubricCriterion::getMetricKey, Function.identity(), (a, b) -> a));
+    try {
+      return objectMapper.readValue(rawJson, CRITERIA_LIST_TYPE).stream()
+          .map(item -> toCriteriaResult(item, criteriaByMetric))
+          .toList();
+    } catch (Exception ex) {
+      return List.of();
+    }
+  }
+
+  private EvaluationCriteriaResultResponse toCriteriaResult(
+      Map<String, Object> item, Map<String, RubricCriterion> criteriaByMetric) {
+    String metricKey = stringValue(item.get("metricKey"));
+    RubricCriterion criterion = criteriaByMetric.get(metricKey);
+    boolean graderError = booleanValue(item.get("graderError"));
+    boolean pass = booleanValue(item.get("pass"));
+    JudgeStatus status = graderError ? JudgeStatus.ERROR : (pass ? JudgeStatus.PASS : JudgeStatus.FAIL);
+    return new EvaluationCriteriaResultResponse(
+        metricKey,
+        criterion != null ? criterion.getName() : metricKey,
+        status,
+        decimalValue(item.get("score")),
+        stringValue(item.get("reason")),
+        graderError);
+  }
+
+  private String stringValue(Object value) {
+    return value == null ? null : String.valueOf(value);
+  }
+
+  private boolean booleanValue(Object value) {
+    if (value instanceof Boolean b) {
+      return b;
+    }
+    return value instanceof String text && Boolean.parseBoolean(text);
+  }
+
+  private BigDecimal decimalValue(Object value) {
+    if (value instanceof Number number) {
+      return BigDecimal.valueOf(number.doubleValue());
+    }
+    if (value instanceof String text) {
+      try {
+        return new BigDecimal(text);
+      } catch (NumberFormatException ignored) {
+        return null;
+      }
+    }
+    return null;
   }
 
   private ReviewUserResponse toReviewUserResponse(User user) {

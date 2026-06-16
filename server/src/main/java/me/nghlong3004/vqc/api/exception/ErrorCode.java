@@ -201,6 +201,10 @@ public enum ErrorCode {
       HttpStatus.CONFLICT.value(),
       "EXPORT_FILE_NOT_READY",
       "Export file is not ready for download."),
+  RED_TEAM_RUN_NOT_FOUND(
+      HttpStatus.NOT_FOUND.value(),
+      "RED_TEAM_RUN_NOT_FOUND",
+      "No red-team run found with the provided ID."),
 
   // ── Import ──
   IMPORT_FILE_EMPTY(

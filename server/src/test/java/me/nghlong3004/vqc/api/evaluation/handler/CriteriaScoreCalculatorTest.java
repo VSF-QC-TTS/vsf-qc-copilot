@@ -120,6 +120,22 @@ class CriteriaScoreCalculatorTest {
   }
 
   @Test
+  void graderErrorForcesErrorStatus() {
+    String json =
+        """
+        [
+          {"metricKey":"accuracy","pass":false,"score":0.0,"reason":"Judge auth failed","graderError":true}
+        ]
+        """;
+    List<RubricCriterion> criteria = List.of(criterion("accuracy", 10, false));
+
+    ScoringResult result = calculator.computeScore(json, criteria, JudgeStatus.FAIL);
+
+    assertThat(result.judgeScore()).isEqualByComparingTo("0.0000");
+    assertThat(result.judgeStatus()).isEqualTo(JudgeStatus.ERROR);
+  }
+
+  @Test
   void unknownMetricKeyIsIgnored() {
     String json =
         """

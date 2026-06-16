@@ -253,6 +253,7 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(ProjectRepository.class),
         ignoredRepo(DatasetRepository.class),
         ignoredRepo(RubricVersionRepository.class),
+        ignoredRepo(me.nghlong3004.vqc.api.rubric.repository.RubricCriterionRepository.class),
         ignoredRepo(TargetApiConnectorRepository.class),
         ignoredRepo(JudgeModelRepository.class),
         ignoredRepo(TestCaseRepository.class),
@@ -281,6 +282,7 @@ class EvaluationRunServiceImplTest {
         projectRepository(Optional.empty()),
         ignoredRepo(DatasetRepository.class),
         ignoredRepo(RubricVersionRepository.class),
+        ignoredRepo(me.nghlong3004.vqc.api.rubric.repository.RubricCriterionRepository.class),
         ignoredRepo(TargetApiConnectorRepository.class),
         ignoredRepo(JudgeModelRepository.class),
         ignoredRepo(TestCaseRepository.class),
@@ -330,6 +332,7 @@ class EvaluationRunServiceImplTest {
         projectRepository(Optional.of(project)),
         ignoredRepo(DatasetRepository.class),
         ignoredRepo(RubricVersionRepository.class),
+        ignoredRepo(me.nghlong3004.vqc.api.rubric.repository.RubricCriterionRepository.class),
         ignoredRepo(TargetApiConnectorRepository.class),
         ignoredRepo(JudgeModelRepository.class),
         ignoredRepo(TestCaseRepository.class),
@@ -366,6 +369,7 @@ class EvaluationRunServiceImplTest {
         projectRepository(Optional.of(project)),
         ignoredRepo(DatasetRepository.class),
         ignoredRepo(RubricVersionRepository.class),
+        ignoredRepo(me.nghlong3004.vqc.api.rubric.repository.RubricCriterionRepository.class),
         ignoredRepo(TargetApiConnectorRepository.class),
         ignoredRepo(JudgeModelRepository.class),
         ignoredRepo(TestCaseRepository.class),
@@ -414,6 +418,7 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(ProjectRepository.class),
         ignoredRepo(DatasetRepository.class),
         ignoredRepo(RubricVersionRepository.class),
+        ignoredRepo(me.nghlong3004.vqc.api.rubric.repository.RubricCriterionRepository.class),
         ignoredRepo(TargetApiConnectorRepository.class),
         ignoredRepo(JudgeModelRepository.class),
         ignoredRepo(TestCaseRepository.class),
@@ -442,6 +447,7 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(ProjectRepository.class),
         ignoredRepo(DatasetRepository.class),
         ignoredRepo(RubricVersionRepository.class),
+        ignoredRepo(me.nghlong3004.vqc.api.rubric.repository.RubricCriterionRepository.class),
         ignoredRepo(TargetApiConnectorRepository.class),
         ignoredRepo(JudgeModelRepository.class),
         ignoredRepo(TestCaseRepository.class),
@@ -493,6 +499,7 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(ProjectRepository.class),
         ignoredRepo(DatasetRepository.class),
         ignoredRepo(RubricVersionRepository.class),
+        ignoredRepo(me.nghlong3004.vqc.api.rubric.repository.RubricCriterionRepository.class),
         ignoredRepo(TargetApiConnectorRepository.class),
         ignoredRepo(JudgeModelRepository.class),
         ignoredRepo(TestCaseRepository.class),
@@ -533,6 +540,7 @@ class EvaluationRunServiceImplTest {
         ignoredRepo(ProjectRepository.class),
         ignoredRepo(DatasetRepository.class),
         ignoredRepo(RubricVersionRepository.class),
+        ignoredRepo(me.nghlong3004.vqc.api.rubric.repository.RubricCriterionRepository.class),
         ignoredRepo(TargetApiConnectorRepository.class),
         ignoredRepo(JudgeModelRepository.class),
         ignoredRepo(TestCaseRepository.class),
@@ -576,6 +584,7 @@ class EvaluationRunServiceImplTest {
             ignoredRepo(ProjectRepository.class),
             ignoredRepo(DatasetRepository.class),
             ignoredRepo(RubricVersionRepository.class),
+        ignoredRepo(me.nghlong3004.vqc.api.rubric.repository.RubricCriterionRepository.class),
             ignoredRepo(TargetApiConnectorRepository.class),
             ignoredRepo(JudgeModelRepository.class),
             ignoredRepo(TestCaseRepository.class),
@@ -608,6 +617,7 @@ class EvaluationRunServiceImplTest {
         projectRepository(Optional.of(project)),
         datasetRepository(Optional.of(dataset)),
         rubricVersionRepository(Optional.of(rubricVersion)),
+        ignoredRepo(me.nghlong3004.vqc.api.rubric.repository.RubricCriterionRepository.class),
         connectorRepository(Optional.of(connector)),
         judgeModelRepository(Optional.of(judgeModel(project, creator))),
         testCaseRepository(activeCases),
@@ -753,6 +763,7 @@ class EvaluationRunServiceImplTest {
   @SuppressWarnings("unchecked")
   private <T> T ignoredRepo(Class<T> type) {
     return proxy(type, (p, m, args) -> {
+      if (m.getReturnType() == List.class) return List.of();
       throw new UnsupportedOperationException(m.getName());
     });
   }

@@ -56,14 +56,16 @@ public class PromptfooResultParser {
     BigDecimal score = decimalValue(firstPresent(grading.path("score"), output.path("score")));
     String error = errorValue(firstPresent(output.path("error"), output.path("failureReason")));
     String criteriaResultsJson = extractCriteriaResults(grading);
+    boolean graderError = hasGraderError(grading);
+    JudgeStatus status = judgeStatus(output, grading, score, error, graderError);
     return new PromptfooResult(
         testCaseId(output),
         actualAnswer(output),
         score,
-        judgeStatus(output, grading, score, error),
+        status,
         textValue(firstPresent(grading.path("reason"), output.path("reason"))),
         intValue(firstPresent(output.path("latencyMs"), output.path("response").path("latencyMs"))),
-        error,
+        error != null ? error : (graderError ? "Judge provider error." : null),
         objectMapper.writeValueAsString(output),
         criteriaResultsJson);
   }
@@ -106,8 +108,11 @@ public class PromptfooResultParser {
   }
 
   private JudgeStatus judgeStatus(
-      JsonNode output, JsonNode grading, BigDecimal score, String error) {
+      JsonNode output, JsonNode grading, BigDecimal score, String error, boolean graderError) {
     if (error != null && !error.isBlank()) {
+      return JudgeStatus.ERROR;
+    }
+    if (graderError) {
       return JudgeStatus.ERROR;
     }
     JsonNode pass = firstPresent(grading.path("pass"), output.path("success"), output.path("pass"));
@@ -215,6 +220,8 @@ public class PromptfooResultParser {
       entry.put("pass", component.path("pass").asBoolean(false));
       entry.put("score", component.path("score").asDouble(0.0));
       entry.put("reason", component.path("reason").asText(""));
+      entry.put("status", component.path("pass").asBoolean(false) ? "PASS" : "FAIL");
+      entry.put("graderError", component.path("metadata").path("graderError").asBoolean(false));
       criteriaResults.add(entry);
     }
     if (criteriaResults.isEmpty()) {
@@ -226,5 +233,18 @@ public class PromptfooResultParser {
       log.warn("Failed to serialize criteria results: {}", ex.getMessage());
       return null;
     }
+  }
+
+  private boolean hasGraderError(JsonNode grading) {
+    JsonNode componentResults = grading.path("componentResults");
+    if (!componentResults.isArray()) {
+      return false;
+    }
+    for (JsonNode component : componentResults) {
+      if (component.path("metadata").path("graderError").asBoolean(false)) {
+        return true;
+      }
+    }
+    return false;
   }
 }

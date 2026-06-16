@@ -3,6 +3,7 @@ package me.nghlong3004.vqc.api.evaluation.response;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 import me.nghlong3004.vqc.api.evaluation.enums.JudgeStatus;
 import me.nghlong3004.vqc.api.review.enums.QcStatus;
@@ -30,6 +31,8 @@ public record EvaluationResultListItemResponse(
     @Schema(description = "Error message if failed.", nullable = true) String errorMessage,
     @Schema(description = "Per-criterion scoring breakdown JSON.", nullable = true)
         String criteriaResultsJson,
+    @Schema(description = "Structured per-criterion scoring breakdown.")
+        List<EvaluationCriteriaResultResponse> criteriaResults,
     @Schema(description = "Human final QC status.", example = "NOT_REVIEWED") QcStatus qcStatus,
     @Schema(description = "QC note.", nullable = true) String qcNote,
     @Schema(description = "PIC bug user.", nullable = true) ReviewUserResponse picBug,
