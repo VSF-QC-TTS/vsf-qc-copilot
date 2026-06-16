@@ -114,6 +114,8 @@ Coding conventions:
 - **Styling**: Tailwind CSS v4 paired with custom shadcn-inspired components inside `client/src/components/ui`. Light/Dark mode is supported via `next-themes` and variables in `client/src/styles/globals.css`.
 - **Translations**: `next-intl` configuration requires both English (`en.json`) and Vietnamese (`vi.json`) keys under `client/messages/`. Default locale is `vi`.
 - **Forms**: React Hook Form combined with Zod validation schemas (`client/src/lib/validations/`). Error boundaries render validation messages.
+- **Error Mapping & Translation**: All custom backend error codes from `ErrorCode.java` must be registered in the `knownCodes` array in `client/src/lib/utils/error-messages.ts` and translated under the `"errors"` namespace in `vi.json` and `en.json`.
+  - JSR-380 validation messages returned by the server (e.g. `Email is required.`) are dynamically translated at runtime using a regex pattern matching and field dictionary lookup mechanism implemented in `translateValidationMessage` inside `error-messages.ts` to keep the backend language-agnostic.
 - **Icons**: Import strictly from `@phosphor-icons/react` package. No other icon library should be utilized.
 - **API client**: All calls must go through the configured `apiClient` helper inside `client/src/lib/api/client.ts` to ensure automatic auth header attachment, refresh logic, and error normalization.
 
