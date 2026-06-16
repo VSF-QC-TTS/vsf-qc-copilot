@@ -1,6 +1,6 @@
 # ============================================================
 # VSF QC Copilot — Backend Dockerfile
-# Multi-stage build: build → runtime (no promptfoo)
+# Multi-stage build: Maven build → Promptfoo runner → runtime
 # ============================================================
 
 # -----------------------------------------------------------
@@ -24,7 +24,18 @@ RUN ./mvnw package -DskipTests -B -q \
     && mv target/*.jar app.jar
 
 # -----------------------------------------------------------
-# Stage 2: Production runtime (lightweight, no promptfoo)
+# Stage 2: Install pinned Promptfoo runner
+# -----------------------------------------------------------
+FROM node:22-bookworm-slim AS promptfoo
+
+WORKDIR /promptfoo-runner
+
+COPY tooling/promptfoo-runner/package.json tooling/promptfoo-runner/package-lock.json ./
+
+RUN npm ci --omit=dev --no-audit --no-fund
+
+# -----------------------------------------------------------
+# Stage 3: Production runtime
 # -----------------------------------------------------------
 FROM eclipse-temurin:21-jre
 
@@ -33,11 +44,13 @@ LABEL description="VSF QC Copilot Backend API"
 
 WORKDIR /app
 
-# Copy the built JAR
 COPY --from=builder /build/app.jar app.jar
+COPY --from=promptfoo /usr/local/bin/node /usr/local/bin/node
+COPY --from=promptfoo /promptfoo-runner /app/tooling/promptfoo-runner
 
 # Default Spring profile
 ENV SPRING_PROFILES_ACTIVE=prod
+ENV HOME=/app
 
 # Create runtime directories + non-root user
 RUN mkdir -p /app/runs /app/exports /app/logs \

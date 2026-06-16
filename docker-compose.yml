@@ -69,6 +69,9 @@ services:
       DB_USERNAME: ${POSTGRES_USER:-vqc}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-vqc}
       REDIS_HOST: redis
+      VQC_PROMPTFOO_MODE: cli
+      VQC_PROMPTFOO_WORK_DIR: /app/runs
+      VQC_PROMPTFOO_BINARY_PATH: /app/tooling/promptfoo-runner/node_modules/.bin/promptfoo
       # CORS: allow client dev server
       WEB_BASE_URL: http://localhost:3000
       SERVER_BASE_URL: http://localhost:8080
