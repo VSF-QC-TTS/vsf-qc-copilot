@@ -904,6 +904,16 @@ Quick start with auto-resolve. Any `null` field is auto-resolved to the **sole c
       "judgeStatus": "PASS",
       "judgeReason": "Answer is mostly accurate",
       "criteriaResultsJson": "[{\"metricKey\":\"correctness\",\"pass\":true,\"score\":0.9}]",
+      "criteriaResults": [
+        {
+          "metricKey": "correctness",
+          "name": "Correctness",
+          "status": "PASS",
+          "score": 0.9,
+          "reason": "Answer is mostly accurate",
+          "graderError": false
+        }
+      ],
       "latencyMs": 450,
       "qcStatus": "NOT_REVIEWED",
       "qcNote": null,
@@ -939,6 +949,23 @@ Quick start with auto-resolve. Any `null` field is auto-resolved to the **sole c
   }
 ]
 ```
+
+---
+
+### GET /api/v1/evaluation-runs/{runPublicId}/events/stream
+
+Streams evaluation job events as Server-Sent Events. Use `fetch` streaming with
+`Authorization: Bearer <access_token>`; do not put JWTs in query params.
+
+**Response:** `200 OK`, `Content-Type: text/event-stream`
+```text
+event: job-event
+id: <jobEventPublicId>
+data: {"publicId":"uuid","eventType":"RUNNING","payloadJson":"{}","createdAt":"..."}
+```
+
+The stream emits existing events first, then new events, and closes after the
+evaluation run reaches `COMPLETED`, `FAILED`, or `CANCELLED`.
 
 ---
 
