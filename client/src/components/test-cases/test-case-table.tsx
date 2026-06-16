@@ -12,10 +12,11 @@ import type { PageResponse, TestCaseStatus } from '@/lib/api/types';
 import {
   PlusIcon,
   UploadSimpleIcon,
-  RobotIcon,
+  BrainIcon,
   CaretLeftIcon,
   CaretRightIcon,
 } from '@phosphor-icons/react';
+import { motion } from 'motion/react';
 
 import { TestCaseEditor } from './test-case-editor';
 import { ImportDialog } from './import-dialog';
@@ -115,20 +116,32 @@ export function TestCaseTable({
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-3">
         {/* Status filter */}
-        <div className="flex gap-1">
-          {(['ACTIVE', 'INACTIVE'] as const).map((s) => (
-            <Button
-              key={s}
-              variant={statusFilter === s ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => {
-                setStatusFilter(s);
-                setPage(0);
-              }}
-            >
-              {t(`status${s.charAt(0) + s.slice(1).toLowerCase()}` as 'statusActive')}
-            </Button>
-          ))}
+        <div className="flex items-center gap-1 p-1 bg-muted/40 border border-border/50 rounded-lg w-fit">
+          {(['ACTIVE', 'INACTIVE'] as const).map((s) => {
+            const isActive = statusFilter === s;
+            return (
+              <button
+                key={s}
+                onClick={() => {
+                  setStatusFilter(s);
+                  setPage(0);
+                }}
+                className={cn(
+                  "relative px-4 py-1.5 text-sm font-medium rounded-md transition-colors",
+                  isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="testCaseStatusTab"
+                    className="absolute inset-0 bg-background shadow-xs border border-border/50 rounded-md"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10">{t(`status${s.charAt(0) + s.slice(1).toLowerCase()}` as 'statusActive')}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Actions (DRAFT only) */}
@@ -151,7 +164,7 @@ export function TestCaseTable({
               size="sm"
               onClick={() => setGenerateOpen(true)}
             >
-              <RobotIcon className="mr-1.5 size-4" />
+              <BrainIcon className="mr-1.5 size-4" />
               {t('aiGenerate')}
             </Button>
           </div>
