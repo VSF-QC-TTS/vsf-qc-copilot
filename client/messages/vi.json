@@ -29,7 +29,11 @@
     "add": "Thêm",
     "error": "Đã có lỗi xảy ra",
     "success": "Thành công",
-    "errorLoadingData": "Không thể tải dữ liệu."
+    "errorLoadingData": "Không thể tải dữ liệu.",
+    "status": {
+      "PUBLISHED": "Đã xuất bản",
+      "ARCHIVED": "Lưu trữ"
+    }
   },
   "auth": {
     "login": "Đăng nhập",
@@ -640,10 +644,16 @@
     "noEvents": "Chưa có sự kiện nào.",
     "eventTypes": {
       "RUNNING": "Bắt đầu tiến trình đánh giá",
+      "LOADING_TEST_CASES": "Đang tải test case đang hoạt động",
+      "RUNNING_PROMPTFOO": "Promptfoo đang đánh giá {total} test case",
+      "PARSING_RESULTS": "Đang phân tích kết quả Promptfoo",
+      "PERSISTING_RESULTS": "Đang lưu kết quả đánh giá",
       "CASE_COMPLETED": "Đã đánh giá xong testcase {completed}/{total}",
       "COMPLETED": "Quá trình đánh giá hoàn tất. Tổng số: {total} (Đạt: {passed}, Không đạt: {failed}, Cảnh báo: {warning}, Lỗi hệ thống: {error})",
       "FAILED": "Tiến trình thất bại: {errorMessage}"
     },
+    "streamReconnecting": "Đang kết nối lại luồng sự kiện...",
+    "streamDisconnected": "Luồng sự kiện bị ngắt. Đang chuyển sang polling.",
     "results": "Kết quả",
     "export": "Xuất file",
     "summary": "Tổng quan",
@@ -713,6 +723,11 @@
     "judgeScore": "Điểm",
     "qcStatus": "Trạng thái QC",
     "criteriaBreakdown": "Chi tiết tiêu chí",
+    "showDetails": "Xem chi tiết",
+    "hideDetails": "Ẩn chi tiết",
+    "reason": "Lý do",
+    "graderError": "Lỗi provider chấm điểm",
+    "noCriteria": "Chưa có chi tiết tiêu chí.",
     "prevResult": "Trước",
     "nextResult": "Sau"
   },

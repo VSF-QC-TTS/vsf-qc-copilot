@@ -29,7 +29,11 @@
     "add": "Add",
     "error": "An error occurred",
     "success": "Success",
-    "errorLoadingData": "Unable to load data."
+    "errorLoadingData": "Unable to load data.",
+    "status": {
+      "PUBLISHED": "Published",
+      "ARCHIVED": "Archived"
+    }
   },
   "auth": {
     "login": "Sign in",
@@ -640,10 +644,16 @@
     "noEvents": "No events recorded.",
     "eventTypes": {
       "RUNNING": "Evaluation run started",
+      "LOADING_TEST_CASES": "Loading active test cases",
+      "RUNNING_PROMPTFOO": "Promptfoo is evaluating {total} test cases",
+      "PARSING_RESULTS": "Parsing Promptfoo results",
+      "PERSISTING_RESULTS": "Saving evaluation results",
       "CASE_COMPLETED": "Evaluated testcase {completed}/{total}",
       "COMPLETED": "Evaluation completed. Total cases: {total} (Passed: {passed}, Failed: {failed}, Warning: {warning}, Error: {error})",
       "FAILED": "Evaluation failed: {errorMessage}"
     },
+    "streamReconnecting": "Reconnecting event stream...",
+    "streamDisconnected": "Event stream disconnected. Falling back to polling.",
     "results": "Results",
     "export": "Export",
     "summary": "Summary",
@@ -713,6 +723,11 @@
     "judgeScore": "Score",
     "qcStatus": "QC Status",
     "criteriaBreakdown": "Criteria Breakdown",
+    "showDetails": "Show details",
+    "hideDetails": "Hide details",
+    "reason": "Reason",
+    "graderError": "Judge provider error",
+    "noCriteria": "No criteria details are available.",
     "prevResult": "Previous",
     "nextResult": "Next"
   },
