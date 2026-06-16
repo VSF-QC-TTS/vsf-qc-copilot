@@ -10,7 +10,6 @@ import { LightningIcon } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api/client';
-import { useJobProgress } from '@/hooks/use-job-progress';
 import {
   startEvaluationSchema,
   type StartEvaluationFormValues,
@@ -110,8 +109,6 @@ export function StartEvaluationDialog({
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const [jobPublicId, setJobPublicId] = React.useState<string | null>(null);
-  const [runPublicId, setRunPublicId] = React.useState<string | null>(null);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const cancelRef = React.useRef<HTMLButtonElement>(null);
@@ -186,26 +183,6 @@ export function StartEvaluationDialog({
   );
   const selectedValues = useWatch({ control });
 
-  // Job progress polling
-  const { job } = useJobProgress(jobPublicId, {
-    onCompleted: () => {
-      void queryClient.invalidateQueries({
-        queryKey: ['evaluation-runs', projectId],
-      });
-      void queryClient.invalidateQueries({
-        queryKey: ['evaluations', projectId],
-      });
-      onOpenChange(false);
-      if (runPublicId) {
-        router.push(`/projects/${projectId}/evaluations/${runPublicId}`);
-      }
-    },
-    onFailed: () => {
-      setSubmitError('Evaluation job failed.');
-      setIsSubmitting(false);
-    },
-  });
-
   // Reset on close
   React.useEffect(() => {
     if (open) return;
@@ -215,8 +192,6 @@ export function StartEvaluationDialog({
       if (cancelled) return;
 
       reset();
-      setJobPublicId(null);
-      setRunPublicId(null);
       setSubmitError(null);
       setIsSubmitting(false);
     });
@@ -265,14 +240,16 @@ export function StartEvaluationDialog({
         `/api/v1/projects/${projectId}/evaluation-runs`,
         values,
       );
-      setRunPublicId(res.runPublicId);
-      setJobPublicId(res.jobPublicId);
+      
       void queryClient.invalidateQueries({
         queryKey: ['evaluation-runs', projectId],
       });
       void queryClient.invalidateQueries({
         queryKey: ['evaluations', projectId],
       });
+      
+      onOpenChange(false);
+      router.push(`/projects/${projectId}/evaluations/${res.runPublicId}`);
     } catch (err: unknown) {
       const msg =
         err instanceof Object && 'message' in err
@@ -291,14 +268,16 @@ export function StartEvaluationDialog({
         `/api/v1/projects/${projectId}/quick-evaluate`,
         {},
       );
-      setRunPublicId(res.runPublicId);
-      setJobPublicId(res.jobPublicId);
+      
       void queryClient.invalidateQueries({
         queryKey: ['evaluation-runs', projectId],
       });
       void queryClient.invalidateQueries({
         queryKey: ['evaluations', projectId],
       });
+      
+      onOpenChange(false);
+      router.push(`/projects/${projectId}/evaluations/${res.runPublicId}`);
     } catch (err: unknown) {
       const msg =
         err instanceof Object && 'message' in err
@@ -314,10 +293,7 @@ export function StartEvaluationDialog({
     rubricVersionsLoading ||
     connectorsLoading ||
     judgeModelsLoading;
-  const jobProgressPercent =
-    job && job.progressTotal > 0
-      ? Math.round((job.progressCurrent / job.progressTotal) * 100)
-      : 0;
+    
   const canQuickEvaluate =
     datasets.length === 1 &&
     rubricVersions.length === 1 &&
@@ -393,17 +369,10 @@ export function StartEvaluationDialog({
           </div>
         )}
 
-        {jobPublicId ? (
-          <div className="mt-4 space-y-2">
-            <p className="text-sm text-muted-foreground animate-pulse">
-              {t('progress')}: {jobProgressPercent}%
-            </p>
-          </div>
-        ) : (
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="mt-4 space-y-4"
-          >
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="mt-4 space-y-4"
+        >
             {/* Dataset select */}
             <RequirementField
               empty={datasets.length === 0}
@@ -587,7 +556,6 @@ export function StartEvaluationDialog({
               </div>
             </div>
           </form>
-        )}
       </div>
     </div>
   );
