@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
 import { PlusIcon } from '@phosphor-icons/react';
+import { motion } from 'motion/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,20 @@ function formatDate(iso: string): string {
     day: 'numeric',
   });
 }
+
+// ---------------------------------------------------------------------------
+// Motion Variants
+// ---------------------------------------------------------------------------
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.1 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 100, damping: 15 } },
+};
 
 // ---------------------------------------------------------------------------
 // Page component
@@ -131,56 +146,75 @@ export default function ProjectsPage() {
         </Button>
       }
     >
-      {/* Status filter tabs */}
-      <div className="flex items-center gap-1">
-        {filterOptions.map((opt) => (
-          <Button
-            key={opt.value}
-            variant="outline"
-            size="sm"
-            className={cn(
-              statusFilter === opt.value &&
-                'bg-accent text-accent-foreground',
-            )}
-            onClick={() => {
-              setStatusFilter(opt.value);
-              setPage(0);
-            }}
-          >
-            {opt.label}
-          </Button>
-        ))}
-      </div>
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="space-y-4"
+      >
+        {/* Status filter tabs */}
+        <motion.div variants={itemVariants} className="flex items-center gap-1 p-1 bg-muted/40 border border-border/50 rounded-lg w-fit">
+          {filterOptions.map((opt) => {
+            const isActive = statusFilter === opt.value;
+            return (
+              <button
+                key={opt.value}
+                onClick={() => {
+                  setStatusFilter(opt.value);
+                  setPage(0);
+                }}
+                className={cn(
+                  "relative px-4 py-1.5 text-sm font-medium rounded-md transition-colors",
+                  isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="projectsFilterTab"
+                    className="absolute inset-0 bg-background shadow-xs border border-border/50 rounded-md"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10">{opt.label}</span>
+              </button>
+            );
+          })}
+        </motion.div>
 
-      {/* Data table */}
-      <DataTable
-        columns={columns}
-        data={projects}
-        totalItems={totalItems}
-        pageIndex={page}
-        pageSize={PAGE_SIZE}
-        onPaginationChange={handlePaginationChange}
-        loading={isLoading}
-        onRowClick={handleRowClick}
-        emptyMessage={t('noProjects')}
-        emptyAction={
-          <Button onClick={() => setDialogOpen(true)}>
-            <PlusIcon weight="bold" />
-            {t('createProject')}
-          </Button>
-        }
-      />
+        {/* Data table */}
+        <motion.div variants={itemVariants}>
+          <DataTable
+            columns={columns}
+            data={projects}
+            totalItems={totalItems}
+            pageIndex={page}
+            pageSize={PAGE_SIZE}
+            onPaginationChange={handlePaginationChange}
+            loading={isLoading}
+            onRowClick={handleRowClick}
+            emptyMessage={t('noProjects')}
+            emptyAction={
+              <Button onClick={() => setDialogOpen(true)}>
+                <PlusIcon weight="bold" />
+                {t('createProject')}
+              </Button>
+            }
+          />
+        </motion.div>
 
-      {/* Pagination (below table) */}
-      {totalItems > 0 && (
-        <DataTablePagination
-          pageIndex={page}
-          pageSize={PAGE_SIZE}
-          totalItems={totalItems}
-          totalPages={totalPages}
-          onPageChange={setPage}
-        />
-      )}
+        {/* Pagination (below table) */}
+        {totalItems > 0 && (
+          <motion.div variants={itemVariants}>
+            <DataTablePagination
+              pageIndex={page}
+              pageSize={PAGE_SIZE}
+              totalItems={totalItems}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
+          </motion.div>
+        )}
+      </motion.div>
 
       {/* Create project dialog */}
       <CreateProjectDialog open={dialogOpen} onOpenChange={setDialogOpen} />
