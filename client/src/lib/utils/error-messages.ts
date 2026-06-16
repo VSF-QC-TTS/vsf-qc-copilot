@@ -1,6 +1,6 @@
 import type { ApiError } from "@/lib/api/types";
 
-type ErrorTranslator = (key: string) => string;
+type ErrorTranslator = (key: string, values?: any) => string;
 
 /**
  * Map a backend error code to an i18n message key under `errors.*`.
@@ -57,18 +57,122 @@ export function isApiError(error: unknown): error is ApiError {
   );
 }
 
-function backendValidationMessage(error: ApiError): string | null {
+function translateValidationMessage(msg: string, tErrors?: ErrorTranslator): string {
+  if (!tErrors) return msg;
+
+  const cleanMsg = msg.trim().replace(/\.$/, "");
+  const customMap: Record<string, string> = {
+    "Email must be a valid email address": "validation_custom.email_valid",
+    "Metric key must start with a lowercase letter and contain lowercase letters, numbers, or underscores": "validation_custom.metric_key_format"
+  };
+
+  if (customMap[cleanMsg]) {
+    try {
+      const translated = tErrors(customMap[cleanMsg]);
+      if (translated && !translated.startsWith("errors.")) {
+        return translated;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const translateField = (field: string): string => {
+    const key = field.toLowerCase().trim().replace(/\s+/g, "_");
+    try {
+      const translated = tErrors(`validation_fields.${key}`);
+      if (translated && !translated.startsWith("errors.")) {
+        return translated;
+      }
+    } catch {
+      // ignore
+    }
+    return field;
+  };
+
+  const rules = [
+    {
+      regex: /^(.+) is required\.$/i,
+      translate: (match: RegExpMatchArray) => {
+        const field = translateField(match[1]);
+        return tErrors("validation_rules.required", { field });
+      }
+    },
+    {
+      regex: /^(.+) must not be blank\.$/i,
+      translate: (match: RegExpMatchArray) => {
+        const field = translateField(match[1]);
+        return tErrors("validation_rules.not_blank", { field });
+      }
+    },
+    {
+      regex: /^(.+) must be at most (\d+) characters\.$/i,
+      translate: (match: RegExpMatchArray) => {
+        const field = translateField(match[1]);
+        const num = match[2];
+        return tErrors("validation_rules.at_most_chars", { field, num });
+      }
+    },
+    {
+      regex: /^(.+) must be between (\d+) and (\d+) characters\.$/i,
+      translate: (match: RegExpMatchArray) => {
+        const field = translateField(match[1]);
+        const num1 = match[2];
+        const num2 = match[3];
+        return tErrors("validation_rules.between_chars", { field, num1, num2 });
+      }
+    },
+    {
+      regex: /^(.+) must be at least (\d+)\.$/i,
+      translate: (match: RegExpMatchArray) => {
+        const field = translateField(match[1]);
+        const num = match[2];
+        return tErrors("validation_rules.at_least_val", { field, num });
+      }
+    },
+    {
+      regex: /^(.+) must be at most (\d+)\.$/i,
+      translate: (match: RegExpMatchArray) => {
+        const field = translateField(match[1]);
+        const num = match[2];
+        return tErrors("validation_rules.at_most_val", { field, num });
+      }
+    }
+  ];
+
+  for (const rule of rules) {
+    const match = msg.match(rule.regex);
+    if (match) {
+      try {
+        const result = rule.translate(match);
+        if (result && !result.startsWith("errors.")) {
+          return result;
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  return msg;
+}
+
+function backendValidationMessage(error: ApiError, tErrors?: ErrorTranslator): string | null {
   if (!error.errors || error.errors.length === 0) {
     return null;
   }
 
   return error.errors
-    .map((item) => (item.field ? `${item.field}: ${item.message}` : item.message))
+    .map((item) => {
+      if (!item.message) return item.field ? `${item.field}: ` : "";
+      const translatedMsg = translateValidationMessage(item.message, tErrors);
+      return item.field ? `${item.field}: ${translatedMsg}` : translatedMsg;
+    })
     .join("\n");
 }
 
-export function getBackendErrorMessage(error: ApiError): string | null {
-  return backendValidationMessage(error) ?? error.message ?? error.detail ?? null;
+export function getBackendErrorMessage(error: ApiError, tErrors?: ErrorTranslator): string | null {
+  return backendValidationMessage(error, tErrors) ?? error.message ?? error.detail ?? null;
 }
 
 export function getErrorMessage(error: unknown, tErrors: ErrorTranslator): string {
@@ -77,7 +181,7 @@ export function getErrorMessage(error: unknown, tErrors: ErrorTranslator): strin
   }
 
   const messageKey = getErrorMessageKey(error).replace(/^errors\./, "");
-  const backendMessage = getBackendErrorMessage(error);
+  const backendMessage = getBackendErrorMessage(error, tErrors);
 
   if (
     backendMessage &&
