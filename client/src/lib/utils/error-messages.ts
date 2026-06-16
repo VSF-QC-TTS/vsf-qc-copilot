@@ -1,6 +1,6 @@
 import type { ApiError } from "@/lib/api/types";
 
-type ErrorTranslator = (key: string, values?: any) => string;
+type ErrorTranslator = (key: string, values?: Record<string, string | number>) => string;
 
 /**
  * Map a backend error code to an i18n message key under `errors.*`.
