@@ -8,6 +8,7 @@ import {
   CaretRightIcon,
   CaretDownIcon,
 } from '@phosphor-icons/react';
+import { motion, AnimatePresence } from 'motion/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -245,8 +246,8 @@ export function ResultDetailPanel({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/30">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
             {result.judgeStatus ? (
               <StatusBadge status={result.judgeStatus} size="sm" />
             ) : (
@@ -413,22 +414,34 @@ function CriterionCard({
         </Button>
       )}
 
-      {expanded && hasDetails && (
-        <div className="mt-2 space-y-2 border-t pt-2">
-          {criterion.graderError && (
-            <p className="text-xs font-medium text-destructive">{tGraderError}</p>
-          )}
-          {criterion.reason && (
-            <div className="space-y-1">
-              <div className="text-xs font-medium text-muted-foreground">
-                {tReason}
+      {hasDetails && (
+        <AnimatePresence initial={false}>
+          {expanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="mt-2 space-y-2 border-t pt-2">
+                {criterion.graderError && (
+                  <p className="text-xs font-medium text-destructive">{tGraderError}</p>
+                )}
+                {criterion.reason && (
+                  <div className="space-y-1">
+                    <div className="text-xs font-medium text-muted-foreground">
+                      {tReason}
+                    </div>
+                    <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+                      {criterion.reason}
+                    </p>
+                  </div>
+                )}
               </div>
-              <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-                {criterion.reason}
-              </p>
-            </div>
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
       )}
     </div>
   );
@@ -454,7 +467,7 @@ function CollapsibleSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-1">
+    <div className="space-y-2 rounded-xl border bg-card p-4 shadow-sm transition-all">
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           {label}
@@ -468,18 +481,37 @@ function CollapsibleSection({
             onClick={onToggle}
           >
             <CaretDownIcon
-              className={cn('size-3.5 transition-transform', !expanded && '-rotate-90')}
+              className={cn('size-3.5 transition-transform duration-200', !expanded && '-rotate-90')}
             />
             {expanded ? tHide : tShow}
           </Button>
         )}
       </div>
-      {expanded && children}
-      {!expanded && (
-        <p className="max-h-16 overflow-hidden whitespace-pre-wrap text-sm text-muted-foreground">
-          {previewText}
-        </p>
-      )}
+      <AnimatePresence initial={false} mode="popLayout">
+        {expanded ? (
+          <motion.div
+            key="full"
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+            transition={{ duration: 0.2 }}
+          >
+            {children}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="preview"
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+            transition={{ duration: 0.2 }}
+          >
+            <p className="max-h-16 overflow-hidden whitespace-pre-wrap text-sm text-muted-foreground">
+              {previewText}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -491,12 +523,14 @@ function CollapsibleSection({
 function Section({
   label,
   children,
+  className,
 }: {
   label: string;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="space-y-1">
+    <div className={cn("space-y-3 rounded-xl border bg-card p-4 shadow-sm", className)}>
       <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </h3>
