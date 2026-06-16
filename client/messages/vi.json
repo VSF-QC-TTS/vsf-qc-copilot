@@ -110,6 +110,7 @@
     "recentActivity": "Hoạt động gần đây",
     "createFirstProject": "Tạo dự án đầu tiên",
     "createFirstProjectDesc": "Bạn chưa có dự án nào. Hãy tạo dự án mới để bắt đầu.",
+    "createNewProject": "Tạo dự án mới",
     "viewAllProjects": "Xem tất cả dự án",
     "quickActions": "Thao tác nhanh"
   },
@@ -186,10 +187,10 @@
     "validation": "Dữ liệu không hợp lệ.",
     "BAD_CREDENTIALS": "Email hoặc mật khẩu không đúng.",
     "INVALID_CREDENTIALS": "Email hoặc mật khẩu không đúng.",
-    "ACCESS_TOKEN_EXPIRED": "Token truy cập đã hết hạn.",
-    "INVALID_ACCESS_TOKEN": "Token truy cập không hợp lệ.",
-    "INVALID_REFRESH_TOKEN": "Token làm mới không hợp lệ.",
-    "REFRESH_TOKEN_EXPIRED": "Token làm mới đã hết hạn.",
+    "ACCESS_TOKEN_EXPIRED": "Phiên đăng nhập đã hết hạn.",
+    "INVALID_ACCESS_TOKEN": "Phiên đăng nhập không hợp lệ.",
+    "INVALID_REFRESH_TOKEN": "Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.",
+    "REFRESH_TOKEN_EXPIRED": "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
     "ACCOUNT_LOCKED": "Tài khoản người dùng đã bị khóa.",
     "EMAIL_ALREADY_EXISTS": "Email đã được sử dụng.",
     "USER_NOT_FOUND": "Không tìm thấy người dùng.",
@@ -302,7 +303,7 @@
       "output_schema": "Schema đầu ra",
       "pass_condition": "Điều kiện vượt qua",
       "password": "Mật khẩu",
-      "password_reset_token": "Token đặt lại mật khẩu",
+      "password_reset_token": "Mã đặt lại mật khẩu",
       "project_description": "Mô tả dự án",
       "project_name": "Tên dự án",
       "qc_status": "Trạng thái QC",
@@ -322,7 +323,7 @@
       "test_case_question": "Câu hỏi test case",
       "timeout_seconds": "Thời gian chờ (giây)",
       "url": "URL",
-      "verification_token": "Token xác thực"
+      "verification_token": "Mã xác thực"
     },
     "validation_rules": {
       "required": "{field} là bắt buộc.",

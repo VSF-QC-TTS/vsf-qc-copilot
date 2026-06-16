@@ -116,6 +116,9 @@ Coding conventions:
 - **Forms**: React Hook Form combined with Zod validation schemas (`client/src/lib/validations/`). Error boundaries render validation messages.
 - **Error Mapping & Translation**: All custom backend error codes from `ErrorCode.java` must be registered in the `knownCodes` array in `client/src/lib/utils/error-messages.ts` and translated under the `"errors"` namespace in `vi.json` and `en.json`.
   - JSR-380 validation messages returned by the server (e.g. `Email is required.`) are dynamically translated at runtime using a regex pattern matching and field dictionary lookup mechanism implemented in `translateValidationMessage` inside `error-messages.ts` to keep the backend language-agnostic.
+  - **Terminology**: Avoid technical terms like "Access token" or "Refresh token" in user-facing translations (`vi.json`, `en.json`). Use user-friendly terms like "Phiên đăng nhập" or "Session" instead.
+- **Layouts**: Dashboard layouts should use a rigid `h-[100dvh]` container to restrict `body` scrolling, forcing internal scrolling on `<main>`. Sidebars must use `fixed` positioning to remain pinned regardless of content size.
+- **Registration Flow**: Upon successful registration, the UI dynamically extracts the user's email domain and provides a direct "Check email" button routing to providers like Gmail, Yahoo, or Outlook.
 - **Icons**: Import strictly from `@phosphor-icons/react` package. No other icon library should be utilized.
 - **API client**: All calls must go through the configured `apiClient` helper inside `client/src/lib/api/client.ts` to ensure automatic auth header attachment, refresh logic, and error normalization.
 
