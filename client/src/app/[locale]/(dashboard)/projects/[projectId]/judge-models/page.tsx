@@ -35,6 +35,12 @@ const itemVariants = {
   show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 100, damping: 15 } },
 };
 
+function formatDate(iso: string): string {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 export default function JudgeModelsPage() {
   const t = useTranslations('judgeModels');
   const tCommon = useTranslations('common');
