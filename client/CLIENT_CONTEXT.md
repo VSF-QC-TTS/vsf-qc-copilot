@@ -67,7 +67,7 @@ The routing structure follows Next.js App Router localized paths: `client/src/ap
 - `(dashboard)` group:
   - `dashboard/page.tsx`: home overview.
   - `projects/page.tsx`: lists projects.
-  - `projects/[projectId]/page.tsx`: project detail with summaries of connectors, datasets, judge models, recent evaluations, and project readiness checklist.
+  - `projects/[projectId]/page.tsx`: project detail with project readiness checklist (serving as visual navigation/quick links), quality trend chart, and recent evaluations list.
   - `projects/[projectId]/connectors/page.tsx`: lists target API connectors.
   - `projects/[projectId]/connectors/[connectorId]/page.tsx`: edit connector and test-run panel.
   - `projects/[projectId]/connectors/new/page.tsx`: create connector (supports manual config or auto-creating from cURL).
@@ -117,7 +117,7 @@ Coding conventions:
 - **Error Mapping & Translation**: All custom backend error codes from `ErrorCode.java` must be registered in the `knownCodes` array in `client/src/lib/utils/error-messages.ts` and translated under the `"errors"` namespace in `vi.json` and `en.json`.
   - JSR-380 validation messages returned by the server (e.g. `Email is required.`) are dynamically translated at runtime using a regex pattern matching and field dictionary lookup mechanism implemented in `translateValidationMessage` inside `error-messages.ts` to keep the backend language-agnostic.
   - **Terminology**: Avoid technical terms like "Access token" or "Refresh token" in user-facing translations (`vi.json`, `en.json`). Use user-friendly terms like "Phiên đăng nhập" or "Session" instead.
-- **Layouts**: Dashboard layouts should use a rigid `h-[100dvh]` container to restrict `body` scrolling, forcing internal scrolling on `<main>`. Sidebars must use `fixed` positioning to remain pinned regardless of content size.
+- **Layouts**: Dashboard layouts should use a rigid `h-[100dvh]` container to restrict `body` scrolling, forcing internal scrolling on `<main>`. Sidebars must use `fixed` positioning to remain pinned regardless of content size. Apply "anti-slop" UX principles: ban redundant box-in-box wrappers, deduplicate CTAs, avoid section layout repetition (e.g., stacking two card grids doing the same thing), and use `framer-motion` for staggered entrance animations and smooth micro-interactions (like sliding segmented controls).
 - **Registration Flow**: Upon successful registration, the UI dynamically extracts the user's email domain and provides a direct "Check email" button routing to providers like Gmail, Yahoo, or Outlook.
 - **Icons**: Import strictly from `@phosphor-icons/react` package. No other icon library should be utilized.
 - **API client**: All calls must go through the configured `apiClient` helper inside `client/src/lib/api/client.ts` to ensure automatic auth header attachment, refresh logic, and error normalization.
