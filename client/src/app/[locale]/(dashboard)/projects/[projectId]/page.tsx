@@ -297,49 +297,110 @@ export default function ProjectDetailPage() {
         </div>
       </motion.div>
 
-      {/* ---- Evaluation readiness ---- */}
-      <motion.section variants={itemVariants} className="space-y-3">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-lg font-semibold tracking-tight">
-            {t('readiness')}
-          </h2>
-          {allReady && (
-            <Button size="sm" onClick={() => setStartDialogOpen(true)} className="w-full sm:w-auto">
-              <PlusIcon className="mr-2 h-4 w-4" weight="bold" />
+      {/* ---- Contextual Layout based on Readiness ---- */}
+      {!allReady ? (
+        <motion.section variants={itemVariants} className="space-y-3">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-semibold tracking-tight">
+              {t('setupChecklist')}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {t('readinessMissing')}
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {readinessItems.map((item) => {
+              const Icon = item.icon;
+              return (
+              <Link
+                key={item.key}
+                href={item.href}
+                className={cn(
+                  'rounded-lg border bg-card p-4 transition-colors hover:bg-accent hover:text-accent-foreground flex flex-col',
+                  item.ready ? 'border-emerald-200' : 'border-amber-200',
+                )}
+              >
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <div className="flex items-center gap-2">
+                    <Icon size={20} weight="duotone" className={item.ready ? 'text-emerald-500' : 'text-amber-500'} />
+                    <span className="text-sm font-medium">{t(item.key)}</span>
+                  </div>
+                  <StatusBadge
+                    status={item.ready ? 'ACTIVE' : 'PENDING'}
+                    size="sm"
+                  />
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {item.ready ? t('readinessReady') : t('readinessMissing')}
+                </p>
+              </Link>
+              );
+            })}
+          </div>
+        </motion.section>
+      ) : (
+        <motion.section variants={itemVariants} className="space-y-6">
+          {/* Hero Action Banner */}
+          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-6 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden">
+            <div className="absolute -right-10 -top-10 text-emerald-500/10 rotate-12">
+               <BrainIcon size={120} weight="fill" />
+            </div>
+            <div className="flex flex-col gap-2 relative z-10">
+              <h2 className="text-2xl font-bold tracking-tight text-emerald-700 dark:text-emerald-500">
+                {t('readyToEvaluate')}
+              </h2>
+              <p className="text-sm text-emerald-700/80 dark:text-emerald-500/80 max-w-[50ch]">
+                {t('readyToEvaluateDesc')}
+              </p>
+            </div>
+            <Button size="lg" onClick={() => setStartDialogOpen(true)} className="w-full sm:w-auto shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 z-10">
+              <PlusIcon className="mr-2 h-5 w-5" weight="bold" />
               {tEval('startEvaluation')}
             </Button>
-          )}
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {readinessItems.map((item) => {
-            const Icon = item.icon;
-            return (
-            <Link
-              key={item.key}
-              href={item.href}
-              className={cn(
-                'rounded-lg border bg-card p-4 transition-colors hover:bg-accent hover:text-accent-foreground flex flex-col',
-                item.ready ? 'border-emerald-200' : 'border-amber-200',
-              )}
-            >
-              <div className="flex items-center justify-between gap-3 mb-2">
-                <div className="flex items-center gap-2">
-                  <Icon size={20} weight="duotone" className={item.ready ? 'text-emerald-500' : 'text-amber-500'} />
-                  <span className="text-sm font-medium">{t(item.key)}</span>
-                </div>
-                <StatusBadge
-                  status={item.ready ? 'ACTIVE' : 'PENDING'}
-                  size="sm"
-                />
+          </div>
+
+          {/* Quick Metrics Bento */}
+          <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
+            <div className="rounded-xl border bg-card p-4 sm:p-5 flex flex-col justify-center gap-1">
+              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                <ChartBarIcon size={16} />
+                {t('latestPassRate')}
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {item.ready ? t('readinessReady') : t('readinessMissing')}
-              </p>
-            </Link>
-            );
-          })}
-        </div>
-      </motion.section>
+              <div className="text-3xl font-bold tracking-tight">
+                {trendData.length > 0 ? `${trendData[trendData.length - 1].passRate}%` : '--%'}
+              </div>
+            </div>
+            <div className="rounded-xl border bg-card p-4 sm:p-5 flex flex-col justify-center gap-1">
+              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                <ArchiveIcon size={16} />
+                {t('totalRuns')}
+              </div>
+              <div className="text-3xl font-bold tracking-tight">
+                {evaluationsData?.totalItems ?? 0}
+              </div>
+            </div>
+            <div className="rounded-xl border bg-card p-4 sm:p-5 flex flex-col justify-center gap-1 col-span-2 sm:col-span-1">
+              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                <DatabaseIcon size={16} />
+                {t('readiness')}
+              </div>
+              <div className="flex items-center gap-3 mt-1.5">
+                <div className="flex -space-x-2">
+                  {readinessItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <div key={item.key} className="size-8 rounded-full border border-background bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400" title={t(item.key)}>
+                        <Icon size={14} weight="bold" />
+                      </div>
+                    )
+                  })}
+                </div>
+                <StatusBadge status="ACTIVE" size="sm" />
+              </div>
+            </div>
+          </div>
+        </motion.section>
+      )}
 
       {/* ---- Recent evaluations ---- */}
       <motion.section variants={itemVariants} className="space-y-3">
@@ -365,10 +426,9 @@ export default function ProjectDetailPage() {
             title={t('noEvaluations')}
             icon={<ChartBarIcon size={48} weight="duotone" />}
             action={
-              allReady ? (
-                <Button onClick={() => setStartDialogOpen(true)}>
-                  <PlusIcon className="mr-2 h-4 w-4" weight="bold" />
-                  {tEval('startEvaluation')}
+              !allReady ? (
+                <Button variant="outline" asChild>
+                  <Link href="#setup-checklist">{t('readinessMissing')}</Link>
                 </Button>
               ) : undefined
             }
