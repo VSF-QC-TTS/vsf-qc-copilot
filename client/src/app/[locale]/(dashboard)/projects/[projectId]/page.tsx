@@ -12,6 +12,7 @@ import {
   ChartBarIcon,
   ArchiveIcon,
   RobotIcon,
+  ArrowRightIcon,
 } from '@phosphor-icons/react';
 
 import { Link, useRouter } from '@/i18n/navigation';
@@ -38,12 +39,17 @@ const QualityTrendChart = dynamic(() => import('@/components/projects/quality-tr
 });
 
 // ---------------------------------------------------------------------------
-// Quick-link definitions
+// Types & Motion Variants
 // ---------------------------------------------------------------------------
-type QuickLink = {
-  labelKey: string;
-  href: string;
-  icon: React.ElementType;
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.1 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 100, damping: 15 } },
 };
 
 type EvaluationRunSummary = {
@@ -60,41 +66,8 @@ type ReadinessItem = {
   key: string;
   href: string;
   ready: boolean;
+  icon: React.ElementType;
 };
-
-function useQuickLinks(projectId: string): QuickLink[] {
-  return React.useMemo(
-    () => [
-      {
-        labelKey: 'connectors',
-        href: `/projects/${projectId}/connectors`,
-        icon: PlugsIcon,
-      },
-
-      {
-        labelKey: 'datasets',
-        href: `/projects/${projectId}/datasets`,
-        icon: DatabaseIcon,
-      },
-      {
-        labelKey: 'rubrics',
-        href: '/rubrics',
-        icon: ListChecksIcon,
-      },
-      {
-        labelKey: 'judgeModels',
-        href: `/projects/${projectId}/judge-models`,
-        icon: RobotIcon,
-      },
-      {
-        labelKey: 'evaluations',
-        href: `/projects/${projectId}/evaluations`,
-        icon: ChartBarIcon,
-      },
-    ],
-    [projectId],
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Loading skeleton
@@ -201,7 +174,6 @@ export default function ProjectDetailPage() {
       ),
   });
 
-  // --- ArchiveIcon mutation ---
   const archiveMutation = useMutation({
     mutationFn: () => apiClient.del('/api/v1/projects/' + projectId),
     onSuccess: () => {
@@ -211,7 +183,6 @@ export default function ProjectDetailPage() {
     },
   });
 
-  const quickLinks = useQuickLinks(projectId);
   const recentEvaluations = evaluationsData?.items ?? [];
 
   const trendData = React.useMemo(() => {
@@ -238,21 +209,25 @@ export default function ProjectDetailPage() {
       key: 'readinessConnector',
       href: `/projects/${projectId}/connectors`,
       ready: (activeConnectorsData?.totalItems ?? 0) > 0,
+      icon: PlugsIcon,
     },
     {
       key: 'readinessDataset',
       href: `/projects/${projectId}/datasets`,
       ready: (approvedDatasetsData?.totalItems ?? 0) > 0,
+      icon: DatabaseIcon,
     },
     {
       key: 'readinessJudgeModel',
       href: `/projects/${projectId}/judge-models`,
       ready: (activeJudgeModelsData?.totalItems ?? 0) > 0,
+      icon: RobotIcon,
     },
     {
       key: 'readinessRubric',
       href: '/rubrics',
       ready: (publishedRubricsData?.totalItems ?? 0) > 0,
+      icon: ListChecksIcon,
     },
   ];
   const allReady = readinessItems.every((item) => item.ready);
@@ -289,13 +264,13 @@ export default function ProjectDetailPage() {
       }
     >
       <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
         className="space-y-6"
       >
         {/* ---- Project info card ---- */}
-      <div className="rounded-lg border bg-card p-4 sm:p-6 space-y-4">
+      <motion.div variants={itemVariants} className="rounded-lg border bg-card p-4 sm:p-6 space-y-4">
         <div className="flex items-center gap-3">
           <StatusBadge status={project.status} />
         </div>
@@ -320,10 +295,10 @@ export default function ProjectDetailPage() {
             {new Date(project.updatedAt).toLocaleDateString()}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* ---- Evaluation readiness ---- */}
-      <section className="space-y-3">
+      <motion.section variants={itemVariants} className="space-y-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-semibold tracking-tight">
             {t('readiness')}
@@ -336,61 +311,48 @@ export default function ProjectDetailPage() {
           )}
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {readinessItems.map((item) => (
+          {readinessItems.map((item) => {
+            const Icon = item.icon;
+            return (
             <Link
               key={item.key}
               href={item.href}
               className={cn(
-                'rounded-lg border bg-card p-4 transition-colors hover:bg-accent hover:text-accent-foreground',
+                'rounded-lg border bg-card p-4 transition-colors hover:bg-accent hover:text-accent-foreground flex flex-col',
                 item.ready ? 'border-emerald-200' : 'border-amber-200',
               )}
             >
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-medium">{t(item.key)}</span>
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div className="flex items-center gap-2">
+                  <Icon size={20} weight="duotone" className={item.ready ? 'text-emerald-500' : 'text-amber-500'} />
+                  <span className="text-sm font-medium">{t(item.key)}</span>
+                </div>
                 <StatusBadge
                   status={item.ready ? 'ACTIVE' : 'PENDING'}
                   size="sm"
                 />
               </div>
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {item.ready ? t('readinessReady') : t('readinessMissing')}
               </p>
             </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* ---- Quick links ---- */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold tracking-tight">
-          {t('quickLinks')}
-        </h2>
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {quickLinks.map((link) => {
-            const Icon = link.icon;
-            return (
-              <Link
-                key={link.labelKey}
-                href={link.href}
-                className={cn(
-                  'flex items-center gap-3 rounded-lg border bg-card p-4',
-                  'transition-colors hover:bg-accent hover:text-accent-foreground',
-                )}
-              >
-                <Icon size={24} weight="duotone" />
-                <span className="font-medium">{t(link.labelKey)}</span>
-              </Link>
             );
           })}
         </div>
-      </section>
+      </motion.section>
 
       {/* ---- Recent evaluations ---- */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold tracking-tight">
-          {t('recentEvaluations')}
-        </h2>
+      <motion.section variants={itemVariants} className="space-y-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-lg font-semibold tracking-tight">
+            {t('recentEvaluations')}
+          </h2>
+          <Button variant="ghost" size="sm" asChild className="w-fit -mr-3 text-muted-foreground hover:text-foreground">
+            <Link href={`/projects/${projectId}/evaluations`}>
+              {tCommon('viewAll')} <ArrowRightIcon className="ml-1 size-4" />
+            </Link>
+          </Button>
+        </div>
 
         {evaluationsLoading ? (
           <div className="space-y-2">
@@ -457,7 +419,8 @@ export default function ProjectDetailPage() {
             </div>
           </div>
         )}
-      </section>
+      </motion.section>
+      </motion.div>
 
       {/* ---- ArchiveIcon confirm dialog ---- */}
       <ConfirmDialog
@@ -470,7 +433,6 @@ export default function ProjectDetailPage() {
         loading={archiveMutation.isPending}
         onConfirm={() => archiveMutation.mutate()}
       />
-      </motion.div>
 
       {/* ---- Start Evaluation Dialog ---- */}
       <StartEvaluationDialog
