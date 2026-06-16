@@ -1,5 +1,4 @@
 import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
-import createAuthRefresh from 'axios-auth-refresh';
 import type { ApiError, RefreshTokenResponse } from './types';
 
 // ---------------------------------------------------------------------------
@@ -49,45 +48,31 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// 2. Token Refresh Logic
-const refreshAuthLogic = async (failedRequest: AxiosError) => {
-  try {
-    const res = await axios.post<RefreshTokenResponse>(REFRESH_URL, undefined, {
-      withCredentials: true,
-    });
-    
-    const newToken = res.data.accessToken;
-    if (!newToken) throw new Error('No token returned');
+// 2. Token Refresh Logic & Response Error Normalization
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (err: unknown) => void;
+}> = [];
 
-    onRefreshedFn?.(newToken);
-    if (failedRequest.response) {
-      failedRequest.response.config.headers.Authorization = `Bearer ${newToken}`;
+const processQueue = (error: unknown, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else if (token) {
+      prom.resolve(token);
     }
-    
-    return Promise.resolve();
-  } catch (error) {
-    clearAuthFn?.();
-    if (typeof window !== 'undefined') window.location.href = '/login';
-    return Promise.reject(error);
-  }
+  });
+  failedQueue = [];
 };
 
-// 3. Register Auth Refresh Interceptor
-createAuthRefresh(axiosInstance, refreshAuthLogic, {
-  statusCodes: [401],
-  shouldRefresh: (error: AxiosError) => {
-    const body = error.response?.data as ProblemDetailsBody | undefined;
-    return body?.code === ACCESS_TOKEN_EXPIRED_CODE;
-  },
-});
-
-// 4. Response Error Normalization
 axiosInstance.interceptors.response.use(
   (response) => {
     if (response.status === 204) return { ...response, data: undefined };
     return response;
   },
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
+    // Skip interceptor if this is the refresh token request itself
     if (
       typeof window !== 'undefined' &&
       window.location.pathname !== '/login' && 
@@ -96,7 +81,48 @@ axiosInstance.interceptors.response.use(
         return Promise.reject(error);
     }
 
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
     const apiError = toApiError(error);
+
+    if (apiError.code === ACCESS_TOKEN_EXPIRED_CODE && originalRequest && !originalRequest._retry) {
+      if (isRefreshing) {
+        try {
+          const token = await new Promise<string>((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+          });
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return axiosInstance(originalRequest);
+        } catch (err) {
+          return Promise.reject(err);
+        }
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const res = await axios.post<RefreshTokenResponse>(REFRESH_URL, undefined, {
+          withCredentials: true,
+        });
+        
+        const newToken = res.data.accessToken;
+        if (!newToken) throw new Error('No token returned');
+
+        onRefreshedFn?.(newToken);
+        processQueue(null, newToken);
+
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return axiosInstance(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        clearAuthFn?.();
+        if (typeof window !== 'undefined') window.location.href = '/login';
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
     if (apiError.code !== ACCESS_TOKEN_EXPIRED_CODE) {
       notifyApiError(apiError);
     }

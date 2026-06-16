@@ -50,7 +50,7 @@ Current implemented auth state:
 - All auth screens are grouped under `(auth)` locale route: `/login`, `/register`, `/verify-email`, `/forgot-password`, `/reset-password`.
 - Login saves access token to Zustand store (`useAuthStore`) in memory.
 - Access token refresh:
-  - handoff runs automatically via `axios-auth-refresh` when backend returns 401 with error code `ACCESS_TOKEN_EXPIRED`.
+  - handoff runs automatically via a custom Axios interceptor (with Promise queueing) when backend returns 401 with error code `ACCESS_TOKEN_EXPIRED`.
   - calls `POST /api/v1/auth/refresh-token` using the HttpOnly refresh token cookie.
 - Silent login check: `AuthGuard` attempts to refresh the access token on initial load. If successful, user is marked authenticated. If not, redirected to `/login`.
 - `AuthBootstrap` wires store methods (`getTokenFn`, `clearAuthFn`, `onRefreshedFn`) with the base Axios client.
