@@ -447,7 +447,10 @@
       "updatedAt": "Cập nhật",
       "status": "Trạng thái",
       "url": "URL",
-      "secrets": "Secret Values"
+      "secrets": "Secret Values",
+      "streamingType": "Kiểu Streaming",
+      "streamingEventSelector": "Selector Streaming Event",
+      "responseSchema": "Response Schema"
     },
     "quickCreate": "Tạo Nhanh (cURL)",
     "manualSetup": "Cài đặt Thủ công",

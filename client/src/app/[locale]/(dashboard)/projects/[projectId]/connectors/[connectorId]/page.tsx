@@ -50,7 +50,6 @@ type ConnectorDetail = {
   publicId: string;
   name: string;
   description: string | null;
-  rawCurl: string | null;
   protocol: string | null;
   method: string;
   url: string;
@@ -71,6 +70,9 @@ type ConnectorDetail = {
   retryCount: number;
   active: boolean;
   isStreaming: boolean;
+  streamingType: string | null;
+  streamingEventSelector: string | null;
+  responseSchema: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -251,7 +253,7 @@ export default function ConnectorDetailPage() {
       ? {
           name: connector.name,
           description: connector.description ?? '',
-          rawCurl: connector.rawCurl ?? '',
+          rawCurl: '',
           responseSelector: connector.responseSelector ?? '',
           timeoutSeconds: connector.timeoutSeconds,
           retryCount: connector.retryCount,
@@ -698,6 +700,14 @@ export default function ConnectorDetailPage() {
                     value={connector.responseSelector}
                     mono
                   />
+                  {connector.responseSchema && Object.keys(connector.responseSchema).length > 0 && (
+                    <div className="space-y-1 sm:col-span-2 lg:col-span-3">
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {t('fields.responseSchema')}
+                      </span>
+                      <JsonBlock value={connector.responseSchema} />
+                    </div>
+                  )}
                   <ReadOnlyField
                     label={t('fields.timeoutSeconds')}
                     value={`${connector.timeoutSeconds}s`}
@@ -710,19 +720,18 @@ export default function ConnectorDetailPage() {
                     label={t('fields.isStreaming')}
                     value={connector.isStreaming ? 'Yes' : 'No'}
                   />
-                </div>
-              </FormSection>
-
-              <FormSection title={t('rawCurl')}>
-                <div className="space-y-1">
-                  {connector.rawCurl ? (
-                    <pre className="max-h-96 overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs whitespace-pre-wrap break-all">
-                      {connector.rawCurl}
-                    </pre>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      {tCommon('notAvailable')}
-                    </p>
+                  {connector.isStreaming && (
+                    <>
+                      <ReadOnlyField
+                        label={t('fields.streamingType')}
+                        value={connector.streamingType}
+                      />
+                      <ReadOnlyField
+                        label={t('fields.streamingEventSelector')}
+                        value={connector.streamingEventSelector}
+                        mono
+                      />
+                    </>
                   )}
                 </div>
               </FormSection>

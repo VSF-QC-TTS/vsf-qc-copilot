@@ -447,7 +447,10 @@
       "updatedAt": "Updated",
       "status": "Status",
       "url": "URL",
-      "secrets": "Secret Values"
+      "secrets": "Secret Values",
+      "streamingType": "Streaming Type",
+      "streamingEventSelector": "Streaming Event Selector",
+      "responseSchema": "Response Schema"
     },
     "quickCreate": "Quick Create (cURL)",
     "manualSetup": "Manual Setup",
