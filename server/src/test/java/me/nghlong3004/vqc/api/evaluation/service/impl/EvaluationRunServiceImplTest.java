@@ -355,6 +355,57 @@ class EvaluationRunServiceImplTest {
   }
 
   @Test
+  void listGlobalEvaluationRunsReturnsPage() {
+    User creator = user();
+    Project project = project(creator);
+    Dataset dataset = approvedDataset(project, creator);
+    RubricVersion rubricVersion = publishedRubricVersion(creator);
+    TargetApiConnector connector = activeConnector(project, creator);
+
+    EvaluationRun run = EvaluationRun.builder()
+        .publicId(UUID.randomUUID())
+        .project(project)
+        .dataset(dataset)
+        .rubricVersion(rubricVersion)
+        .targetApiConnector(connector)
+        .status(EvaluationRunStatus.PENDING)
+        .totalCases(10)
+        .createdBy(creator)
+        .createdAt(java.time.OffsetDateTime.now())
+        .build();
+
+    EvaluationRunServiceImpl service = new EvaluationRunServiceImpl(
+        evaluationRunRepository(new org.springframework.data.domain.PageImpl<>(
+            java.util.List.of(run),
+            org.springframework.data.domain.PageRequest.of(0, 20), 1)),
+        ignoredRepo(EvaluationResultRepository.class),
+        ignoredRepo(JobRepository.class),
+        ignoredRepo(JobEventRepository.class),
+        projectRepository(Optional.of(project)),
+        ignoredRepo(DatasetRepository.class),
+        ignoredRepo(RubricVersionRepository.class),
+        ignoredRepo(me.nghlong3004.vqc.api.rubric.repository.RubricCriterionRepository.class),
+        ignoredRepo(TargetApiConnectorRepository.class),
+        ignoredRepo(JudgeModelRepository.class),
+        ignoredRepo(TestCaseRepository.class),
+        userRepository(Optional.of(creator)),
+        ignoredPublisher(),
+        new EvaluationRunMapper(new com.fasterxml.jackson.databind.ObjectMapper()));
+
+    var response = service.listGlobalEvaluationRuns(
+        org.springframework.data.domain.PageRequest.of(0, 20),
+        "qc.demo@example.com");
+
+    assertThat(response.items()).hasSize(1);
+    assertThat(response.items().getFirst().publicId()).isEqualTo(run.getPublicId());
+    assertThat(response.items().getFirst().status()).isEqualTo(EvaluationRunStatus.PENDING);
+    assertThat(response.page()).isZero();
+    assertThat(response.size()).isEqualTo(20);
+    assertThat(response.totalItems()).isEqualTo(1);
+    assertThat(response.totalPages()).isEqualTo(1);
+  }
+
+  @Test
   void listEvaluationRunsReturnsEmptyPage() {
     User creator = user();
     Project project = project(creator);

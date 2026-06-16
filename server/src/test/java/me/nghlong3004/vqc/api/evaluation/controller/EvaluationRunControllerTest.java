@@ -414,6 +414,14 @@ class EvaluationRunControllerTest {
     }
 
     @Override
+    public EvaluationRunPageResponse listGlobalEvaluationRuns(Pageable pageable, String username) {
+      RecordingEvaluationRunService.projectPublicId = null;
+      RecordingEvaluationRunService.pageable = pageable;
+      RecordingEvaluationRunService.username = username;
+      return pageResponse;
+    }
+
+    @Override
     public EvaluationRunDetailResponse getEvaluationRun(UUID runPublicId, String username) {
       RecordingEvaluationRunService.runPublicId = runPublicId;
       RecordingEvaluationRunService.username = username;
