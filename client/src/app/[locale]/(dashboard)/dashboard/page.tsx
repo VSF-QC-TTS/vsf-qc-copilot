@@ -73,7 +73,7 @@ export default function DashboardPage() {
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease: 'easeOut' }}
-        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2"
       >
         <MetricCard
           label={t('totalProjects')}
@@ -171,7 +171,7 @@ export default function DashboardPage() {
           <h2 className="text-lg font-semibold tracking-tight">
             {t('quickActions')}
           </h2>
-          <div className="rounded-lg border bg-card p-4 space-y-3">
+          <div className="flex flex-col gap-2 mt-1">
             <Button className="w-full justify-start gap-2" variant="outline" asChild>
               <Link href="/projects">
                 <BriefcaseIcon size={16} weight="bold" />
@@ -187,7 +187,7 @@ export default function DashboardPage() {
             <Button className="w-full justify-start gap-2" asChild>
               <Link href="/projects">
                 <PlusIcon size={16} weight="bold" />
-                {t('createFirstProject')}
+                {t('createNewProject')}
               </Link>
             </Button>
           </div>
