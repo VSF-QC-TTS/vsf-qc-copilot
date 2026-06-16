@@ -7,9 +7,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * Minimal request for creating a target connector by pasting a raw cURL command. The backend
- * parses the cURL, auto-detects method/URL/headers/body/auth, calls the target API for
- * verification, and saves the connector only on success.
+ * Minimal request for creating a target connector by pasting a raw cURL command. The backend parses
+ * the cURL, auto-detects method/URL/headers/body/auth, calls the target API for verification, and
+ * saves the connector only on success.
  *
  * @author nghlong3004 (Long Nguyen Hoang)
  * @since 6/14/2026
@@ -30,7 +30,6 @@ public record CreateConnectorFromCurlRequest(
                     + " --header 'Content-Type: application/json'"
                     + " --data '{\"input\": \"hello\"}'")
         @NotBlank(message = "Raw cURL command is required.")
-        @Size(max = 20000, message = "Raw cURL must be at most 20,000 characters.")
         String rawCurl,
     @Schema(description = "Optional connector description.", nullable = true)
         @Size(max = 2000, message = "Connector description must be at most 2,000 characters.")
