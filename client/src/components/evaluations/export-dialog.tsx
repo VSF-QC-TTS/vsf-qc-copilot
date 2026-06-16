@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { useMutation } from '@tanstack/react-query';
 import { DownloadSimpleIcon, XIcon } from '@phosphor-icons/react';
+import { motion } from 'motion/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -48,6 +49,7 @@ export function ExportDialog({
   onOpenChange,
 }: ExportDialogProps) {
   const t = useTranslations('exports');
+  const tCommon = useTranslations('common');
   const cancelRef = React.useRef<HTMLButtonElement>(null);
 
   const [fileType, setFileType] = React.useState<FileType>('EXCEL');
@@ -265,9 +267,11 @@ export function ExportDialog({
             </p>
             {progressPercent !== null && (
               <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-primary transition-all"
-                  style={{ width: `${progressPercent}%` }}
+                <motion.div
+                  className="h-full bg-primary"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progressPercent}%` }}
+                  transition={{ duration: 1, ease: 'easeOut' }}
                 />
               </div>
             )}
@@ -317,7 +321,7 @@ export function ExportDialog({
                 disabled={startExportMutation.isPending}
                 onClick={() => onOpenChange(false)}
               >
-                {t('title')}
+                {tCommon('cancel')}
               </Button>
               <Button
                 type="button"

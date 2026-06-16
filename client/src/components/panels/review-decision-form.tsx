@@ -57,6 +57,7 @@ function formatDateTime(iso: string): string {
 
 export function ReviewDecisionForm({ resultPublicId }: ReviewDecisionFormProps) {
   const t = useTranslations('qcReview');
+  const tCommon = useTranslations('common');
   const queryClient = useQueryClient();
 
   const [isEditing, setIsEditing] = React.useState(false);
@@ -347,7 +348,7 @@ export function ReviewDecisionForm({ resultPublicId }: ReviewDecisionFormProps) 
             disabled={isSaving}
             onClick={() => setIsEditing(false)}
           >
-            {t('title')}
+            {tCommon('cancel')}
           </Button>
         )}
         <Button type="submit" size="sm" disabled={isSaving}>
