@@ -2,7 +2,7 @@
 
 Date: 2026-06-15
 Repo area: `server/`
-Last full-suite pass: 393 tests, 0 failures (2026-06-15). Focused rubric/evaluation/frontend checks passed on 2026-06-15 after rubric workflow + judge model changes.
+Last full-suite pass: 393 tests, 0 failures (2026-06-15). Focused evaluation/job/red-team tests passed on 2026-06-15 after Promptfoo mapping, worker progress, and red-team backend changes.
 
 Purpose: this is the server bootstrap handoff. If a user only says "read `server/SERVER_CONTEXT.md`", the agent must use this file to discover the next files to read without asking for more pointers. Current code is the source of truth when docs and implementation differ. The full product target lives in `docs/`; treat docs as roadmap/contract intent unless the user explicitly asks to migrate current code toward them.
 
@@ -94,7 +94,7 @@ Domain choices in current code:
 ## [CURRENT_STATE] Persistence
 
 Persistence now vs target:
-- Current Flyway has five migrations: `V1__init_schema.sql` (auth, project, connector, requirement table kept, dataset without requirement FK, test_case, rubric, rubric version content/schema), `V2__create_jobs_evaluation.sql` (jobs, job_events, judge_models, evaluation_runs with judge model FK, evaluation_results), `V3__create_review_decisions.sql`, `V4__create_export_files.sql`, `V5__create_connector_secrets.sql`.
+- Current Flyway has six migrations: `V1__init_schema.sql` (auth, project, connector, requirement table kept, dataset without requirement FK, test_case, rubric, rubric version content/schema), `V2__create_jobs_evaluation.sql` (jobs, job_events, judge_models, evaluation_runs with judge model FK, evaluation_results), `V3__create_review_decisions.sql`, `V4__create_export_files.sql`, `V5__create_connector_secrets.sql`, `V6__create_red_team_runs.sql`.
 - Dataset has `generation_prompt TEXT` column for AI generation context.
 - Rubrics are user-scoped (nullable `project_id`); `is_template BOOLEAN NOT NULL DEFAULT FALSE` flags system templates. Rubric versions store `content` and optional `output_schema_json`.
 - Email verification and password reset tokens are opaque raw values; only SHA-256 hashes are stored.
@@ -160,7 +160,9 @@ Implemented API slices after auth:
   - `GET /api/v1/projects/{projectPublicId}/evaluation-runs` lists runs under a project with pagination.
   - `GET /api/v1/evaluation-runs/{runPublicId}` returns run detail (flat path, owner-scoped).
   - `GET /api/v1/evaluation-runs/{runPublicId}/results` lists evaluation results with optional `judgeStatus` and `qcStatus` filters, pagination, test-case review context, and QC fields (`qcStatus`, `qcNote`, `picBug`).
+  - Result list responses include `criteriaResults`: one structured row per rubric criterion result with `metricKey`, criterion `name`, criterion-level `status`, `score`, `reason`, and `graderError`. Keep this structure for QC UI; `criteriaResultsJson` remains for compatibility/raw inspection.
   - `GET /api/v1/evaluation-runs/{runPublicId}/events` lists job events in chronological order.
+  - `GET /api/v1/evaluation-runs/{runPublicId}/events/stream` streams the same event shape as SSE (`event: job-event`, `data: JobEventResponse`). It emits existing events, polls DB for new events, sends keep-alive comments, and closes after run terminal status. Frontend uses fetch streaming with Bearer auth because native EventSource cannot set the in-memory access token header.
   - `GET /api/v1/jobs/{jobPublicId}` returns job detail with resolved `resourcePublicId` (flat path, owner-scoped).
   - All evaluation/job endpoints are owner-scoped through the project `createdBy` chain.
   - `EvaluationRunStatus`: `PENDING`, `RUNNING`, `COMPLETED`, `FAILED`, `CANCELLED`. `JobStatus`: `PENDING`, `RUNNING`, `COMPLETED`, `FAILED`, `CANCELLED`. `JudgeStatus`: `PASS`, `FAIL`, `WARNING`, `ERROR`.
@@ -176,7 +178,15 @@ Implemented API slices after auth:
   - CLI judge provider comes from `EvaluationRun.judgeModel`: `GEMINI` → `google:<model>`, `OPENAI` → `openai:<model>`, `ANTHROPIC` → `anthropic:<model>`, `DEEPSEEK`/`CUSTOM` → OpenAI-compatible provider with optional `OPENAI_BASE_URL`. Decrypted judge API keys are passed per run via provider-specific env vars.
   - Rubric criteria still generate structured `llm-rubric` assertions. If criteria are empty but `RubricVersion.content` exists, config generation creates one holistic rubric assertion from that content.
   - Promptfoo local runner metadata and lockfile exist under `tooling/promptfoo-runner` for `promptfoo@0.121.15`; install `node_modules` locally before real CLI/smoke runs.
-  - `EvaluationJobHandler` loads active dataset test cases, runs the executor, writes one `EvaluationResult` per active case, updates run/job counters and statuses, and emits `RUNNING`, `CASE_COMPLETED`, `COMPLETED`, or `FAILED` job events.
+  - `EvaluationJobHandler` loads active dataset test cases, runs the executor, writes one `EvaluationResult` per active case, updates run/job counters and statuses, and emits `RUNNING`, `LOADING_TEST_CASES`, `RUNNING_PROMPTFOO`, `PARSING_RESULTS`, `PERSISTING_RESULTS`, `CASE_COMPLETED`, `COMPLETED`, or `FAILED` job events.
+  - `EvaluationJobHandler` intentionally does not wrap the full Promptfoo execution in one long `@Transactional` method. Repository saves/events commit around each stage so job polling and SSE-style clients can observe progress while Promptfoo is still running.
+  - Promptfoo parser marks component-level grader/provider errors with `graderError=true` and maps the affected overall result to `JudgeStatus.ERROR`, not `FAIL`. `FAIL` should mean target answer failed a criterion; `ERROR` should mean the judge/grader infrastructure could not grade reliably.
+- Red-team runs:
+  - `POST /api/v1/projects/{projectPublicId}/red-team-runs` queues a `RED_TEAM_RUN` job for an active target connector and optional active judge model. Default compact plugins are `harmful:privacy`, `prompt-extraction`, and `pii:direct`; default strategy is `basic`; `numTests` is capped at 10 by request validation.
+  - `GET /api/v1/projects/{projectPublicId}/red-team-runs` lists project red-team runs. `GET /api/v1/red-team-runs/{runPublicId}` returns detail. `GET /api/v1/red-team-runs/{runPublicId}/results` returns Promptfoo `results.json` raw result payload plus `stats` summary when artifacts exist.
+  - `red_team_runs` persists target connector, optional judge model, plugin/strategy JSON, counters, status, artifact directory, and linked job. `GET /api/v1/jobs/{jobPublicId}` resolves `ResourceType.RED_TEAM_RUN` to the red-team run public UUID.
+  - `JobWorker` routes `JobType.RED_TEAM_RUN` to `RedTeamJobHandler`; artifacts are written under `vqc.promptfoo.work-dir/red-team/{runPublicId}`.
+  - `RedTeamPromptfooExecutor` uses the local pinned Promptfoo CLI: `redteam generate` writes `redteam.yaml`, then `redteam eval` writes `results.json`. It sets `PROMPTFOO_DISABLE_TELEMETRY=1`, `--no-share`, local config/log dirs, connector secret env vars, and judge provider env vars. This path does not require Promptfoo Cloud/UI login; app APIs still require the normal JWT auth.
 - QC review:
   - `PUT /api/v1/evaluation-results/{resultPublicId}/review-decision` upserts one review decision per evaluation result.
   - `GET /api/v1/evaluation-results/{resultPublicId}/review-decision` returns the persisted review decision or a default `NOT_REVIEWED` response when absent.
@@ -211,6 +221,7 @@ Implemented API slices after auth:
 
 Known current gaps:
 - Promptfoo CLI selector support is limited to `$.answer` and `$.data.answer`.
+- Red-team CLI integration is backend-only; frontend screens and QC-friendly result presentation still need to be built.
 - OAuth persistence/linking remains incomplete.
 - Connector response extraction only supports the current simple selector path used by tests.
 - S3/R2/MinIO export storage providers are future work; the storage interface is in place and local is the only current provider.

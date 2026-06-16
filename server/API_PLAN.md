@@ -1,7 +1,7 @@
 # API Plan — Current Backend Slice Tracker
 
-Date: 2026-06-13
-Status: **QC Productivity Features — planning, not started**
+Date: 2026-06-15
+Status: **Ready for next backend slice**
 
 Purpose: keep the immediate backend plan short. `API_TODO.md` and `API_TREE.md` remain the source for completed endpoint inventory and resource relationships.
 
@@ -18,6 +18,8 @@ Purpose: keep the immediate backend plan short. `API_TODO.md` and `API_TREE.md` 
 9. AI Generate Dataset.
 10. Rubric Decoupling from Project.
 11. Quick Evaluate.
+12. Promptfoo QC result mapping/progress hardening.
+13. Promptfoo Red-team backend job/API.
 
 See git log for full details on each sequence.
 

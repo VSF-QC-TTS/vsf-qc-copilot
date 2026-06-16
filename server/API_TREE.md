@@ -32,6 +32,7 @@ Auth
             |-- Evaluation Result
             |   `-- QC Review
             |-- Job Event
+            |-- Red-team Run
             `-- Export
     `-- User-scoped Rubric
         `-- Rubric Version
@@ -104,11 +105,17 @@ Auth
 |   |   `-- POST /
 |   |       `-- Auto-resolve dataset/connector/rubric version/judge model khi mỗi loại có đúng 1 candidate
 |
-|   `-- /{projectPublicId}/evaluation-runs [auth]
+|   |-- /{projectPublicId}/evaluation-runs [auth]
+|   |   |-- POST /
+|   |   |   `-- Tạo evaluation run (202); validate dataset/rubric/connector/judge model
+|   |   `-- GET /
+|   |       `-- List evaluation runs của project; pageable/sortable
+|   |
+|   `-- /{projectPublicId}/red-team-runs [auth]
 |       |-- POST /
-|       |   `-- Tạo evaluation run (202); validate dataset/rubric/connector/judge model
+|       |   `-- Queue Promptfoo red-team run cho target connector; dùng local CLI, không Promptfoo Cloud login
 |       `-- GET /
-|           `-- List evaluation runs của project; pageable/sortable
+|           `-- List red-team runs của project; pageable/sortable
 |
 |-- /api/v1/target-api-connectors [auth]
 |   `-- /{connectorPublicId}
@@ -194,7 +201,7 @@ Auth
 |       `-- POST /test-connection
 |           `-- Validate ownership/active status; returns masked model config
 |
-`-- /mock-chatbot [public]
+|-- /mock-chatbot [public]
     `-- POST /chat
         `-- Target API fallback public cho demo
 
@@ -204,15 +211,25 @@ Auth
 |       |   `-- Chi tiết evaluation run
 |       |-- /results [auth]
 |       |   `-- GET /
-|       |       `-- List kết quả; filter: judgeStatus/qcStatus; includes QC review fields
+|       |       `-- List kết quả; filter: judgeStatus/qcStatus; includes QC review fields + structured criteriaResults
 |       `-- /events [auth]
-|           `-- GET /
-|               `-- List job events theo thứ tự thời gian
+|           |-- GET /
+|           |   `-- List job events theo thứ tự thời gian
+|           `-- GET /stream
+|               `-- Stream job events bằng text/event-stream cho run detail realtime
 |
-`-- /api/v1/jobs [auth]
+|-- /api/v1/red-team-runs [auth]
+|   `-- /{runPublicId}
+|       |-- GET /
+|       |   `-- Chi tiết red-team run
+|       `-- /results
+|           `-- GET /
+|               `-- Trả Promptfoo red-team results.json raw payload + summary nếu artifact đã có
+|
+|-- /api/v1/jobs [auth]
     `-- /{jobPublicId}
         `-- GET /
-            `-- Chi tiết job; resourcePublicId resolved từ internal ID
+            `-- Chi tiết job; resourcePublicId resolved từ internal ID, gồm evaluation/export/red-team resources
 
 |-- /api/v1/evaluation-results [auth]
 |   `-- /{resultPublicId}/review-decision
