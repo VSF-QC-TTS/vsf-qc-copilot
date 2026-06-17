@@ -14,33 +14,15 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { ReviewDecisionForm } from '@/components/panels/review-decision-form';
+import { getCriteria, criterionStatusRank } from '@/lib/utils/criteria';
+import type { EvaluationResultRow, CriterionResult } from '@/lib/api/types';
+
+// Re-export types for backward compatibility
+export type { EvaluationResultRow, CriterionResult } from '@/lib/api/types';
 
 // ---------------------------------------------------------------------------
-// Types
+// Props
 // ---------------------------------------------------------------------------
-
-export type EvaluationResultRow = {
-  publicId: string;
-  question: string;
-  precondition: string | null;
-  groundTruth: string | null;
-  actualAnswer: string | null;
-  judgeStatus: string | null;
-  judgeScore: number | null;
-  criteriaResultsJson: string | null;
-  criteriaResults?: CriterionResult[] | null;
-  qcStatus: string;
-  qcNote: string | null;
-};
-
-export type CriterionResult = {
-  metricKey?: string | null;
-  name: string;
-  status: string;
-  score: number | null;
-  reason: string | null;
-  graderError?: boolean;
-};
 
 interface ResultDetailPanelProps {
   result: EvaluationResultRow | null;
@@ -48,62 +30,6 @@ interface ResultDetailPanelProps {
   onPrev: (() => void) | null;
   onNext: (() => void) | null;
   className?: string;
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function parseCriteriaJson(raw: string | null): CriterionResult[] {
-  if (!raw) return [];
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (Array.isArray(parsed)) {
-      return parsed.map((item: unknown) => {
-        const obj =
-          typeof item === 'object' && item !== null
-            ? (item as Record<string, unknown>)
-            : {};
-        return {
-          metricKey: typeof obj['metricKey'] === 'string' ? obj['metricKey'] : null,
-          name: typeof obj['name'] === 'string' ? obj['name'] : '',
-          status: typeof obj['status'] === 'string' ? obj['status'] : '',
-          score: typeof obj['score'] === 'number' ? obj['score'] : null,
-          reason: typeof obj['reason'] === 'string' ? obj['reason'] : null,
-          graderError: obj['graderError'] === true,
-        };
-      });
-    }
-    return [];
-  } catch {
-    return [];
-  }
-}
-
-function getCriteria(result: EvaluationResultRow): CriterionResult[] {
-  if (Array.isArray(result.criteriaResults) && result.criteriaResults.length > 0) {
-    return result.criteriaResults;
-  }
-  return parseCriteriaJson(result.criteriaResultsJson);
-}
-
-function statusRank(status: string): number {
-  switch (status) {
-    case 'ERROR':
-      return 0;
-    case 'FAIL':
-      return 1;
-    case 'WARNING':
-      return 2;
-    case 'PASS':
-      return 3;
-    default:
-      return 4;
-  }
-}
-
-function isLongText(value: string | null | undefined): boolean {
-  return (value?.length ?? 0) > 280;
 }
 
 // ---------------------------------------------------------------------------
@@ -128,7 +54,7 @@ export function ResultDetailPanel({
     () => new Set(),
   );
 
-  // Escape key
+  // Escape + arrow key navigation
   React.useEffect(() => {
     if (!result) return;
     function handleKey(e: KeyboardEvent) {
@@ -136,10 +62,18 @@ export function ResultDetailPanel({
         e.stopPropagation();
         onClose();
       }
+      if (e.key === 'ArrowLeft' && onPrev) {
+        e.preventDefault();
+        onPrev();
+      }
+      if (e.key === 'ArrowRight' && onNext) {
+        e.preventDefault();
+        onNext();
+      }
     }
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
-  }, [result, onClose]);
+  }, [result, onClose, onPrev, onNext]);
 
   // Lock body scroll when open
   React.useEffect(() => {
@@ -161,7 +95,7 @@ export function ResultDetailPanel({
   if (!result) return null;
 
   const criteria = getCriteria(result).toSorted(
-    (a, b) => statusRank(a.status) - statusRank(b.status),
+    (a, b) => criterionStatusRank(a.status) - criterionStatusRank(b.status),
   );
 
   const toggleSection = (key: string) => {
@@ -188,6 +122,10 @@ export function ResultDetailPanel({
     });
   };
 
+  const hasGroundTruth = result.groundTruth !== null;
+  const hasActualAnswer = result.actualAnswer !== null;
+  const showSideBySide = hasGroundTruth && hasActualAnswer;
+
   return (
     <>
       {/* Backdrop */}
@@ -197,7 +135,7 @@ export function ResultDetailPanel({
         aria-hidden="true"
       />
 
-      {/* Panel */}
+      {/* Panel — wider for QC review workflow */}
       <aside
         ref={panelRef}
         tabIndex={-1}
@@ -205,7 +143,7 @@ export function ResultDetailPanel({
         aria-modal="true"
         className={cn(
           'fixed inset-y-0 right-0 z-50 flex w-full flex-col border-l bg-card shadow-xl outline-none',
-          'lg:w-[520px]',
+          'lg:w-[680px]',
           'animate-in slide-in-from-right',
           className,
         )}
@@ -233,6 +171,9 @@ export function ResultDetailPanel({
             >
               <CaretRightIcon className="size-4" />
             </Button>
+            <span className="ml-1 text-xs text-muted-foreground hidden sm:inline">
+              ← → {t('keyboardNav')}
+            </span>
           </div>
           <Button
             variant="ghost"
@@ -247,6 +188,7 @@ export function ResultDetailPanel({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/30">
+          {/* Status row */}
           <div className="flex flex-wrap items-center gap-2 mb-2">
             {result.judgeStatus ? (
               <StatusBadge status={result.judgeStatus} size="sm" />
@@ -271,47 +213,48 @@ export function ResultDetailPanel({
           {/* Precondition */}
           <CollapsibleSection
             label={t('precondition')}
-            expanded={expandedSections.has('precondition') || !isLongText(result.precondition)}
-            onToggle={() => toggleSection('precondition')}
-            toggleable={isLongText(result.precondition)}
-            previewText={result.precondition ?? tCommon('notAvailable')}
+            content={result.precondition}
+            fallback={tCommon('notAvailable')}
             tShow={t('showDetails')}
             tHide={t('hideDetails')}
-          >
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-              {result.precondition ?? tCommon('notAvailable')}
-            </p>
-          </CollapsibleSection>
+          />
 
-          {/* Ground Truth */}
-          <CollapsibleSection
-            label={t('groundTruth')}
-            expanded={expandedSections.has('groundTruth') || !isLongText(result.groundTruth)}
-            onToggle={() => toggleSection('groundTruth')}
-            toggleable={isLongText(result.groundTruth)}
-            previewText={result.groundTruth ?? tCommon('notAvailable')}
-            tShow={t('showDetails')}
-            tHide={t('hideDetails')}
-          >
-            <p className="text-sm whitespace-pre-wrap">
-              {result.groundTruth ?? tCommon('notAvailable')}
-            </p>
-          </CollapsibleSection>
-
-          {/* Actual Answer */}
-          <CollapsibleSection
-            label={t('actualAnswer')}
-            expanded={expandedSections.has('actualAnswer') || !isLongText(result.actualAnswer)}
-            onToggle={() => toggleSection('actualAnswer')}
-            toggleable={isLongText(result.actualAnswer)}
-            previewText={result.actualAnswer ?? tCommon('notAvailable')}
-            tShow={t('showDetails')}
-            tHide={t('hideDetails')}
-          >
-            <p className="text-sm whitespace-pre-wrap">
-              {result.actualAnswer ?? tCommon('notAvailable')}
-            </p>
-          </CollapsibleSection>
+          {/* Ground Truth vs Actual Answer — side by side when both exist */}
+          {showSideBySide ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <CollapsibleSection
+                label={t('groundTruth')}
+                content={result.groundTruth}
+                fallback={tCommon('notAvailable')}
+                tShow={t('showDetails')}
+                tHide={t('hideDetails')}
+              />
+              <CollapsibleSection
+                label={t('actualAnswer')}
+                content={result.actualAnswer}
+                fallback={tCommon('notAvailable')}
+                tShow={t('showDetails')}
+                tHide={t('hideDetails')}
+              />
+            </div>
+          ) : (
+            <>
+              <CollapsibleSection
+                label={t('groundTruth')}
+                content={result.groundTruth}
+                fallback={tCommon('notAvailable')}
+                tShow={t('showDetails')}
+                tHide={t('hideDetails')}
+              />
+              <CollapsibleSection
+                label={t('actualAnswer')}
+                content={result.actualAnswer}
+                fallback={tCommon('notAvailable')}
+                tShow={t('showDetails')}
+                tHide={t('hideDetails')}
+              />
+            </>
+          )}
 
           {/* Criteria Breakdown */}
           {criteria.length > 0 && (
@@ -341,7 +284,7 @@ export function ResultDetailPanel({
             </Section>
           )}
 
-          {/* QC Review (Epic 10) */}
+          {/* QC Review */}
           <Section label={tQc('title')}>
             <ReviewDecisionForm resultPublicId={result.publicId} />
           </Section>
@@ -447,38 +390,47 @@ function CriterionCard({
   );
 }
 
+// ---------------------------------------------------------------------------
+// CollapsibleSection — improved with fade-out gradient instead of hard clip
+// ---------------------------------------------------------------------------
+
+const COLLAPSE_THRESHOLD = 280;
+
 function CollapsibleSection({
   label,
-  expanded,
-  toggleable,
-  onToggle,
-  previewText,
+  content,
+  fallback,
   tShow,
   tHide,
-  children,
 }: {
   label: string;
-  expanded: boolean;
-  toggleable: boolean;
-  onToggle: () => void;
-  previewText: string;
+  content: string | null;
+  fallback: string;
   tShow: string;
   tHide: string;
-  children: React.ReactNode;
 }) {
+  const text = content ?? fallback;
+  const isLong = text.length > COLLAPSE_THRESHOLD;
+  const [expanded, setExpanded] = React.useState(!isLong);
+
+  // Auto-expand short content when result changes
+  React.useEffect(() => {
+    setExpanded(text.length <= COLLAPSE_THRESHOLD);
+  }, [text]);
+
   return (
     <div className="space-y-2 rounded-xl bg-card p-4 transition-all">
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           {label}
         </h3>
-        {toggleable && (
+        {isLong && (
           <Button
             type="button"
             variant="ghost"
             size="sm"
             className="h-7 px-2 text-xs"
-            onClick={onToggle}
+            onClick={() => setExpanded((v) => !v)}
           >
             <CaretDownIcon
               className={cn('size-3.5 transition-transform duration-200', !expanded && '-rotate-90')}
@@ -487,31 +439,20 @@ function CollapsibleSection({
           </Button>
         )}
       </div>
-      <AnimatePresence initial={false} mode="popLayout">
-        {expanded ? (
-          <motion.div
-            key="full"
-            initial={{ opacity: 0, y: -5 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -5 }}
-            transition={{ duration: 0.2 }}
-          >
-            {children}
-          </motion.div>
-        ) : (
-          <motion.div
-            key="preview"
-            initial={{ opacity: 0, y: -5 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -5 }}
-            transition={{ duration: 0.2 }}
-          >
-            <p className="max-h-16 overflow-hidden whitespace-pre-wrap text-sm text-muted-foreground">
-              {previewText}
-            </p>
-          </motion.div>
+      <div className="relative">
+        <p
+          className={cn(
+            'whitespace-pre-wrap text-sm text-muted-foreground',
+            !expanded && 'max-h-20 overflow-hidden',
+          )}
+        >
+          {text}
+        </p>
+        {/* Fade-out gradient when collapsed */}
+        {!expanded && isLong && (
+          <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-card to-transparent pointer-events-none" />
         )}
-      </AnimatePresence>
+      </div>
     </div>
   );
 }

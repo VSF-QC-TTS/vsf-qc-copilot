@@ -21,8 +21,8 @@ import { apiClient } from '@/lib/api/client';
 import { useRouter } from '@/i18n/navigation';
 import { ExportDialog } from '@/components/evaluations/export-dialog';
 import { useBreadcrumbStore } from '@/lib/store/breadcrumb-store';
-import type { JobEventResponse, PageResponse, EvaluationRunDetail } from '@/lib/api/types';
-import type { CriterionResult } from '@/components/panels/result-detail-panel';
+import type { JobEventResponse, PageResponse, EvaluationRunDetail, EvaluationResultRow, CriterionResult } from '@/lib/api/types';
+import { parseCriteriaJson, getCriteria } from '@/lib/utils/criteria';
 import dynamic from 'next/dynamic';
 
 const RunDonutChart = dynamic(() => import('@/components/evaluations/run-donut-chart'), {
@@ -37,11 +37,7 @@ const CriteriaBarChart = dynamic(() => import('@/components/evaluations/criteria
 
 
 
-type EvaluationResultRow = {
-  publicId: string;
-  criteriaResultsJson: string | null;
-  criteriaResults?: CriterionResult[] | null;
-};
+// EvaluationResultRow type now imported from @/lib/api/types
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -57,36 +53,8 @@ function formatDateTime(iso: string): string {
   });
 }
 
-function parseCriteriaJson(raw: string | null): CriterionResult[] {
-  if (!raw) return [];
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.map((item) => {
-      const obj =
-        typeof item === 'object' && item !== null
-          ? (item as Record<string, unknown>)
-          : {};
-      return {
-        metricKey: typeof obj.metricKey === 'string' ? obj.metricKey : null,
-        name: typeof obj.name === 'string' ? obj.name : '',
-        status: typeof obj.status === 'string' ? obj.status : '',
-        score: typeof obj.score === 'number' ? obj.score : null,
-        reason: typeof obj.reason === 'string' ? obj.reason : null,
-        graderError: obj.graderError === true,
-      };
-    });
-  } catch {
-    return [];
-  }
-}
 
-function getCriteria(row: EvaluationResultRow): CriterionResult[] {
-  if (Array.isArray(row.criteriaResults) && row.criteriaResults.length > 0) {
-    return row.criteriaResults;
-  }
-  return parseCriteriaJson(row.criteriaResultsJson);
-}
+// parseCriteriaJson + getCriteria moved to @/lib/utils/criteria
 
 const containerVariants = {
   hidden: { opacity: 0, y: 15 },

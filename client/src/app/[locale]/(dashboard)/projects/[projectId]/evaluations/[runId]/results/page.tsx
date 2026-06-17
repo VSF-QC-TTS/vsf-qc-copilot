@@ -8,18 +8,15 @@ import { type ColumnDef } from '@tanstack/react-table';
 import { FunnelIcon, SortAscendingIcon, CaretDownIcon } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
+import { getCriteria } from '@/lib/utils/criteria';
 
 import { PageShell } from '@/components/layout/page-shell';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { StatusBadge } from '@/components/ui/status-badge';
-import {
-  ResultDetailPanel,
-  type EvaluationResultRow,
-  type CriterionResult,
-} from '@/components/panels/result-detail-panel';
+import { ResultDetailPanel } from '@/components/panels/result-detail-panel';
 import { apiClient } from '@/lib/api/client';
-import type { PageResponse } from '@/lib/api/types';
+import type { PageResponse, EvaluationResultRow } from '@/lib/api/types';
 
 // ---------------------------------------------------------------------------
 // Filter constants
@@ -51,36 +48,7 @@ function truncate(str: string, max = 80): string {
   return str.length > max ? str.slice(0, max) + '...' : str;
 }
 
-function parseCriteriaJson(raw: string | null): CriterionResult[] {
-  if (!raw) return [];
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.map((item) => {
-      const obj =
-        typeof item === 'object' && item !== null
-          ? (item as Record<string, unknown>)
-          : {};
-      return {
-        metricKey: typeof obj.metricKey === 'string' ? obj.metricKey : null,
-        name: typeof obj.name === 'string' ? obj.name : '',
-        status: typeof obj.status === 'string' ? obj.status : '',
-        score: typeof obj.score === 'number' ? obj.score : null,
-        reason: typeof obj.reason === 'string' ? obj.reason : null,
-        graderError: obj.graderError === true,
-      };
-    });
-  } catch {
-    return [];
-  }
-}
-
-function getCriteria(row: EvaluationResultRow): CriterionResult[] {
-  if (Array.isArray(row.criteriaResults) && row.criteriaResults.length > 0) {
-    return row.criteriaResults;
-  }
-  return parseCriteriaJson(row.criteriaResultsJson);
-}
+// parseCriteriaJson + getCriteria moved to @/lib/utils/criteria
 
 function CriteriaSummary({ row }: { row: EvaluationResultRow }) {
   const criteria = getCriteria(row);

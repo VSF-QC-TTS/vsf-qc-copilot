@@ -297,3 +297,28 @@ export type RedTeamResultResponse = {
   } | null;
 };
 
+// ---------------------------------------------------------------------------
+// Evaluation Result (used in result list + detail panel)
+// ---------------------------------------------------------------------------
+export type CriterionResult = {
+  metricKey?: string | null;
+  name: string;
+  status: string;
+  score: number | null;
+  reason: string | null;
+  graderError?: boolean;
+};
+
+export type EvaluationResultRow = {
+  publicId: string;
+  question: string;
+  precondition: string | null;
+  groundTruth: string | null;
+  actualAnswer: string | null;
+  judgeStatus: string | null;
+  judgeScore: number | null;
+  criteriaResultsJson: string | null;
+  criteriaResults?: CriterionResult[] | null;
+  qcStatus: string;
+  qcNote: string | null;
+};
