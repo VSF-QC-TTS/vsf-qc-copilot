@@ -1,8 +1,7 @@
 "use client";
 
 import { useLocale } from "next-intl";
-
-import { useRouter as useNextRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { TranslateIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import type { Locale } from "@/i18n/config";
@@ -15,13 +14,22 @@ const localeLabels: Record<Locale, string> = {
 
 export function LanguageSwitcher() {
   const locale = useLocale() as Locale;
-  const nextRouter = useNextRouter();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const nextLocale = locales.find((l) => l !== locale) ?? locales[0];
 
   function handleSwitch() {
     document.cookie = `NEXT_LOCALE=${nextLocale}; path=/; max-age=31536000`;
-    nextRouter.refresh();
+    
+    if (pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`) {
+      const newPath = pathname.replace(`/${locale}`, `/${nextLocale}`);
+      router.push(newPath);
+    } else {
+      // Fallback if URL somehow doesn't have locale (e.g. rewrite)
+      router.push(`/${nextLocale}${pathname}`);
+    }
+    router.refresh();
   }
 
   return (
