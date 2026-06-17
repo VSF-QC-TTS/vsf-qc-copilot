@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
  * The AuthGuard on the dashboard layout will redirect
  * unauthenticated users to the login page.
  */
-export default function Home() {
-  redirect("/dashboard");
+export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  redirect(`/${locale}/dashboard`);
 }

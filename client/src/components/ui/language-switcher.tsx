@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale } from "next-intl";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname } from "@/i18n/navigation";
 import { TranslateIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import type { Locale } from "@/i18n/config";
@@ -21,15 +21,7 @@ export function LanguageSwitcher() {
 
   function handleSwitch() {
     document.cookie = `NEXT_LOCALE=${nextLocale}; path=/; max-age=31536000`;
-    
-    if (pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`) {
-      const newPath = pathname.replace(`/${locale}`, `/${nextLocale}`);
-      router.push(newPath);
-    } else {
-      // Fallback if URL somehow doesn't have locale (e.g. rewrite)
-      router.push(`/${nextLocale}${pathname}`);
-    }
-    router.refresh();
+    router.replace(pathname, { locale: nextLocale });
   }
 
   return (
