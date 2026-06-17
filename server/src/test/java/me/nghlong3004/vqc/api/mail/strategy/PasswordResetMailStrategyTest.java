@@ -3,7 +3,7 @@ package me.nghlong3004.vqc.api.mail.strategy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.lenient;
 
 import me.nghlong3004.vqc.api.mail.model.MailRequest;
 import me.nghlong3004.vqc.api.mail.model.MailType;
@@ -31,9 +31,11 @@ class PasswordResetMailStrategyTest {
 
   @Test
   void buildMessageUsesPasswordResetTemplateAndModel() {
-    when(messageSource.getMessage(eq("mail.reset.subject"), any(), any()))
+    lenient().when(messageSource.getMessage(any(), any(), any()))
+        .thenAnswer(inv -> inv.getArgument(0).toString());
+    lenient().when(messageSource.getMessage(eq("mail.reset.subject"), any(), any()))
         .thenReturn("Reset your VF QC Copilot password");
-    when(messageSource.getMessage(eq("mail.reset.greeting"), any(), any()))
+    lenient().when(messageSource.getMessage(eq("mail.reset.greeting"), any(), any()))
         .thenReturn("Hi QC Demo,");
 
     var request =
