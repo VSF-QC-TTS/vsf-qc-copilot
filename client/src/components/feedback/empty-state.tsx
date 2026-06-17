@@ -27,7 +27,7 @@ export function EmptyState({
   const reduce = useReducedMotion();
 
   // Stagger variants
-  const containerVariants = {
+  const containerVariants: any = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -37,7 +37,7 @@ export function EmptyState({
     },
   };
 
-  const itemVariants = {
+  const itemVariants: any = {
     hidden: { opacity: 0, y: 12 },
     show: { 
       opacity: 1, 
