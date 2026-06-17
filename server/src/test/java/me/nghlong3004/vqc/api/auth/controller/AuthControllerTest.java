@@ -272,6 +272,7 @@ class AuthControllerTest {
         UUID.fromString("7b7b7d42-5f42-4c5a-9281-8d1d36f6f59d"),
         "qc.demo@example.com",
         "QC Demo",
+        null,
         Role.QC_MEMBER,
         UserStatus.ACTIVE,
         OffsetDateTime.parse("2026-06-09T10:00:00Z"));
@@ -282,6 +283,7 @@ class AuthControllerTest {
         UUID.fromString("7b7b7d42-5f42-4c5a-9281-8d1d36f6f59d"),
         "qc.demo@example.com",
         "QC Demo",
+        null,
         Role.QC_MEMBER,
         UserStatus.PENDING_EMAIL_VERIFICATION,
         null);

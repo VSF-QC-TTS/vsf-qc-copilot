@@ -42,7 +42,7 @@ class AuthServiceImplTest {
     AtomicReference<String> authenticatedEmail = new AtomicReference<>();
     AtomicReference<User> savedUser = new AtomicReference<>();
     UserResponse userResponse =
-        new UserResponse(null, "qc.demo@example.com", "QC Demo", Role.QC_MEMBER, UserStatus.ACTIVE, null);
+        new UserResponse(null, "qc.demo@example.com", "QC Demo", null, Role.QC_MEMBER, UserStatus.ACTIVE, null);
     AuthServiceImpl authService =
         new AuthServiceImpl(
             authenticationManager(authenticatedEmail),
@@ -103,7 +103,7 @@ class AuthServiceImplTest {
     AtomicReference<String> authenticatedEmail = new AtomicReference<>();
     AtomicReference<User> savedUser = new AtomicReference<>();
     UserResponse userResponse =
-        new UserResponse(null, "qc.demo@example.com", "QC Demo", Role.QC_MEMBER, UserStatus.ACTIVE, null);
+        new UserResponse(null, "qc.demo@example.com", "QC Demo", null, Role.QC_MEMBER, UserStatus.ACTIVE, null);
     AuthServiceImpl authService =
         new AuthServiceImpl(
             authenticationManager(authenticatedEmail),

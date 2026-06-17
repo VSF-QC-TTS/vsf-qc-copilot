@@ -98,6 +98,8 @@ vqc:
     base-url: ${WEB_BASE_URL}
   server:
     base-url: ${SERVER_BASE_URL}
+  user:
+    default-avatar-url: ${DEFAULT_AVATAR_URL:https://ui-avatars.com/api/?name={name}&background=random&color=fff&size=128}
   mail:
     from: ${MAIL_FROM:no-reply@localhost}
   security:

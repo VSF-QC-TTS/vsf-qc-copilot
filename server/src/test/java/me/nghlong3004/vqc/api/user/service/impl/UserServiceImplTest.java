@@ -34,7 +34,7 @@ class UserServiceImplTest {
     RegisterRequest request =
         new RegisterRequest("  QC.Demo@Example.COM  ", "password123", "   ");
     UserResponse mappedResponse =
-        new UserResponse(null, "qc.demo@example.com", "qc.demo", Role.QC_MEMBER, null, null);
+        new UserResponse(null, "qc.demo@example.com", "qc.demo", null, Role.QC_MEMBER, null, null);
     AtomicReference<User> savedUser = new AtomicReference<>();
     RecordingMailService mailService = new RecordingMailService();
     RecordingEmailVerificationService emailVerificationService =
@@ -111,7 +111,7 @@ class UserServiceImplTest {
     user.setRole(Role.QC_MEMBER);
     user.setStatus(UserStatus.ACTIVE);
     UserResponse mappedResponse =
-        new UserResponse(null, "qc.demo@example.com", "QC Demo", Role.QC_MEMBER, UserStatus.ACTIVE, null);
+        new UserResponse(null, "qc.demo@example.com", "QC Demo", null, Role.QC_MEMBER, UserStatus.ACTIVE, null);
     UserServiceImpl userService =
         new UserServiceImpl(
             repository(false, new AtomicReference<>(), null, Optional.of(user)),

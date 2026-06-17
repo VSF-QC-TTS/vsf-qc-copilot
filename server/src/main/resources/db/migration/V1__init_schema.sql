@@ -6,6 +6,7 @@ CREATE TABLE users (
     username VARCHAR(100) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     display_name VARCHAR(255) NOT NULL,
+    avatar_url VARCHAR(512),
     role VARCHAR(50) NOT NULL DEFAULT 'QC_MEMBER',
     status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
     last_login_at TIMESTAMPTZ,

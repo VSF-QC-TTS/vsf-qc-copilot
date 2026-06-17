@@ -18,6 +18,7 @@ public record UserResponse(
         UUID publicId,
     @Schema(description = "User email address.", example = "qc.demo@example.com") String email,
     @Schema(description = "User display name.", example = "QC Demo") String displayName,
+    @Schema(description = "User avatar URL.", example = "https://ui-avatars.com/api/?name=QC+Demo", nullable = true) String avatarUrl,
     @Schema(description = "Application role.", example = "QC_MEMBER") Role role,
     @Schema(description = "User account status.", example = "ACTIVE") UserStatus status,
     @Schema(

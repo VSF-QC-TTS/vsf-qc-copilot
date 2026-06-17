@@ -2,7 +2,7 @@
 
 Date: 2026-06-15
 Repo area: `server/`
-Last full-suite pass: 393 tests, 0 failures (2026-06-15). Focused evaluation/job/red-team tests passed on 2026-06-15 after Promptfoo mapping, worker progress, and red-team backend changes.
+Last full-suite pass: 399 tests, 2 pre-existing errors (2026-06-17). The 2 errors are `ServerApplicationTests.contextLoads` (Testcontainers/Docker) and `EvaluationRunServiceImplTest.listGlobalEvaluationRunsReturnsPage` (stub). All user/auth/mail focused tests green.
 
 Purpose: this is the server bootstrap handoff. If a user only says "read `server/SERVER_CONTEXT.md`", the agent must use this file to discover the next files to read without asking for more pointers. Current code is the source of truth when docs and implementation differ. The full product target lives in `docs/`; treat docs as roadmap/contract intent unless the user explicitly asks to migrate current code toward them.
 
@@ -90,6 +90,8 @@ Domain choices in current code:
 - `Role`: `QC_MEMBER`, `QC_LEAD`, `ADMIN`; `Role#getAuthority()` returns `ROLE_` + enum name.
 - `User` uses Lombok builder/defaults; register currently builds users with `User.builder()`.
 - Existing domain code prefers Lombok builders for object creation where available; keep that style instead of constructing with `new` and then mutating through setters.
+- `User.avatarUrl` (`VARCHAR(512)`, nullable): stores the user's avatar image URL. `UserResponse` includes `avatarUrl` in its JSON payload. When `avatarUrl` is `null`, the frontend falls back to initials-based avatar rendering.
+- Default avatar URL template is configurable via `vqc.user.default-avatar-url` (env: `DEFAULT_AVATAR_URL`). Uses `ui-avatars.com` with `{name}` placeholder. Available for future use at registration time.
 
 ## [CURRENT_STATE] Persistence
 
