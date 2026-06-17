@@ -1,9 +1,12 @@
 package me.nghlong3004.vqc.api.mail.strategy;
 
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import me.nghlong3004.vqc.api.mail.model.MailMessage;
 import me.nghlong3004.vqc.api.mail.model.MailRequest;
 import me.nghlong3004.vqc.api.mail.model.MailType;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Component;
 
 /**
@@ -11,10 +14,11 @@ import org.springframework.stereotype.Component;
  * @since 6/9/2026
  */
 @Component
+@RequiredArgsConstructor
 public class EmailVerificationMailStrategy implements MailStrategy {
 
   private static final String TEMPLATE_PATH = "templates/mail/email-verification.html";
-  private static final String SUBJECT = "Verify your VF QC Copilot account";
+  private final MessageSource messageSource;
 
   @Override
   public MailType type() {
@@ -23,17 +27,26 @@ public class EmailVerificationMailStrategy implements MailStrategy {
 
   @Override
   public MailMessage buildMessage(MailRequest request) {
+    var locale = LocaleContextHolder.getLocale();
+    var appName = "VF QC Copilot";
+    var subject = messageSource.getMessage("mail.verify.subject", null, locale);
+
     return MailMessage.builder()
         .to(request.to())
-        .subject(SUBJECT)
+        .subject(subject)
         .templatePath(TEMPLATE_PATH)
         .model(
             Map.of(
-                "appName", "VF QC Copilot",
-                "displayName", request.displayName(),
-                "verificationUrl", request.actionUrl(),
-                "preheader",
-                    "Verify your email address to activate your VF QC Copilot account."))
+                "appName", appName,
+                "title", messageSource.getMessage("mail.verify.title", null, locale),
+                "greeting", messageSource.getMessage("mail.verify.greeting", new Object[]{request.displayName()}, locale),
+                "body", messageSource.getMessage("mail.verify.body", null, locale),
+                "buttonText", messageSource.getMessage("mail.verify.button", null, locale),
+                "expiryNote", messageSource.getMessage("mail.verify.expiry", null, locale),
+                "automatedNote", messageSource.getMessage("mail.common.automated", new Object[]{appName}, locale),
+                "actionUrl", request.actionUrl(),
+                "preheader", messageSource.getMessage("mail.verify.body", null, locale)
+            ))
         .build();
   }
 }

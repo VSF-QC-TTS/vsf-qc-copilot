@@ -43,6 +43,14 @@ axiosInstance.interceptors.request.use(
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    if (typeof document !== 'undefined') {
+      const match = document.cookie.match(new RegExp('(^| )NEXT_LOCALE=([^;]+)'));
+      if (match && config.headers) {
+        config.headers['Accept-Language'] = match[2];
+      }
+    }
+
     return config;
   },
   (error) => Promise.reject(error)

@@ -250,7 +250,12 @@ Future product direction from docs:
 Mail:
 - Mail config maps `.env` keys `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM`.
 - Mail flow uses Strategy + Factory: `MailType`, `MailRequest`, `MailMessage`, `MailStrategy`, `MailStrategyFactory`.
-- Templates are HTML emails with table-friendly structure and inline CSS.
+- Templates are HTML emails designed with a modern, minimalist aesthetic (sans-serif, ample padding, neutral colors).
+- **Internationalization (i18n)**: 
+  - Emails support multi-language via Spring `MessageSource`.
+  - Translations are stored in `messages.properties` (English default) and `messages_vi.properties` (Vietnamese).
+  - The `LocaleContextHolder` reads the `Accept-Language` header from the frontend request to determine the email language at runtime.
+  - Hardcoded English text has been replaced with dynamic placeholders (e.g., `{{title}}`, `{{greeting}}`, `{{body}}`) injected via the `model` map in each strategy.
 
 ## [CONVENTIONS] Workflow
 

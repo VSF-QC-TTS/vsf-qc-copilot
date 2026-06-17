@@ -126,6 +126,7 @@ Coding conventions:
 - **Registration Flow**: Upon successful registration, the UI dynamically extracts the user's email domain and provides a direct "Check email" button routing to providers like Gmail, Yahoo, or Outlook.
 - **Icons**: Import strictly from `@phosphor-icons/react` package. No other icon library should be utilized. Be contextually precise with icons (e.g., use `BrainIcon` instead of a generic `RobotIcon` for AI models and neural networks).
 - **API client**: All calls must go through the configured `apiClient` helper inside `client/src/lib/api/client.ts` to ensure automatic auth header attachment, refresh logic, and error normalization.
+  - The client automatically extracts the `NEXT_LOCALE` cookie and attaches it as the `Accept-Language` header so the backend can localize error messages and emails.
 
 ## [TESTS] Development and Validation
 
