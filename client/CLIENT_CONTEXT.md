@@ -116,7 +116,8 @@ Async job handling:
 Coding conventions:
 - **Component File Size**: Flag UI files exceeding 250 lines as violating Single Responsibility Principle (per `react-component-patterns`). Split subcomponents into specialized files under a colocated folder or under `src/components/`.
 - **Styling**: Tailwind CSS v4 paired with custom shadcn-inspired components inside `client/src/components/ui`. Light/Dark mode is supported via `next-themes` and variables in `client/src/styles/globals.css`.
-- **Translations**: `next-intl` configuration requires both English (`en.json`) and Vietnamese (`vi.json`) keys under `client/messages/`. Default locale is `vi`.
+- **Translations**: `next-intl` configuration requires both English (`en.json`) and Vietnamese (`vi.json`) keys under `client/messages/`. Default locale is `vi`. 
+  - **Routing Rule**: The app uses `localePrefix: "always"` with a middleware to enforce `/[locale]` in the URL. You **MUST** use `Link`, `useRouter`, `usePathname`, and `redirect` from `@/i18n/navigation` instead of `next/navigation` or `next/link` for all internal routing.
 - **Forms**: React Hook Form combined with Zod validation schemas (`client/src/lib/validations/`). Error boundaries render validation messages.
 - **Error Mapping & Translation**: All custom backend error codes from `ErrorCode.java` must be registered in the `knownCodes` array in `client/src/lib/utils/error-messages.ts` and translated under the `"errors"` namespace in `vi.json` and `en.json`.
   - JSR-380 validation messages returned by the server (e.g. `Email is required.`) are dynamically translated at runtime using a regex pattern matching and field dictionary lookup mechanism implemented in `translateValidationMessage` inside `error-messages.ts` to keep the backend language-agnostic.
