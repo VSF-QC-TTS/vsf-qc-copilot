@@ -77,9 +77,13 @@ Current implemented auth state:
 ## [CURRENT_STATE] OAuth
 
 OAuth state:
-- OAuth code exists for Google/GitHub profile extraction and GitHub email enrichment.
-- OAuth success handler currently extracts profile/email, sets a temporary refresh cookie, invalidates session, and redirects; user persistence/linking is still commented/incomplete.
-- Treat OAuth as partially implemented, not production-complete.
+- OAuth2 login is **fully implemented** for Google and GitHub providers.
+- `OAuth2LoginSuccessHandler` implements find-or-create user pattern: on first OAuth login, a new `User` is created with `UserStatus.ACTIVE`, `Role.QC_MEMBER`, a random (un-guessable) `passwordHash`, `displayName` from OAuth profile (falls back to email prefix), and `avatarUrl` from the provider. On re-login, `avatarUrl` and `lastLoginAt` are synced.
+- JWT tokens (access + refresh) are issued via `JwtTokenService` — same as local login. Refresh token is set as an HttpOnly cookie.
+- No `authProvider` field on `User` entity — OAuth users are just users with an impossible-to-guess password hash.
+- Profile extraction: `GoogleOAuth2UserProfileExtractor` (email, given_name, family_name, picture), `GithubOAuth2UserProfileExtractor` (email, name/login, avatar_url). `GithubEmailOAuth2UserEnricher` fetches private emails from GitHub API.
+- Security config wires: `.oauth2Login()` with custom `ProviderAwareOAuth2UserService`, `OAuth2LoginSuccessHandler`, and redirect URIs under `/api/v1/`.
+- 15 OAuth2 tests passing (handler: 5, profile: 5, userinfo: 3, auth provider: 2).
 
 ## [CURRENT_STATE] Domain Choices
 
