@@ -838,6 +838,20 @@
       "rubric": "Tiêu chí",
       "progress": "Tiến độ",
       "createdAt": "Ngày tạo"
+    },
+    "wizard": {
+      "step1": "Bộ dữ liệu",
+      "step2": "Tiêu chí",
+      "step3": "Kết nối & Model",
+      "step4": "Xác nhận",
+      "next": "Tiếp tục",
+      "back": "Quay lại",
+      "runNow": "Chạy đánh giá",
+      "reviewAndRun": "Xác nhận thông tin",
+      "emptyDataset": "Chưa có bộ dữ liệu nào được duyệt.",
+      "emptyRubric": "Chưa có tiêu chí nào được xuất bản.",
+      "emptyConnector": "Dự án chưa có kết nối API nào.",
+      "emptyJudgeModel": "Dự án chưa có model chấm nào."
     }
   },
   "judgeModels": {
@@ -1054,4 +1068,3 @@
     }
   }
 }
-

@@ -844,6 +844,20 @@
       "rubric": "Rubric",
       "progress": "Progress",
       "createdAt": "Created"
+    },
+    "wizard": {
+      "step1": "Dataset",
+      "step2": "Rubric",
+      "step3": "Connector & Model",
+      "step4": "Review",
+      "next": "Next",
+      "back": "Back",
+      "runNow": "Run Evaluation",
+      "reviewAndRun": "Review and Run",
+      "emptyDataset": "No approved datasets available.",
+      "emptyRubric": "No published rubrics available.",
+      "emptyConnector": "No API connectors available.",
+      "emptyJudgeModel": "No judge models available."
     }
   },
   "judgeModels": {
@@ -1060,4 +1074,3 @@
     }
   }
 }
-
