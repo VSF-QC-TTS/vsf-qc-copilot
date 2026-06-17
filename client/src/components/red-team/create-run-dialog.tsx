@@ -188,7 +188,7 @@ export function CreateRedTeamRunDialog({
         aria-modal="true"
         aria-labelledby="create-redteam-title"
         className={cn(
-          'relative z-10 w-full max-w-xl rounded-xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl text-zinc-100',
+          'relative z-10 w-full max-w-xl rounded-xl border bg-card p-6 shadow-2xl text-foreground',
           'animate-in fade-in-0 zoom-in-95 duration-200',
         )}
       >
@@ -205,7 +205,7 @@ export function CreateRedTeamRunDialog({
         </div>
 
         {submitError && (
-          <div className="mt-3 rounded-lg border border-red-900/30 bg-red-950/20 p-3 text-sm text-red-400">
+          <div className="mt-3 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-red-600 dark:text-red-400">
             {submitError}
           </div>
         )}
@@ -213,7 +213,7 @@ export function CreateRedTeamRunDialog({
         {isLoading ? (
           <div className="py-12 flex flex-col items-center justify-center gap-3 text-muted-foreground text-sm">
             <svg
-              className="size-6 animate-spin text-zinc-500"
+              className="size-6 animate-spin text-muted-foreground"
               viewBox="0 0 24 24"
               fill="none"
             >
@@ -240,7 +240,7 @@ export function CreateRedTeamRunDialog({
           >
             {/* Run name input */}
             <div className="space-y-1.5">
-              <label htmlFor="name" className="text-sm font-semibold text-zinc-300">
+              <label htmlFor="name" className="text-sm font-semibold text-foreground">
                 {t('scanName')}
               </label>
               <input
@@ -249,10 +249,10 @@ export function CreateRedTeamRunDialog({
                 placeholder={t('scanNamePlaceholder')}
                 {...register('name')}
                 disabled={isSubmitting}
-                className="w-full rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-sm text-zinc-100 outline-hidden placeholder:text-zinc-500 focus:border-zinc-700 focus:ring-1 focus:ring-zinc-700 disabled:opacity-50"
+                className="w-full rounded-lg border bg-muted/50 px-3 py-2 text-sm text-foreground outline-hidden placeholder:text-muted-foreground focus:border-ring focus:ring-1 focus:ring-ring disabled:opacity-50"
               />
               {errors.name && (
-                <p className="text-xs text-red-400 mt-1">{errors.name.message}</p>
+                <p className="text-xs text-destructive mt-1">{errors.name.message}</p>
               )}
             </div>
 
@@ -265,7 +265,7 @@ export function CreateRedTeamRunDialog({
             >
               <label
                 htmlFor="targetConnectorPublicId"
-                className="text-sm font-semibold text-zinc-300"
+                className="text-sm font-semibold text-foreground"
               >
                 {t('fields.connector')}
               </label>
@@ -273,19 +273,19 @@ export function CreateRedTeamRunDialog({
                 id="targetConnectorPublicId"
                 {...register('targetConnectorPublicId')}
                 disabled={isSubmitting}
-                className="w-full rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-sm text-zinc-100 outline-hidden focus:border-zinc-700 disabled:opacity-50"
+                className="w-full rounded-lg border bg-muted/50 px-3 py-2 text-sm text-foreground outline-hidden focus:border-ring disabled:opacity-50"
               >
-                <option value="" className="bg-zinc-950 text-zinc-500">
+                <option value="">
                   {t('fields.connectorPlaceholder')}
                 </option>
                 {connectors.map((c) => (
-                  <option key={c.publicId} value={c.publicId} className="bg-zinc-950 text-zinc-100">
+                  <option key={c.publicId} value={c.publicId}>
                     {c.name}
                   </option>
                 ))}
               </select>
               {errors.targetConnectorPublicId && (
-                <p className="text-xs text-red-400 mt-1">
+                <p className="text-xs text-destructive mt-1">
                   {errors.targetConnectorPublicId.message}
                 </p>
               )}
@@ -300,27 +300,27 @@ export function CreateRedTeamRunDialog({
             >
               <label
                 htmlFor="judgeModelPublicId"
-                className="text-sm font-semibold text-zinc-300"
+                className="text-sm font-semibold text-foreground"
               >
-                {t('fields.judgeModel')} <span className="text-[10px] text-zinc-500 font-normal">({tCommon('yes')} / {tCommon('no')} - optional)</span>
+                {t('fields.judgeModel')} <span className="text-[10px] text-muted-foreground font-normal">({tCommon('yes')} / {tCommon('no')} - optional)</span>
               </label>
               <select
                 id="judgeModelPublicId"
                 {...register('judgeModelPublicId')}
                 disabled={isSubmitting}
-                className="w-full rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-sm text-zinc-100 outline-hidden focus:border-zinc-700 disabled:opacity-50"
+                className="w-full rounded-lg border bg-muted/50 px-3 py-2 text-sm text-foreground outline-hidden focus:border-ring disabled:opacity-50"
               >
-                <option value="" className="bg-zinc-950 text-zinc-500">
+                <option value="">
                   {t('fields.judgeModelPlaceholder')}
                 </option>
                 {judgeModels.map((jm) => (
-                  <option key={jm.publicId} value={jm.publicId} className="bg-zinc-950 text-zinc-100">
+                  <option key={jm.publicId} value={jm.publicId}>
                     {jm.name} ({jm.provider}: {jm.modelName})
                   </option>
                 ))}
               </select>
               {errors.judgeModelPublicId && (
-                <p className="text-xs text-red-400 mt-1">
+                <p className="text-xs text-destructive mt-1">
                   {errors.judgeModelPublicId.message}
                 </p>
               )}
@@ -328,7 +328,7 @@ export function CreateRedTeamRunDialog({
 
             {/* Chatbot Purpose textarea */}
             <div className="space-y-1.5">
-              <label htmlFor="purpose" className="text-sm font-semibold text-zinc-300">
+              <label htmlFor="purpose" className="text-sm font-semibold text-foreground">
                 {t('fields.purpose')}
               </label>
               <textarea
@@ -337,13 +337,13 @@ export function CreateRedTeamRunDialog({
                 placeholder={t('fields.purposePlaceholder')}
                 {...register('purpose')}
                 disabled={isSubmitting}
-                className="w-full rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-sm text-zinc-100 outline-hidden placeholder:text-zinc-500 focus:border-zinc-700 focus:ring-1 focus:ring-zinc-700 disabled:opacity-50 resize-none"
+                className="w-full rounded-lg border bg-muted/50 px-3 py-2 text-sm text-foreground outline-hidden placeholder:text-muted-foreground focus:border-ring focus:ring-1 focus:ring-ring disabled:opacity-50 resize-none"
               />
               {errors.purpose ? (
-                <p className="text-xs text-red-400 mt-1">{errors.purpose.message}</p>
+                <p className="text-xs text-destructive mt-1">{errors.purpose.message}</p>
               ) : (
-                <p className="text-[10px] text-zinc-500">
-                  Cung cấp ngữ cảnh hoạt động của chatbot để hệ thống sinh các kịch bản tấn công thực tế (tối thiểu 10 ký tự).
+                <p className="text-[10px] text-muted-foreground">
+                  {t('fields.purposeHint')}
                 </p>
               )}
             </div>
@@ -352,18 +352,18 @@ export function CreateRedTeamRunDialog({
             <div className="grid gap-4 sm:grid-cols-2">
               {/* Plugins multi-select */}
               <div className="space-y-2">
-                <span className="text-sm font-semibold text-zinc-300 block">
+                <span className="text-sm font-semibold text-foreground block">
                   {t('fields.plugins')}
                 </span>
-                <div className="space-y-2 rounded-lg border border-zinc-800 bg-zinc-900/20 p-3">
+                <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
                   {['harmful:privacy', 'prompt-extraction', 'pii:direct'].map((plugin) => (
-                    <label key={plugin} className="flex items-center gap-2 text-xs font-medium cursor-pointer text-zinc-300 hover:text-zinc-100">
+                    <label key={plugin} className="flex items-center gap-2 text-xs font-medium cursor-pointer text-foreground/80 hover:text-foreground">
                       <input
                         type="checkbox"
                         value={plugin}
                         {...register('plugins')}
                         disabled={isSubmitting}
-                        className="rounded border-zinc-800 bg-zinc-900 text-red-600 focus:ring-0 focus:ring-offset-0"
+                        className="rounded border bg-muted text-red-600 focus:ring-0 focus:ring-offset-0"
                       />
                       <span>
                         {plugin === 'harmful:privacy' && t('plugins.privacy')}
@@ -374,14 +374,14 @@ export function CreateRedTeamRunDialog({
                   ))}
                 </div>
                 {errors.plugins && (
-                  <p className="text-xs text-red-400 mt-1">{errors.plugins.message}</p>
+                  <p className="text-xs text-destructive mt-1">{errors.plugins.message}</p>
                 )}
               </div>
 
               {/* Num tests input */}
               <div className="space-y-2 flex flex-col justify-between">
                 <div className="space-y-1.5">
-                  <label htmlFor="numTests" className="text-sm font-semibold text-zinc-300 block">
+                  <label htmlFor="numTests" className="text-sm font-semibold text-foreground block">
                     {t('fields.numTests')}
                   </label>
                   <Controller
@@ -389,10 +389,10 @@ export function CreateRedTeamRunDialog({
                     name="numTests"
                     render={({ field }) => (
                       <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs text-zinc-400">
-                          <span>1 đòn</span>
-                          <span className="font-bold text-red-500 text-sm">{field.value} đòn / plugin</span>
-                          <span>10 đòn</span>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>1</span>
+                          <span className="font-bold text-red-600 dark:text-red-500 text-sm">{t('fields.numTestsPerPlugin', { count: field.value })}</span>
+                          <span>10</span>
                         </div>
                         <input
                           id="numTests"
@@ -403,31 +403,31 @@ export function CreateRedTeamRunDialog({
                           disabled={isSubmitting}
                           value={field.value}
                           onChange={(e) => field.onChange(parseInt(e.target.value))}
-                          className="w-full accent-red-500 h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
+                          className="w-full accent-red-500 h-1 bg-muted rounded-lg appearance-none cursor-pointer"
                         />
                       </div>
                     )}
                   />
                   {errors.numTests && (
-                    <p className="text-xs text-red-400 mt-1">{errors.numTests.message}</p>
+                    <p className="text-xs text-destructive mt-1">{errors.numTests.message}</p>
                   )}
                 </div>
 
-                <p className="text-[10px] text-zinc-500">
-                  Mỗi loại lỗ hổng sẽ sinh ra số câu hỏi tấn công tương ứng. Tối đa 10 đòn để đảm bảo hiệu năng và giới hạn hệ thống.
+                <p className="text-[10px] text-muted-foreground">
+                  {t('fields.numTestsHint')}
                 </p>
               </div>
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-800">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t">
               <Button
                 ref={cancelRef}
                 type="button"
                 variant="ghost"
                 disabled={isSubmitting}
                 onClick={() => onOpenChange(false)}
-                className="text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900"
+                className="text-muted-foreground hover:text-foreground hover:bg-muted"
               >
                 {tCommon('cancel')}
               </Button>

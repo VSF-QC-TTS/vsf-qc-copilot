@@ -81,7 +81,7 @@ export default function RedTeamRunsPage() {
         header: t('scanName'),
         cell: ({ row }) => {
           const runNumber = totalItems - (page * PAGE_SIZE) - row.index;
-          const displayName = row.original.name || `Quét bảo mật #${runNumber}`;
+          const displayName = row.original.name || t('defaultScanName', { number: runNumber });
           return (
             <div className="flex flex-col">
               <span className="font-semibold text-foreground">
@@ -168,7 +168,7 @@ export default function RedTeamRunsPage() {
       },
       {
         accessorKey: 'createdAt',
-        header: tCommon('status.PUBLISHED'), // Reuse label mapping or custom columns
+        header: tCommon('createdAt'),
         cell: ({ row }) => (
           <span className="text-muted-foreground text-xs">
             {formatDate(row.original.createdAt)}

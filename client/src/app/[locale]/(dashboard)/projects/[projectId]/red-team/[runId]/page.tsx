@@ -38,7 +38,6 @@ export default function RedTeamRunProgressPage() {
   const { job } = useJobProgress(jobPublicId, {
     enabled: !!jobPublicId && !isTerminalRun,
     onCompleted: () => {
-      // Invalidate query and refetch run info
       queryClient.invalidateQueries({ queryKey: ['red-team-run', runId] });
       queryClient.invalidateQueries({ queryKey: ['red-team-runs', projectId] });
       refetchRun();
@@ -54,7 +53,7 @@ export default function RedTeamRunProgressPage() {
     if (run?.status === 'COMPLETED') {
       const timer = setTimeout(() => {
         router.push(`/projects/${projectId}/red-team/${runId}/results`);
-      }, 1500); // Small delay so the user sees it's done
+      }, 1500);
       return () => clearTimeout(timer);
     }
   }, [run?.status, projectId, runId, router]);
@@ -62,8 +61,8 @@ export default function RedTeamRunProgressPage() {
   if (runLoading || !run) {
     return (
       <PageShell title={t('title')} backHref={`/projects/${projectId}/red-team`} backLabel={tCommon('back')}>
-        <div className="flex flex-col items-center justify-center py-20 gap-3 text-sm text-zinc-500">
-          <CircleNotchIcon className="size-6 animate-spin text-zinc-500" />
+        <div className="flex flex-col items-center justify-center py-20 gap-3 text-sm text-muted-foreground">
+          <CircleNotchIcon className="size-6 animate-spin" />
           {tCommon('loading')}
         </div>
       </PageShell>
@@ -78,40 +77,40 @@ export default function RedTeamRunProgressPage() {
 
   return (
     <PageShell
-      title={run.name || `Quét bảo mật #${runId.slice(0, 8)}`}
+      title={run.name || t('defaultScanName', { number: runId.slice(0, 8) })}
       backHref={`/projects/${projectId}/red-team`}
       backLabel={tCommon('back')}
     >
       <div className="max-w-2xl mx-auto space-y-6 mt-4">
         {/* Run context summary card */}
-        <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-5 space-y-4 text-zinc-200">
-          <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
-            Thông tin đợt quét
+        <div className="rounded-xl border bg-card p-5 space-y-4 text-foreground">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            {t('progress.scanInfo')}
           </h2>
           <div className="grid gap-3 sm:grid-cols-2 text-sm">
             <div>
-              <span className="text-zinc-500">API Connector:</span>{' '}
-              <span className="font-medium text-zinc-300">{run.connectorName || '—'}</span>
+              <span className="text-muted-foreground">{t('progress.apiConnector')}:</span>{' '}
+              <span className="font-medium text-foreground">{run.connectorName || '—'}</span>
             </div>
             <div>
-              <span className="text-zinc-500">Mô hình đánh giá:</span>{' '}
-              <span className="font-medium text-zinc-300">{run.judgeModelDisplayName || 'Mặc định (Promptfoo)'}</span>
+              <span className="text-muted-foreground">{t('progress.judgeModel')}:</span>{' '}
+              <span className="font-medium text-foreground">{run.judgeModelDisplayName || t('progress.judgeDefault')}</span>
             </div>
             <div className="sm:col-span-2">
-              <span className="text-zinc-500">Mục đích Chatbot:</span>
-              <p className="mt-1 text-xs text-zinc-400 leading-relaxed bg-zinc-900/40 p-2.5 rounded-lg border border-zinc-900 font-mono">
+              <span className="text-muted-foreground">{t('progress.chatbotPurpose')}:</span>
+              <p className="mt-1 text-xs text-muted-foreground leading-relaxed bg-muted/40 p-2.5 rounded-lg border font-mono">
                 {run.purpose}
               </p>
             </div>
             <div>
-              <span className="text-zinc-500">Số lượng đòn:</span>{' '}
-              <span className="font-semibold text-zinc-300">{run.numTests} đòn / loại</span>
+              <span className="text-muted-foreground">{t('progress.numAttacks')}:</span>{' '}
+              <span className="font-semibold text-foreground">{t('progress.numAttacksPerType', { count: run.numTests })}</span>
             </div>
             <div>
-              <span className="text-zinc-500">Plugins kích hoạt:</span>
+              <span className="text-muted-foreground">{t('progress.pluginsActivated')}:</span>
               <div className="flex flex-wrap gap-1 mt-1.5">
                 {run.plugins.map((p) => (
-                  <Badge key={p} variant="outline" className="text-[10px] bg-zinc-900 border-zinc-800 py-0.5 text-zinc-400">
+                  <Badge key={p} variant="outline" className="text-[10px] bg-muted border py-0.5 text-muted-foreground">
                     {p.split(':').pop() || p}
                   </Badge>
                 ))}
@@ -121,34 +120,34 @@ export default function RedTeamRunProgressPage() {
         </div>
 
         {/* Live progress cockpit */}
-        <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-6 space-y-6 text-zinc-200">
+        <div className="rounded-xl border bg-card p-6 space-y-6 text-foreground">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <h3 className="font-bold text-lg text-zinc-100">
-                {status === 'PENDING' && 'Đang chuẩn bị quét bảo mật...'}
-                {status === 'RUNNING' && 'Đang quét lỗ hổng bảo mật...'}
-                {status === 'COMPLETED' && 'Quét bảo mật hoàn tất!'}
-                {status === 'FAILED' && 'Đợt quét bảo mật thất bại'}
-                {status === 'CANCELLED' && 'Đợt quét đã bị hủy'}
+              <h3 className="font-bold text-lg text-foreground">
+                {status === 'PENDING' && t('progress.preparing')}
+                {status === 'RUNNING' && t('progress.scanning')}
+                {status === 'COMPLETED' && t('progress.completed')}
+                {status === 'FAILED' && t('progress.failed')}
+                {status === 'CANCELLED' && t('progress.cancelled')}
               </h3>
-              <p className="text-xs text-zinc-500">
-                {status === 'RUNNING' && `Đang xử lý ${currentProgress} trên tổng số ${totalProgress} kịch bản tấn công.`}
-                {status === 'COMPLETED' && 'Đang tạo báo cáo và chuyển hướng...'}
-                {status === 'PENDING' && 'Đang cấu hình Promptfoo CLI và khởi tạo container...'}
-                {(status === 'FAILED' || status === 'CANCELLED') && 'Vui lòng kiểm tra lại cấu hình hoặc log lỗi bên dưới.'}
+              <p className="text-xs text-muted-foreground">
+                {status === 'RUNNING' && t('progress.scanningDesc', { current: currentProgress, total: totalProgress })}
+                {status === 'COMPLETED' && t('progress.completedDesc')}
+                {status === 'PENDING' && t('progress.preparingDesc')}
+                {(status === 'FAILED' || status === 'CANCELLED') && t('progress.failedDesc')}
               </p>
             </div>
             <div>
               {['PENDING', 'RUNNING'].includes(status) && (
-                <CircleNotchIcon className="size-6 animate-spin text-red-500" />
+                <CircleNotchIcon className="size-6 animate-spin text-red-600 dark:text-red-500" />
               )}
               {status === 'COMPLETED' && (
-                <div className="size-7 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center">
+                <div className="size-7 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-500 flex items-center justify-center">
                   <ShieldCheckIcon size={18} weight="fill" />
                 </div>
               )}
               {status === 'FAILED' && (
-                <div className="size-7 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center">
+                <div className="size-7 rounded-full bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-500 flex items-center justify-center">
                   <ShieldWarningIcon size={18} weight="fill" />
                 </div>
               )}
@@ -158,15 +157,15 @@ export default function RedTeamRunProgressPage() {
           {/* Progress bar */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-zinc-500">Tiến độ quét</span>
+              <span className="text-muted-foreground">{t('progress.progressLabel')}</span>
               <span className={cn(
                 'font-bold',
-                status === 'COMPLETED' ? 'text-emerald-500' : 'text-red-500'
+                status === 'COMPLETED' ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-500'
               )}>
                 {percent}%
               </span>
             </div>
-            <div className="h-2 w-full bg-zinc-900 overflow-hidden rounded-full border border-zinc-800">
+            <div className="h-2 w-full bg-muted overflow-hidden rounded-full border">
               <motion.div
                 className={cn(
                   'h-full',
@@ -179,10 +178,10 @@ export default function RedTeamRunProgressPage() {
             </div>
           </div>
 
-          {/* Error messages if failure occurs */}
+          {/* Error messages */}
           {status === 'FAILED' && errorMsg && (
-            <div className="rounded-lg border border-red-950 bg-red-950/20 p-4 space-y-2 text-sm text-red-400">
-              <span className="font-semibold block">Chi tiết lỗi từ máy chủ:</span>
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 space-y-2 text-sm text-red-600 dark:text-red-400">
+              <span className="font-semibold block">{t('progress.errorDetail')}:</span>
               <p className="font-mono text-xs leading-relaxed max-h-40 overflow-y-auto whitespace-pre-wrap">
                 {errorMsg}
               </p>
@@ -195,7 +194,7 @@ export default function RedTeamRunProgressPage() {
               onClick={() => router.push(`/projects/${projectId}/red-team/${runId}/results`)}
               className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center justify-center gap-1.5 py-5 shadow-lg shadow-emerald-600/10"
             >
-              Xem báo cáo bảo mật chi tiết
+              {t('progress.viewReport')}
               <ArrowRightIcon weight="bold" size={16} />
             </Button>
           )}
