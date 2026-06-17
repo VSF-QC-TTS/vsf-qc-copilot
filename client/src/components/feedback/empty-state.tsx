@@ -1,6 +1,8 @@
-import * as React from "react";
-import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/ssr";
+'use client';
 
+import * as React from "react";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react";
+import { motion, useReducedMotion } from "motion/react";
 import { cn } from "@/lib/utils";
 
 export interface EmptyStateProps {
@@ -22,26 +24,76 @@ export function EmptyState({
   action,
   className,
 }: EmptyStateProps) {
+  const reduce = useReducedMotion();
+
+  // Stagger variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 12 },
+    show: { 
+      opacity: 1, 
+      y: 0, 
+      transition: { 
+        type: "spring", 
+        stiffness: 100, 
+        damping: 15 
+      } 
+    },
+  };
+
   return (
-    <div
+    <motion.div
       data-slot="empty-state"
       className={cn(
-        "flex flex-col items-center justify-center gap-3 py-12 text-center",
+        "flex flex-col items-center justify-center gap-4 py-16 text-center rounded-2xl border border-dashed bg-muted/10",
         className,
       )}
+      variants={reduce ? {} : containerVariants}
+      initial="hidden"
+      animate="show"
     >
-      <div className="text-muted-foreground/60">
-        {icon ?? <MagnifyingGlassIcon size={48} weight="duotone" />}
-      </div>
+      <motion.div 
+        variants={reduce ? {} : itemVariants}
+        className="flex h-20 w-20 items-center justify-center rounded-2xl bg-muted/30 text-muted-foreground/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] ring-1 ring-inset ring-muted"
+      >
+        {icon ?? <MagnifyingGlassIcon size={40} weight="duotone" />}
+      </motion.div>
 
-      <div className="space-y-1">
-        <h3 className="text-base font-semibold text-foreground">{title}</h3>
+      <div className="space-y-1.5 flex flex-col items-center">
+        <motion.h3 
+          variants={reduce ? {} : itemVariants}
+          className="text-base font-semibold tracking-tight text-foreground"
+        >
+          {title}
+        </motion.h3>
+        
         {description && (
-          <p className="text-sm text-muted-foreground max-w-sm">{description}</p>
+          <motion.p 
+            variants={reduce ? {} : itemVariants}
+            className="text-sm text-muted-foreground max-w-[40ch] leading-relaxed"
+          >
+            {description}
+          </motion.p>
         )}
       </div>
 
-      {action && <div className="mt-2">{action}</div>}
-    </div>
+      {action && (
+        <motion.div 
+          variants={reduce ? {} : itemVariants}
+          className="mt-3"
+        >
+          {action}
+        </motion.div>
+      )}
+    </motion.div>
   );
 }

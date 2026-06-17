@@ -80,6 +80,9 @@ The routing structure follows Next.js App Router localized paths: `client/src/ap
   - `rubrics/page.tsx`: lists independent/user-scoped rubrics.
   - `rubrics/[rubricId]/page.tsx`: rubric detail with draft and published versions list.
   - `rubrics/[rubricId]/versions/[versionId]/page.tsx`: rubric version criteria list; page is split into page.tsx and criteria-editor-panel.tsx.
+  - `projects/[projectId]/red-team/page.tsx`: lists red-team security scanning runs.
+  - `projects/[projectId]/red-team/[runId]/page.tsx`: overview of a specific red-team scan.
+  - `projects/[projectId]/red-team/[runId]/results/page.tsx`: detailed results and attack vectors for a security scan.
   - `settings/page.tsx`: user profile settings.
 
 ## [STATE_MANAGEMENT] Zustand & React Query
@@ -111,14 +114,14 @@ Async job handling:
 ## [CONVENTIONS] Frontend Guidelines
 
 Coding conventions:
-- **Component File Size**: Flag UI files exceeding 500 lines (Medium) and 1,000 lines (Critical) as violating Single Responsibility Principle (e.g., version detail `page.tsx` contains criteria editor panel). Split subcomponents into specialized files under a colocated folder or under `src/components/`.
+- **Component File Size**: Flag UI files exceeding 250 lines as violating Single Responsibility Principle (per `react-component-patterns`). Split subcomponents into specialized files under a colocated folder or under `src/components/`.
 - **Styling**: Tailwind CSS v4 paired with custom shadcn-inspired components inside `client/src/components/ui`. Light/Dark mode is supported via `next-themes` and variables in `client/src/styles/globals.css`.
 - **Translations**: `next-intl` configuration requires both English (`en.json`) and Vietnamese (`vi.json`) keys under `client/messages/`. Default locale is `vi`.
 - **Forms**: React Hook Form combined with Zod validation schemas (`client/src/lib/validations/`). Error boundaries render validation messages.
 - **Error Mapping & Translation**: All custom backend error codes from `ErrorCode.java` must be registered in the `knownCodes` array in `client/src/lib/utils/error-messages.ts` and translated under the `"errors"` namespace in `vi.json` and `en.json`.
   - JSR-380 validation messages returned by the server (e.g. `Email is required.`) are dynamically translated at runtime using a regex pattern matching and field dictionary lookup mechanism implemented in `translateValidationMessage` inside `error-messages.ts` to keep the backend language-agnostic.
   - **Terminology**: Avoid technical terms like "Access token" or "Refresh token" in user-facing translations (`vi.json`, `en.json`). Use user-friendly terms like "Phiên đăng nhập" or "Session" instead.
-- **Layouts**: Dashboard layouts should use a rigid `h-[100dvh]` container to restrict `body` scrolling, forcing internal scrolling on `<main>`. Sidebars must use `fixed` positioning to remain pinned regardless of content size. Apply "anti-slop" UX principles: ban redundant box-in-box wrappers, deduplicate CTAs, avoid section layout repetition (e.g., stacking two card grids doing the same thing), and use `framer-motion` for staggered entrance animations and smooth micro-interactions (like sliding segmented controls). Extract creation forms (e.g., Create Project, Create Judge Model) into Dialog components instead of rendering them inline above data tables, ensuring the main data view remains clean and focused.
+- **Layouts**: Dashboard layouts should use a rigid `h-[100dvh]` container to restrict `body` scrolling, forcing internal scrolling on `<main>`. Sidebars must use `fixed` positioning to remain pinned regardless of content size. Apply "anti-slop" UX principles: ban redundant box-in-box wrappers, deduplicate CTAs, avoid section layout repetition (e.g., stacking two card grids doing the same thing), and use `motion/react` for staggered entrance animations and smooth micro-interactions. **Accessibility**: All motion must respect `prefers-reduced-motion` using `useReducedMotion()`. Extract creation forms (e.g., Create Project, Create Judge Model) into Dialog components instead of rendering them inline above data tables, ensuring the main data view remains clean and focused.
 - **Registration Flow**: Upon successful registration, the UI dynamically extracts the user's email domain and provides a direct "Check email" button routing to providers like Gmail, Yahoo, or Outlook.
 - **Icons**: Import strictly from `@phosphor-icons/react` package. No other icon library should be utilized. Be contextually precise with icons (e.g., use `BrainIcon` instead of a generic `RobotIcon` for AI models and neural networks).
 - **API client**: All calls must go through the configured `apiClient` helper inside `client/src/lib/api/client.ts` to ensure automatic auth header attachment, refresh logic, and error normalization.
