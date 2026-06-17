@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { ResponsiveContainer, PieChart, Pie } from 'recharts';
 import { cn } from '@/lib/utils';
 
@@ -17,6 +18,8 @@ export default function RedTeamResultsChart({
   errors,
   vulnerabilityRate,
 }: RedTeamResultsChartProps) {
+  const t = useTranslations('redTeam');
+
   const chartData = React.useMemo(() => {
     return [
       { name: 'Shielded', value: successes, fill: '#10b981' }, // Emerald
@@ -43,12 +46,12 @@ export default function RedTeamResultsChart({
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
         <span className={cn(
           'text-xl font-black leading-none',
-          vulnerabilityRate > 0 ? 'text-red-500' : 'text-emerald-500'
+          vulnerabilityRate > 0 ? 'text-red-600 dark:text-red-500' : 'text-emerald-600 dark:text-emerald-500'
         )}>
           {vulnerabilityRate}%
         </span>
-        <span className="text-[8px] uppercase tracking-wider text-zinc-500 mt-1 font-bold">
-          {vulnerabilityRate > 0 ? 'Rủi ro' : 'An toàn'}
+        <span className="text-[8px] uppercase tracking-wider text-muted-foreground mt-1 font-bold">
+          {vulnerabilityRate > 0 ? t('results.riskLabel') : t('results.safeLabel')}
         </span>
       </div>
     </div>
