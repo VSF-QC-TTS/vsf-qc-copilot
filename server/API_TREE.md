@@ -123,6 +123,8 @@ Auth
 |       |   `-- Chi tiết connector; không trả raw secret
 |       |-- PATCH /
 |       |   `-- Update connector; secretValues thay raw values bằng placeholders
+|       |-- DELETE / (hard)
+|       |   `-- Xóa cứng connector
 |       `-- POST /test-runs
 |           `-- Chạy thử 1 request qua connector; hiện chỉ extract $.answer
 |
@@ -132,6 +134,8 @@ Auth
 |       |   `-- Chi tiết dataset
 |       |-- PATCH /
 |       |   `-- Update dataset; approve cần 1-100 active test cases
+|       |-- DELETE / (hard)
+|       |   `-- Xóa cứng dataset
 |       |-- POST /generate
 |       |   `-- Queue DATASET_GENERATION job để tạo test cases qua Gemini AI
 |       `-- /test-cases [auth]
@@ -198,6 +202,8 @@ Auth
 |   `-- /{judgeModelPublicId}
 |       |-- PATCH /
 |       |   `-- Update judge model metadata/config; optional API key replacement
+|       |-- DELETE / (hard)
+|       |   `-- Xóa cứng judge model
 |       `-- POST /test-connection
 |           `-- Validate ownership/active status; returns masked model config
 |

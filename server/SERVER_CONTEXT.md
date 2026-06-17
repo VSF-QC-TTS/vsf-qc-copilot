@@ -115,7 +115,7 @@ Implemented API slices after auth:
 - Public mock chatbot fallback: `POST /mock-chatbot/chat`; it is intentionally public in `SecurityConfig` so connector test-runs can call it without a JWT.
 - Target API connectors:
   - Create/list are nested under `/api/v1/projects/{projectPublicId}/target-api-connectors`.
-  - Detail/update/test-run use `/api/v1/target-api-connectors/{connectorPublicId}` and `/test-runs`.
+  - Detail/update/delete/test-run use `/api/v1/target-api-connectors/{connectorPublicId}` and `/test-runs`.
   - Connector access is owner-scoped by authenticated username/email.
   - `secretValues` are write-only. Create/update replace raw secret values in headers/body/auth config with placeholders like `{{secret:KEY}}`; responses return masked `secretRefs`, not raw secrets.
   - `ConnectorSecretService` encrypts raw secret values with AES-256-GCM (`AesGcmEncryptor`) and persists them in `connector_secrets` table. Decryption is used at connector test-run time and evaluation time.
@@ -125,7 +125,7 @@ Implemented API slices after auth:
 - Requirements: **REMOVED** from the API/domain flow; `me.nghlong3004.vqc.api.requirement` package is gone. The legacy `business_requirements` table is still created, but datasets no longer reference it.
 - Datasets and test cases:
   - Dataset create/list are nested under `/api/v1/projects/{projectPublicId}/datasets`.
-  - Dataset detail/update use `/api/v1/datasets/{datasetPublicId}`.
+  - Dataset detail/update/delete use `/api/v1/datasets/{datasetPublicId}`.
   - Test case create/list are nested under `/api/v1/datasets/{datasetPublicId}/test-cases`.
   - Test case update/delete use `/api/v1/test-cases/{testCasePublicId}`.
   - Dataset/test case access is owner-scoped by authenticated username/email through `createdBy`.
@@ -160,6 +160,7 @@ Implemented API slices after auth:
   - `POST /api/v1/projects/{projectPublicId}/judge-models` creates provider/model config and encrypts the raw API key with AES-256-GCM. Responses return only `apiKeyMasked`.
   - `GET /api/v1/projects/{projectPublicId}/judge-models` lists models, with optional `active`.
   - `PATCH /api/v1/judge-models/{judgeModelPublicId}` updates metadata/config and replaces the encrypted API key only when a new key is supplied.
+  - `DELETE /api/v1/judge-models/{judgeModelPublicId}` hard-deletes the judge model.
   - `POST /api/v1/judge-models/{judgeModelPublicId}/test-connection` currently validates ownership/active status and returns the masked config; it does not call external providers yet.
 - Evaluation runs and jobs:
   - `POST /api/v1/projects/{projectPublicId}/evaluation-runs` creates an evaluation run + job, validates that the referenced dataset is `APPROVED`, rubric version is `PUBLISHED`, connector is active, and judge model is active under the same project, then pushes a job message to a Redis queue and returns `202 Accepted` with `runPublicId` and `jobPublicId`.

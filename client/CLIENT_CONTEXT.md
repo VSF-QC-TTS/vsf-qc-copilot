@@ -67,16 +67,16 @@ The routing structure follows Next.js App Router localized paths: `client/src/ap
 - `(dashboard)` group:
   - `dashboard/page.tsx`: home overview.
   - `projects/page.tsx`: lists projects.
-  - `projects/[projectId]/page.tsx`: project detail with project readiness checklist (serving as visual navigation/quick links), quality trend chart, and recent evaluations list.
+  - `projects/[projectId]/page.tsx`: project detail with project readiness checklist (serving as visual navigation/quick links), quality trend chart, and recent evaluations list (supports edit/archive project).
   - `projects/[projectId]/connectors/page.tsx`: lists target API connectors.
-  - `projects/[projectId]/connectors/[connectorId]/page.tsx`: edit connector and test-run panel.
+  - `projects/[projectId]/connectors/[connectorId]/page.tsx`: edit/delete connector and test-run panel.
   - `projects/[projectId]/connectors/new/page.tsx`: create connector (supports manual config or auto-creating from cURL).
-  - `projects/[projectId]/datasets/page.tsx`: lists datasets.
-  - `projects/[projectId]/datasets/[datasetId]/page.tsx`: dataset detail containing test case table (supports manual edits, bulk import from Excel/CSV, and AI test case generation).
+  - `projects/[projectId]/datasets/page.tsx`: lists datasets (supports inline edit/delete).
+  - `projects/[projectId]/datasets/[datasetId]/page.tsx`: dataset detail containing test case table (supports manual edits, bulk import from Excel/CSV, and AI test case generation, as well as dataset edit/delete).
   - `projects/[projectId]/evaluations/page.tsx`: lists evaluation runs.
   - `projects/[projectId]/evaluations/[runId]/page.tsx`: details of an evaluation run including event streams/polling, status, metrics, and charts.
   - `projects/[projectId]/evaluations/[runId]/results/page.tsx`: results list with data table, filtering, and inline QC review panel.
-  - `projects/[projectId]/judge-models/page.tsx`: lists provider model configurations and connection testing.
+  - `projects/[projectId]/judge-models/page.tsx`: lists provider model configurations and connection testing (supports inline create/edit/delete via Dialog).
   - `rubrics/page.tsx`: lists independent/user-scoped rubrics.
   - `rubrics/[rubricId]/page.tsx`: rubric detail with draft and published versions list.
   - `rubrics/[rubricId]/versions/[versionId]/page.tsx`: rubric version criteria list; page is split into page.tsx and criteria-editor-panel.tsx.
