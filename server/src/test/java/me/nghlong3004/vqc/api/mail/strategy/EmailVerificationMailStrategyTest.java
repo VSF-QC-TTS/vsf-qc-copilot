@@ -33,7 +33,7 @@ class EmailVerificationMailStrategyTest {
   @Test
   void buildMessageUsesEmailVerificationTemplateAndModel() {
     lenient().when(messageSource.getMessage(any(String.class), any(), any(Locale.class)))
-        .thenAnswer(inv -> String.valueOf(inv.getArgument(0)));
+        .thenAnswer(inv -> inv.<String>getArgument(0));
     lenient().when(messageSource.getMessage(eq("mail.verify.subject"), any(), any()))
         .thenReturn("Verify your VF QC Copilot account");
     lenient().when(messageSource.getMessage(eq("mail.verify.greeting"), any(), any()))
