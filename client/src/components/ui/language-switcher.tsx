@@ -9,8 +9,8 @@ import type { Locale } from "@/i18n/config";
 import { locales } from "@/i18n/config";
 
 const localeLabels: Record<Locale, string> = {
-  vi: "VI",
-  en: "EN",
+  vi: "Tiếng Việt",
+  en: "English",
 };
 
 export function LanguageSwitcher() {
