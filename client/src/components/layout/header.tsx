@@ -12,16 +12,10 @@ import { logoutUser } from '@/lib/api/auth';
 import { useBreadcrumbStore } from '@/lib/store/breadcrumb-store';
 import { Button } from '@/components/ui/button';
 import { LanguageSwitcher } from '@/components/ui/language-switcher';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-}
+
 
 export function Header() {
   const t = useTranslations('header');
@@ -83,7 +77,7 @@ export function Header() {
     router.push('/login');
   }
 
-  const initials = user?.displayName ? getInitials(user.displayName) : '?';
+
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center border-b bg-background/95 backdrop-blur">
@@ -144,9 +138,7 @@ export function Header() {
             aria-label={t('userMenu')}
             className="ml-1"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-              {initials}
-            </div>
+            <UserAvatar displayName={user?.displayName ?? '?'} avatarUrl={user?.avatarUrl} size="sm" />
           </Button>
 
           {menuOpen && (

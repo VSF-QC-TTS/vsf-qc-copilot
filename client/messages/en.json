@@ -911,6 +911,7 @@
   },
   "settings": {
     "title": "Settings",
+    "description": "Manage your account, appearance, and language preferences.",
     "profile": "Profile",
     "displayName": "Display Name",
     "email": "Email",

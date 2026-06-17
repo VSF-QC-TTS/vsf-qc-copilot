@@ -31,8 +31,8 @@ class PasswordResetMailStrategyTest {
 
   @Test
   void buildMessageUsesPasswordResetTemplateAndModel() {
-    lenient().when(messageSource.getMessage(any(), any(), any()))
-        .thenAnswer(inv -> inv.getArgument(0).toString());
+    lenient().when(messageSource.getMessage(any(String.class), any(), any(Locale.class)))
+        .thenAnswer(inv -> String.valueOf(inv.getArgument(0)));
     lenient().when(messageSource.getMessage(eq("mail.reset.subject"), any(), any()))
         .thenReturn("Reset your VF QC Copilot password");
     lenient().when(messageSource.getMessage(eq("mail.reset.greeting"), any(), any()))

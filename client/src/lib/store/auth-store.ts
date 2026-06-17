@@ -9,6 +9,7 @@ type User = {
   displayName: string;
   role: UserRole;
   status: UserStatus;
+  avatarUrl: string | null;
   lastLoginAt: string | null;
 };
 

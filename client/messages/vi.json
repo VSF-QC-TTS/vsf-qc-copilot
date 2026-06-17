@@ -911,6 +911,7 @@
   },
   "settings": {
     "title": "Cài đặt",
+    "description": "Quản lý tài khoản, giao diện và ngôn ngữ của bạn.",
     "profile": "Hồ sơ",
     "displayName": "Tên hiển thị",
     "email": "Email",
