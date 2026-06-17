@@ -54,7 +54,7 @@ export function Sidebar() {
     <>
       {/* Logo */}
       <div className="flex h-16 items-center border-b px-3 gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg overflow-hidden bg-card border shadow-xs">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center">
           <Image 
             src="/logo.png" 
             alt="Logo" 
