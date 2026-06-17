@@ -62,8 +62,19 @@ public interface EvaluationResultRepository extends JpaRepository<EvaluationResu
    * Counts results by run ID and judge status.
    *
    * @param evaluationRunId internal run identifier
+   * @param evaluationRunId internal run identifier
    * @param judgeStatus judge status
    * @return count of matching results
    */
   long countByEvaluationRunIdAndJudgeStatus(Long evaluationRunId, JudgeStatus judgeStatus);
+
+  /**
+   * Finds evaluation results by public ID and run ID.
+   *
+   * @param publicIds list of public result identifiers
+   * @param evaluationRunId internal run identifier
+   * @return list of matching results
+   */
+  java.util.List<EvaluationResult> findByPublicIdInAndEvaluationRunId(
+      java.util.Collection<UUID> publicIds, Long evaluationRunId);
 }

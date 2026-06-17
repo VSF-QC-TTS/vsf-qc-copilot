@@ -462,5 +462,12 @@ class EvaluationRunControllerTest {
       RecordingEvaluationRunService.username = username;
       return createResponse;
     }
+
+    @Override
+    public void bulkReview(
+        UUID runPublicId, me.nghlong3004.vqc.api.evaluation.request.BulkReviewRequest request, String username) {
+      RecordingEvaluationRunService.runPublicId = runPublicId;
+      RecordingEvaluationRunService.username = username;
+    }
   }
 }

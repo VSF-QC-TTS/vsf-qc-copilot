@@ -244,5 +244,5 @@ export async function del<T>(path: string, opts?: RequestOptions): Promise<T> {
   return res.data;
 }
 
-export const apiClient = { get, post, put, patch, del };
+export const apiClient = { get, post, put, patch, del, delete: del };
 export const apiBaseUrl = BASE_URL;

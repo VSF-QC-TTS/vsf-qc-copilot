@@ -15,6 +15,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -79,5 +80,13 @@ public class JudgeModelController {
   public JudgeModelResponse testConnection(
       @PathVariable UUID judgeModelPublicId, Principal principal) {
     return judgeModelService.testConnection(judgeModelPublicId, principal.getName());
+  }
+
+  @Operation(summary = "Delete judge model")
+  @DeleteMapping("/api/v1/judge-models/{judgeModelPublicId}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deleteJudgeModel(
+      @PathVariable UUID judgeModelPublicId, Principal principal) {
+    judgeModelService.deleteJudgeModel(judgeModelPublicId, principal.getName());
   }
 }

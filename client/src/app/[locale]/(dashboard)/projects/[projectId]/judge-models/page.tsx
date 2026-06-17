@@ -3,9 +3,9 @@
 import * as React from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
-import { PlusIcon } from '@phosphor-icons/react';
+import { PlusIcon, PencilSimpleIcon, TrashIcon } from '@phosphor-icons/react';
 import { motion } from 'motion/react';
 
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,8 @@ import { DataTable } from '@/components/data-table/data-table';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { PageShell } from '@/components/layout/page-shell';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { CreateJudgeModelDialog } from '@/components/judge-models/create-judge-model-dialog';
+import { JudgeModelDialog } from '@/components/judge-models/create-judge-model-dialog';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { apiClient } from '@/lib/api/client';
 import type {
   JudgeModelResponse,
@@ -49,6 +50,13 @@ export default function JudgeModelsPage() {
 
   const [page, setPage] = React.useState(0);
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
+  
+  const [editingJudgeModel, setEditingJudgeModel] = React.useState<JudgeModelResponse | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [deletingJudgeModel, setDeletingJudgeModel] = React.useState<JudgeModelResponse | null>(null);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
+  const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ['judge-models', projectId, { page, size: PAGE_SIZE }],
@@ -63,6 +71,29 @@ export default function JudgeModelsPage() {
   const judgeModels = data?.items ?? [];
   const totalItems = data?.totalItems ?? 0;
   const totalPages = data?.totalPages ?? 0;
+
+  async function handleDelete() {
+    if (!deletingJudgeModel) return;
+    setIsDeleting(true);
+    try {
+      await apiClient.delete(`/api/v1/projects/${projectId}/judge-models/${deletingJudgeModel.publicId}`);
+      await queryClient.invalidateQueries({
+        queryKey: ['judge-models', projectId],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ['judge-models-active', projectId],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ['project-readiness', projectId],
+      });
+      setDeleteDialogOpen(false);
+      setDeletingJudgeModel(null);
+    } catch {
+      // apiClient emits toast on error
+    } finally {
+      setIsDeleting(false);
+    }
+  }
 
   const columns = React.useMemo<ColumnDef<JudgeModelResponse, unknown>[]>(
     () => [
@@ -118,8 +149,36 @@ export default function JudgeModelsPage() {
           </span>
         ),
       },
+      {
+        id: 'actions',
+        size: 80,
+        cell: ({ row }) => (
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setEditingJudgeModel(row.original)}
+              title={tCommon('edit')}
+            >
+              <PencilSimpleIcon weight="bold" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => {
+                setDeletingJudgeModel(row.original);
+                setDeleteDialogOpen(true);
+              }}
+              title={tCommon('delete')}
+            >
+              <TrashIcon weight="bold" />
+            </Button>
+          </div>
+        ),
+      },
     ],
-    [t],
+    [t, tCommon],
   );
 
 
@@ -175,10 +234,36 @@ export default function JudgeModelsPage() {
         )}
       </motion.div>
 
-      <CreateJudgeModelDialog
+      <JudgeModelDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         projectId={projectId}
+      />
+
+      <JudgeModelDialog
+        open={!!editingJudgeModel}
+        onOpenChange={(open) => {
+          if (!open) setEditingJudgeModel(null);
+        }}
+        projectId={projectId}
+        initialData={editingJudgeModel}
+      />
+
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteDialogOpen(false);
+            setDeletingJudgeModel(null);
+          }
+        }}
+        title={tCommon('delete')}
+        description={t('deleteConfirmDescription')}
+        confirmLabel={tCommon('delete')}
+        cancelLabel={tCommon('cancel')}
+        variant="destructive"
+        loading={isDeleting}
+        onConfirm={handleDelete}
       />
     </PageShell>
   );

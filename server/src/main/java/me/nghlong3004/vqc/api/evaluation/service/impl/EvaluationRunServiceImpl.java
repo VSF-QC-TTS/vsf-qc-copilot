@@ -529,4 +529,28 @@ public class EvaluationRunServiceImpl implements EvaluationRunService {
 
     return createEvaluationRun(projectPublicId, resolved, username);
   }
+
+  @Override
+  @Transactional
+  public void bulkReview(
+      UUID runPublicId, me.nghlong3004.vqc.api.evaluation.request.BulkReviewRequest request, String username) {
+    User creator = findCreator(username);
+    EvaluationRun run =
+        evaluationRunRepository
+            .findByPublicIdAndCreatedBy(runPublicId, creator)
+            .orElseThrow(() -> new ResourceException(ErrorCode.EVALUATION_RUN_NOT_FOUND));
+
+    List<EvaluationResult> results = evaluationResultRepository.findByPublicIdInAndEvaluationRunId(
+        request.resultIds(), run.getId());
+
+    for (EvaluationResult result : results) {
+      if (result.getReviewDecision() == null) {
+        result.setReviewDecision(new me.nghlong3004.vqc.api.review.entity.ReviewDecision());
+        result.getReviewDecision().setEvaluationResult(result);
+      }
+      result.getReviewDecision().applyDecision(request.status(), request.note(), null, creator);
+    }
+    evaluationResultRepository.saveAll(results);
+    log.info("Bulk reviewed {} results for run {} by user {}", results.size(), run.getPublicId(), creator.getPublicId());
+  }
 }

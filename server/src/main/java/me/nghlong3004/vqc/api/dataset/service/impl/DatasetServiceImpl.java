@@ -188,4 +188,12 @@ public class DatasetServiceImpl implements DatasetService {
     }
     return value.trim();
   }
+
+  @Override
+  @Transactional
+  public void deleteDataset(UUID datasetPublicId, String username) {
+    Dataset dataset = findDataset(datasetPublicId, username);
+    datasetRepository.delete(dataset);
+    log.info("Deleted dataset {} by user {}", datasetPublicId, username);
+  }
 }

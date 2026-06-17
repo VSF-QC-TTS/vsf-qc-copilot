@@ -152,7 +152,11 @@ export default function ResultsPage() {
         header: tDetail('question'),
         cell: ({ row }) => (
           <span className="font-medium">
-            {truncate(row.original.question)}
+            {row.original.turns ? (
+              <span className="italic text-muted-foreground">Multi-turn conversation ({row.original.turns.length} turns)</span>
+            ) : (
+              truncate(row.original.question ?? tCommon('notAvailable'))
+            )}
           </span>
         ),
       },

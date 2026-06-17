@@ -12,7 +12,9 @@ import type { DatasetDetailResponse } from '@/lib/api/types';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { DatasetDialog } from '@/components/datasets/create-dataset-dialog';
 import { PageShell } from '@/components/layout/page-shell';
+import { useRouter } from '@/i18n/navigation';
 import { useBreadcrumbStore } from '@/lib/store/breadcrumb-store';
 import { TestCaseTable } from '@/components/test-cases/test-case-table';
 import { Skeleton, SkeletonText } from '@/components/feedback/loading-skeleton';
@@ -90,9 +92,12 @@ export default function DatasetDetailPage() {
   const queryClient = useQueryClient();
   const projectId = params.projectId as string;
   const datasetId = params.datasetId as string;
+  const router = useRouter();
 
   const [approveOpen, setApproveOpen] = React.useState(false);
   const [archiveOpen, setArchiveOpen] = React.useState(false);
+  const [editOpen, setEditOpen] = React.useState(false);
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
 
   // --- Fetch dataset ---
   const {
@@ -134,6 +139,16 @@ export default function DatasetDetailPage() {
     },
   });
 
+  // --- Delete mutation ---
+  const deleteMutation = useMutation({
+    mutationFn: () => apiClient.delete('/api/v1/datasets/' + datasetId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['datasets'] });
+      queryClient.invalidateQueries({ queryKey: ['project-readiness', projectId] });
+      router.push(`/projects/${projectId}/datasets`);
+    },
+  });
+
   // --- Loading state ---
   if (isLoading) {
     return (
@@ -164,28 +179,38 @@ export default function DatasetDetailPage() {
       backHref={`/projects/${projectId}/datasets`}
       backLabel={tCommon('back')}
       actions={
-        !isArchived ? (
-          <div className="flex items-center gap-2">
-            {isDraft && (
-              <Button
-                disabled={!canApprove}
-                onClick={() => setApproveOpen(true)}
-              >
-                <CheckCircleIcon className="mr-2 size-4" weight="bold" />
-                {t('approve')}
-              </Button>
-            )}
-            {(isDraft || isApproved) && (
-              <Button
-                variant="outline"
-                onClick={() => setArchiveOpen(true)}
-              >
-                <ArchiveIcon className="mr-2 size-4" weight="bold" />
-                {t('archive')}
-              </Button>
-            )}
-          </div>
-        ) : undefined
+        <div className="flex items-center gap-2">
+          {isDraft && (
+            <Button
+              disabled={!canApprove}
+              onClick={() => setApproveOpen(true)}
+            >
+              <CheckCircleIcon className="mr-2 size-4" weight="bold" />
+              {t('approve')}
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            onClick={() => setEditOpen(true)}
+          >
+            {tCommon('edit', { fallback: 'Edit' })}
+          </Button>
+          {!isArchived && (
+            <Button
+              variant="outline"
+              onClick={() => setArchiveOpen(true)}
+            >
+              <ArchiveIcon className="mr-2 size-4" weight="bold" />
+              {t('archive')}
+            </Button>
+          )}
+          <Button
+            variant="destructive"
+            onClick={() => setDeleteOpen(true)}
+          >
+            {tCommon('delete', { fallback: 'Delete' })}
+          </Button>
+        </div>
       }
     >
       <motion.div
@@ -278,23 +303,43 @@ export default function DatasetDetailPage() {
       <ConfirmDialog
         open={approveOpen}
         onOpenChange={setApproveOpen}
-        title={t('approve')}
-        description={t('approveConfirm', { name: dataset.name })}
+        title={t('approveDatasetTitle')}
+        description={t('approveDatasetConfirm')}
         confirmLabel={t('approve')}
         loading={approveMutation.isPending}
         onConfirm={() => approveMutation.mutate()}
       />
 
-      {/* ---- ArchiveIcon confirm dialog ---- */}
+      {/* ---- Archive confirm dialog ---- */}
       <ConfirmDialog
         open={archiveOpen}
         onOpenChange={setArchiveOpen}
-        title={t('archive')}
-        description={t('archiveConfirm', { name: dataset.name })}
+        title={t('archiveDatasetTitle')}
+        description={t('archiveDatasetConfirm')}
         confirmLabel={t('archive')}
         variant="destructive"
         loading={archiveMutation.isPending}
         onConfirm={() => archiveMutation.mutate()}
+      />
+
+      {/* ---- Delete confirm dialog ---- */}
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title={t('deleteDatasetTitle', { fallback: 'Delete Dataset' })}
+        description={t('deleteDatasetConfirm', { name: dataset.name })}
+        confirmLabel={tCommon('delete', { fallback: 'Delete' })}
+        variant="destructive"
+        loading={deleteMutation.isPending}
+        onConfirm={() => deleteMutation.mutate()}
+      />
+
+      {/* ---- Edit Dataset Dialog ---- */}
+      <DatasetDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        projectId={projectId}
+        initialData={dataset}
       />
     </PageShell>
   );

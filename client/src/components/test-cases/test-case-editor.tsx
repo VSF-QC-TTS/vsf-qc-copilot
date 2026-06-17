@@ -24,7 +24,8 @@ import {
 
 type TestCaseResponse = {
   publicId: string;
-  question: string;
+  question: string | null;
+  turns: { role: string; content: string }[] | null;
   groundTruth: string | null;
   precondition: Record<string, unknown> | null;
   metadata: Record<string, unknown> | null;
@@ -70,6 +71,7 @@ export function TestCaseEditor({
   const isEditMode = !!testCase;
 
   const [serverError, setServerError] = React.useState<string | null>(null);
+  const [turnsRaw, setTurnsRaw] = React.useState<string>('');
   const [confirmDeleteOpen, setConfirmDeleteOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
 
@@ -82,6 +84,7 @@ export function TestCaseEditor({
     resolver: zodResolver(createTestCaseSchema),
     defaultValues: {
       question: '',
+      turns: null,
       groundTruth: '',
       precondition: '',
       metadata: '',
@@ -98,10 +101,12 @@ export function TestCaseEditor({
 
       reset({
         question: testCase?.question ?? '',
+        turns: testCase?.turns ?? null,
         groundTruth: testCase?.groundTruth ?? '',
         precondition: testCase?.precondition ? JSON.stringify(testCase.precondition, null, 2) : '',
         metadata: testCase?.metadata ? JSON.stringify(testCase.metadata, null, 2) : '',
       });
+      setTurnsRaw(testCase?.turns ? JSON.stringify(testCase.turns, null, 2) : '');
       setServerError(null);
     });
 
@@ -140,8 +145,19 @@ export function TestCaseEditor({
     setServerError(null);
 
     try {
+      let parsedTurns = null;
+      if (turnsRaw.trim()) {
+        try {
+          parsedTurns = JSON.parse(turnsRaw);
+        } catch (e) {
+          setServerError('Invalid JSON in turns field');
+          return;
+        }
+      }
+
       const payload = {
         ...values,
+        turns: parsedTurns,
         precondition: values.precondition ? JSON.parse(values.precondition) : null,
         metadata: values.metadata ? JSON.parse(values.metadata) : null,
       };
@@ -297,6 +313,27 @@ export function TestCaseEditor({
                   {errors.question.message}
                 </p>
               )}
+            </div>
+
+            {/* Turns (JSON read-only fallback) */}
+            <div className="space-y-2">
+              <label
+                htmlFor="tc-turns"
+                className="text-sm font-medium leading-none text-foreground"
+              >
+                Multi-turn conversation (JSON array)
+              </label>
+              <textarea
+                id="tc-turns"
+                disabled={isSubmitting || isReadOnly}
+                value={turnsRaw}
+                onChange={(e) => setTurnsRaw(e.target.value)}
+                placeholder={'[\n  { "role": "user", "content": "hello" }\n]'}
+                className={cn(textareaClassName, 'font-mono text-xs')}
+              />
+              <p className="text-xs text-muted-foreground">
+                Leave empty to use single-turn Question.
+              </p>
             </div>
 
             {/* Ground Truth */}

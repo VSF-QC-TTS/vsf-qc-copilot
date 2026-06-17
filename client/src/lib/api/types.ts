@@ -312,7 +312,8 @@ export type CriterionResult = {
 
 export type EvaluationResultRow = {
   publicId: string;
-  question: string;
+  question: string | null;
+  turns?: { role: string; content: string }[] | null;
   precondition: string | null;
   groundTruth: string | null;
   actualAnswer: string | null;

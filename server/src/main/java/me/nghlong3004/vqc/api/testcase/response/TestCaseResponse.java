@@ -15,7 +15,9 @@ public record TestCaseResponse(
     @Schema(description = "Public test case identifier.") UUID publicId,
     @Schema(description = "Owning dataset public identifier.") UUID datasetPublicId,
     @Schema(description = "External/source row identifier.", nullable = true) String externalId,
-    @Schema(description = "User question/input.") String question,
+    @Schema(description = "User question/input.", nullable = true) String question,
+    @Schema(description = "Multi-turn conversation history.", nullable = true)
+        java.util.List<me.nghlong3004.vqc.api.testcase.entity.TestCaseTurn> turns,
     @Schema(description = "Optional context/precondition.", nullable = true)
         Map<String, Object> precondition,
     @Schema(description = "Expected answer.", nullable = true) String groundTruth,

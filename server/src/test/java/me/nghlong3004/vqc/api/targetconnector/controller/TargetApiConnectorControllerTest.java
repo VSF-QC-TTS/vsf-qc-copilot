@@ -495,6 +495,12 @@ class TargetApiConnectorControllerTest {
     }
 
     @Override
+    public void deleteConnector(UUID connectorPublicId, String username) {
+      RecordingTargetApiConnectorService.connectorPublicId = connectorPublicId;
+      RecordingTargetApiConnectorService.username = username;
+    }
+
+    @Override
     public TestTargetConnectorResponse testConnector(
         UUID connectorPublicId, TestTargetConnectorRequest request, String username) {
       RecordingTargetApiConnectorService.connectorPublicId = connectorPublicId;

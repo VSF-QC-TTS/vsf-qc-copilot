@@ -32,6 +32,7 @@ import { EmptyState } from '@/components/feedback/empty-state';
 import { PageShell } from '@/components/layout/page-shell';
 import { Skeleton, SkeletonText } from '@/components/feedback/loading-skeleton';
 import { StartEvaluationDialog } from '@/components/evaluations/start-evaluation-dialog';
+import { ProjectDialog } from '@/components/projects/create-project-dialog';
 import { motion } from 'motion/react';
 import dynamic from 'next/dynamic';
 
@@ -119,6 +120,7 @@ export default function ProjectDetailPage() {
   const projectId = params.projectId as string;
 
   const [archiveOpen, setArchiveOpen] = React.useState(false);
+  const [editOpen, setEditOpen] = React.useState(false);
   const [startDialogOpen, setStartDialogOpen] = React.useState(false);
 
   // --- Fetch project ---
@@ -262,13 +264,21 @@ export default function ProjectDetailPage() {
       backLabel={tCommon('back')}
       actions={
         project.status === 'ACTIVE' ? (
-          <Button
-            variant="outline"
-            onClick={() => setArchiveOpen(true)}
-          >
-            <ArchiveIcon className="mr-2 size-4" weight="bold" />
-            {t('archiveProject')}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setEditOpen(true)}
+            >
+              {tCommon('edit')}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setArchiveOpen(true)}
+            >
+              <ArchiveIcon className="mr-2 size-4" weight="bold" />
+              {t('archiveProject')}
+            </Button>
+          </div>
         ) : undefined
       }
     >
@@ -535,6 +545,13 @@ export default function ProjectDetailPage() {
         open={startDialogOpen}
         onOpenChange={setStartDialogOpen}
         projectId={projectId}
+      />
+
+      {/* ---- Edit Project Dialog ---- */}
+      <ProjectDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        initialData={project}
       />
     </PageShell>
   );

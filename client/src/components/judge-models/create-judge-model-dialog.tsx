@@ -13,10 +13,11 @@ import type { JudgeModelResponse, JudgeProvider } from '@/lib/api/types';
 // Props & Types
 // ---------------------------------------------------------------------------
 
-interface CreateJudgeModelDialogProps {
+interface JudgeModelDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectId: string;
+  initialData?: JudgeModelResponse | null;
 }
 
 type CreateJudgeModelPayload = {
@@ -70,29 +71,70 @@ const textareaClassName =
 // Component
 // ---------------------------------------------------------------------------
 
-export function CreateJudgeModelDialog({
+export function JudgeModelDialog({
   open,
   onOpenChange,
   projectId,
-}: CreateJudgeModelDialogProps) {
+  initialData,
+}: JudgeModelDialogProps) {
   const t = useTranslations('judgeModels');
   const tCommon = useTranslations('common');
   const queryClient = useQueryClient();
 
   const [form, setForm] = React.useState<CreateJudgeModelPayload>(() =>
-    initialPayload(),
+    initialData
+      ? {
+          name: initialData.name,
+          provider: initialData.provider,
+          modelName: initialData.modelName,
+          baseUrl: initialData.baseUrl ?? '',
+          apiKey: '', // don't prefill masked api key
+          configJson: initialData.configJson ?? '',
+          active: initialData.active,
+        }
+      : initialPayload(),
   );
-  const [advancedOpen, setAdvancedOpen] = React.useState(false);
+  
+  React.useEffect(() => {
+    if (open) {
+      const timer = setTimeout(() => {
+        setForm(
+          initialData
+            ? {
+                name: initialData.name,
+                provider: initialData.provider,
+                modelName: initialData.modelName,
+                baseUrl: initialData.baseUrl ?? '',
+                apiKey: '',
+                configJson: initialData.configJson ?? '',
+                active: initialData.active,
+              }
+            : initialPayload(),
+        );
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [open, initialData]);
+
+  const [advancedOpen, setAdvancedOpen] = React.useState(!!initialData?.baseUrl || !!initialData?.configJson);
   const [serverError, setServerError] = React.useState<string | null>(null);
 
-  const createMutation = useMutation({
-    mutationFn: (payload: CreateJudgeModelPayload) =>
-      apiClient.post<JudgeModelResponse>(
+  const saveMutation = useMutation({
+    mutationFn: (payload: CreateJudgeModelPayload) => {
+      // If editing, omit empty apiKey unless it was changed
+      const body = initialData && !payload.apiKey ? { ...payload, apiKey: undefined } : payload;
+      if (initialData) {
+        return apiClient.patch<JudgeModelResponse>(
+          `/api/v1/judge-models/${initialData.publicId}`,
+          body,
+        );
+      }
+      return apiClient.post<JudgeModelResponse>(
         `/api/v1/projects/${projectId}/judge-models`,
-        payload,
-      ),
+        body,
+      );
+    },
     onSuccess: async () => {
-      setForm(initialPayload());
       setServerError(null);
       await queryClient.invalidateQueries({
         queryKey: ['judge-models', projectId],
@@ -169,7 +211,7 @@ export function CreateJudgeModelDialog({
   function handleSubmit(event: React.SyntheticEvent) {
     event.preventDefault();
     setServerError(null);
-    createMutation.mutate(form);
+    saveMutation.mutate(form);
   }
 
   if (!open) return null;
@@ -182,7 +224,7 @@ export function CreateJudgeModelDialog({
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={() => !createMutation.isPending && handleClose(false)}
+        onClick={() => !saveMutation.isPending && handleClose(false)}
         aria-hidden="true"
       />
 
@@ -200,7 +242,7 @@ export function CreateJudgeModelDialog({
           id="create-judge-model-title"
           className="text-lg font-semibold text-card-foreground"
         >
-          {t('createJudgeModel')}
+          {initialData ? t('editJudgeModel') : t('createJudgeModel')}
         </h2>
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
@@ -218,7 +260,7 @@ export function CreateJudgeModelDialog({
               <input
                 id="judge-name"
                 required
-                disabled={createMutation.isPending}
+                disabled={saveMutation.isPending}
                 value={form.name}
                 onChange={(event) => updateField('name', event.target.value)}
                 className={inputClassName}
@@ -231,7 +273,7 @@ export function CreateJudgeModelDialog({
               </label>
               <select
                 id="judge-provider"
-                disabled={createMutation.isPending}
+                disabled={saveMutation.isPending}
                 value={form.provider}
                 onChange={(event) =>
                   handleProviderChange(event.target.value as JudgeProvider)
@@ -253,7 +295,7 @@ export function CreateJudgeModelDialog({
               <input
                 id="judge-model-name"
                 required
-                disabled={createMutation.isPending}
+                disabled={saveMutation.isPending}
                 value={form.modelName}
                 onChange={(event) => updateField('modelName', event.target.value)}
                 className={inputClassName}
@@ -266,19 +308,20 @@ export function CreateJudgeModelDialog({
               </label>
               <input
                 id="judge-api-key"
-                required
+                required={!initialData}
                 type="password"
-                disabled={createMutation.isPending}
+                disabled={saveMutation.isPending}
                 value={form.apiKey}
                 onChange={(event) => updateField('apiKey', event.target.value)}
                 className={inputClassName}
+                placeholder={initialData ? t('leaveBlankToKeep') : undefined}
               />
             </div>
 
             <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium">
               <input
                 type="checkbox"
-                disabled={createMutation.isPending}
+                disabled={saveMutation.isPending}
                 checked={form.active}
                 onChange={(event) => updateField('active', event.target.checked)}
                 className="size-4 rounded border-input"
@@ -305,7 +348,7 @@ export function CreateJudgeModelDialog({
                   </label>
                   <input
                     id="judge-base-url"
-                    disabled={createMutation.isPending}
+                    disabled={saveMutation.isPending}
                     value={form.baseUrl}
                     onChange={(event) => updateField('baseUrl', event.target.value)}
                     className={inputClassName}
@@ -319,7 +362,7 @@ export function CreateJudgeModelDialog({
                   </label>
                   <textarea
                     id="judge-config-json"
-                    disabled={createMutation.isPending}
+                    disabled={saveMutation.isPending}
                     value={form.configJson}
                     onChange={(event) =>
                       updateField('configJson', event.target.value)
@@ -336,13 +379,13 @@ export function CreateJudgeModelDialog({
             <Button
               type="button"
               variant="outline"
-              disabled={createMutation.isPending}
+              disabled={saveMutation.isPending}
               onClick={() => handleClose(false)}
             >
               {tCommon('cancel')}
             </Button>
-            <Button type="submit" disabled={createMutation.isPending}>
-              {createMutation.isPending ? tCommon('loading') : tCommon('create')}
+            <Button type="submit" disabled={saveMutation.isPending}>
+              {saveMutation.isPending ? tCommon('saving') : tCommon('save')}
             </Button>
           </div>
         </form>

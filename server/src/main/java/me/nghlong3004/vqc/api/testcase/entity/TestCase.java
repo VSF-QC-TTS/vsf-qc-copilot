@@ -61,8 +61,12 @@ public class TestCase {
   @Column(name = "external_id")
   private String externalId;
 
-  @Column(nullable = false, columnDefinition = "TEXT")
+  @Column(columnDefinition = "TEXT")
   private String question;
+
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(columnDefinition = "jsonb")
+  private java.util.List<TestCaseTurn> turns;
 
   @JdbcTypeCode(SqlTypes.JSON)
   @Column(columnDefinition = "jsonb")

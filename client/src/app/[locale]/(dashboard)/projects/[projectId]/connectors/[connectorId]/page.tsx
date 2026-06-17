@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
@@ -15,6 +15,7 @@ import {
   InfoIcon,
   CaretDownIcon,
   CaretUpIcon,
+  TrashIcon,
 } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
@@ -23,6 +24,7 @@ import { PageShell } from '@/components/layout/page-shell';
 import { useBreadcrumbStore } from '@/lib/store/breadcrumb-store';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Skeleton, SkeletonText } from '@/components/feedback/loading-skeleton';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { motion, AnimatePresence } from 'motion/react';
 import { apiClient } from '@/lib/api/client';
@@ -256,8 +258,12 @@ export default function ConnectorDetailPage() {
   const projectId = params.projectId as string;
   const connectorId = params.connectorId as string;
 
+  const router = useRouter();
+
   // State
   const [editing, setEditing] = React.useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   // Test run state
   const [testRunning, setTestRunning] = React.useState(false);
@@ -329,6 +335,27 @@ export default function ConnectorDetailPage() {
       setEditing(false);
     } catch {
       // apiClient emits a localized toast for normalized backend errors.
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Delete handler
+  // ---------------------------------------------------------------------------
+  async function handleDelete() {
+    setIsDeleting(true);
+    try {
+      await apiClient.delete(`/api/v1/target-api-connectors/${connectorId}`);
+      await queryClient.invalidateQueries({
+        queryKey: ['connectors', projectId],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ['project-readiness', projectId],
+      });
+      router.push(`/projects/${projectId}/connectors`);
+    } catch {
+      // apiClient emits a localized toast for normalized backend errors.
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
     }
   }
 
@@ -405,10 +432,16 @@ export default function ConnectorDetailPage() {
       actions={
         <div className="flex items-center gap-2">
           {!editing && (
-            <Button onClick={() => setEditing(true)}>
-              <PencilSimpleIcon weight="bold" />
-              {tCommon('edit')}
-            </Button>
+            <>
+              <Button onClick={() => setEditing(true)} variant="outline">
+                <PencilSimpleIcon weight="bold" className="mr-2" />
+                {tCommon('edit')}
+              </Button>
+              <Button onClick={() => setDeleteDialogOpen(true)} variant="destructive">
+                <TrashIcon weight="bold" className="mr-2" />
+                {tCommon('delete')}
+              </Button>
+            </>
           )}
         </div>
       }
@@ -969,6 +1002,18 @@ export default function ConnectorDetailPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title={t('deleteConfirmTitle')}
+        description={t('deleteConfirmDescription')}
+        confirmLabel={tCommon('delete')}
+        cancelLabel={tCommon('cancel')}
+        variant="destructive"
+        loading={isDeleting}
+        onConfirm={handleDelete}
+      />
     </PageShell>
   );
 }

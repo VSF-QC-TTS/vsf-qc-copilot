@@ -86,4 +86,12 @@ public interface TargetApiConnectorService {
 
   CreateConnectorFromCurlResponse updateConnectorFromCurl(
       UUID connectorPublicId, UpdateConnectorFromCurlRequest request, String username);
+
+  /**
+   * Deletes a target connector owned by the authenticated user.
+   *
+   * @param connectorPublicId public connector identifier
+   * @param username normalized or raw username from the authenticated principal
+   */
+  void deleteConnector(UUID connectorPublicId, String username);
 }

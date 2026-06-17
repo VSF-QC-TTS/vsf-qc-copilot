@@ -9,7 +9,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api/client';
-import type { ApiError } from '@/lib/api/types';
+import type { ApiError, DatasetDetailResponse } from '@/lib/api/types';
 import { getErrorMessageKey } from '@/lib/utils/error-messages';
 import {
   createDatasetSchema,
@@ -21,10 +21,11 @@ import { useRouter } from '@/i18n/navigation';
 // Props
 // ---------------------------------------------------------------------------
 
-interface CreateDatasetDialogProps {
+interface DatasetDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectId: string;
+  initialData?: DatasetDetailResponse | null;
 }
 
 
@@ -42,11 +43,12 @@ const textareaClassName =
 // Component
 // ---------------------------------------------------------------------------
 
-export function CreateDatasetDialog({
+export function DatasetDialog({
   open,
   onOpenChange,
   projectId,
-}: CreateDatasetDialogProps) {
+  initialData,
+}: DatasetDialogProps) {
   const t = useTranslations('datasets');
   const tCommon = useTranslations('common');
   const tErrors = useTranslations('errors');
@@ -67,6 +69,19 @@ export function CreateDatasetDialog({
       description: '',
     },
   });
+
+  React.useEffect(() => {
+    if (open) {
+      reset(
+        initialData
+          ? {
+              name: initialData.name,
+              description: initialData.description ?? '',
+            }
+          : { name: '', description: '' },
+      );
+    }
+  }, [open, initialData, reset]);
 
 
   /* ---- Close helper: resets form + error ---- */
@@ -111,14 +126,29 @@ export function CreateDatasetDialog({
     setServerError(null);
 
     try {
-      const result = await apiClient.post<{ publicId: string }>(
-        '/api/v1/projects/' + projectId + '/datasets',
-        { ...values, sourceType: 'MANUAL' },
-      );
+      let result;
+      if (initialData) {
+        result = await apiClient.patch<{ publicId: string }>(
+          `/api/v1/datasets/${initialData.publicId}`,
+          values,
+        );
+      } else {
+        result = await apiClient.post<{ publicId: string }>(
+          '/api/v1/projects/' + projectId + '/datasets',
+          { ...values, sourceType: 'MANUAL' },
+        );
+      }
+      
       await queryClient.invalidateQueries({ queryKey: ['datasets'] });
       await queryClient.invalidateQueries({ queryKey: ['project-readiness', projectId] });
+      if (initialData) {
+        await queryClient.invalidateQueries({ queryKey: ['dataset', initialData.publicId] });
+      }
       handleClose(false);
-      router.push(`/projects/${projectId}/datasets/${result.publicId}`);
+      
+      if (!initialData) {
+        router.push(`/projects/${projectId}/datasets/${result.publicId}`);
+      }
     } catch (error: unknown) {
       if (
         typeof error === 'object' &&
@@ -165,7 +195,7 @@ export function CreateDatasetDialog({
           id="create-dataset-title"
           className="text-lg font-semibold text-card-foreground"
         >
-          {t('createDatasetTitle')}
+          {initialData ? t('editDatasetTitle', { fallback: 'Edit Dataset' }) : t('createDatasetTitle')}
         </h2>
 
         <form
@@ -241,7 +271,11 @@ export function CreateDatasetDialog({
               {tCommon('cancel')}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? t('creating') : t('createDataset')}
+              {isSubmitting
+                ? tCommon('saving')
+                : initialData
+                ? tCommon('save')
+                : t('createDataset')}
             </Button>
           </div>
         </form>

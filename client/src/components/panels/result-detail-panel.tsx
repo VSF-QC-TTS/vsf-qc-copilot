@@ -205,10 +205,23 @@ export function ResultDetailPanel({
             )}
           </div>
 
-          {/* Question */}
-          <Section label={t('question')}>
-            <p className="text-sm whitespace-pre-wrap">{result.question}</p>
-          </Section>
+          {/* Question / Turns */}
+          {result.turns ? (
+            <Section label={t('question')}>
+              <div className="space-y-3">
+                {result.turns.map((turn, i) => (
+                  <div key={i} className="flex flex-col gap-1 rounded-lg border bg-muted/20 p-3 text-sm">
+                    <span className="font-semibold capitalize text-foreground">{turn.role}</span>
+                    <span className="whitespace-pre-wrap text-muted-foreground">{turn.content}</span>
+                  </div>
+                ))}
+              </div>
+            </Section>
+          ) : (
+            <Section label={t('question')}>
+              <p className="text-sm whitespace-pre-wrap">{result.question}</p>
+            </Section>
+          )}
 
           {/* Precondition */}
           <CollapsibleSection

@@ -305,4 +305,37 @@ public class EvaluationRunController {
     return evaluationRunService.quickEvaluate(
         projectPublicId, request, principal.getName());
   }
+
+  @Operation(
+      summary = "Bulk review evaluation results",
+      description = "Updates the QC status for multiple evaluation results within a run.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "204",
+        description = "Results updated successfully"),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Validation failed",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Evaluation run not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @org.springframework.web.bind.annotation.PutMapping(
+      value = "/api/v1/evaluation-runs/{runPublicId}/bulk-review",
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void bulkReview(
+      @PathVariable UUID runPublicId,
+      @Valid @RequestBody me.nghlong3004.vqc.api.evaluation.request.BulkReviewRequest request,
+      Principal principal) {
+    evaluationRunService.bulkReview(runPublicId, request, principal.getName());
+  }
 }

@@ -696,6 +696,7 @@ class EvaluationRunServiceImplTest {
       org.springframework.data.domain.Page<me.nghlong3004.vqc.api.evaluation.entity.EvaluationRun> page) {
     return proxy(EvaluationRunRepository.class, (p, m, args) -> {
       if ("findByProjectIdAndCreatedBy".equals(m.getName())) return page;
+      if ("findByCreatedBy".equals(m.getName())) return page;
       if ("save".equals(m.getName())) return args[0];
       throw new UnsupportedOperationException(m.getName());
     });

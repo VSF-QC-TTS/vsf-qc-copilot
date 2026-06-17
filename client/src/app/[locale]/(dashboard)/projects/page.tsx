@@ -13,7 +13,7 @@ import { PageShell } from '@/components/layout/page-shell';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { CreateProjectDialog } from '@/components/projects/create-project-dialog';
+import { ProjectDialog } from '@/components/projects/create-project-dialog';
 import { apiClient } from '@/lib/api/client';
 import type { ProjectResponse, PageResponse, ProjectStatus } from '@/lib/api/types';
 import { useRouter } from '@/i18n/navigation';
@@ -217,7 +217,7 @@ export default function ProjectsPage() {
       </motion.div>
 
       {/* Create project dialog */}
-      <CreateProjectDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+      <ProjectDialog open={dialogOpen} onOpenChange={setDialogOpen} />
     </PageShell>
   );
 }

@@ -141,7 +141,11 @@ public class PromptfooConfigGenerator {
     Map<String, Object> vars = new LinkedHashMap<>();
     vars.put("vqcTestCaseId", testCase.getId());
     vars.put("vqcTestCasePublicId", String.valueOf(testCase.getPublicId()));
-    vars.put("question", testCase.getQuestion());
+    vars.put("question", testCase.getQuestion() == null ? "" : testCase.getQuestion());
+    if (testCase.getTurns() != null && !testCase.getTurns().isEmpty()) {
+      vars.put("_conversation", testCase.getTurns()); // Special promptfoo variable for conversation history
+      vars.put("turns", testCase.getTurns()); // Standard variable accessible in body template
+    }
     vars.put("groundTruth", testCase.getGroundTruth() == null ? "" : testCase.getGroundTruth());
     vars.put("precondition", testCase.getPrecondition() == null ? Map.of() : testCase.getPrecondition());
     vars.put("metadata", testCase.getMetadata() == null ? Map.of() : testCase.getMetadata());

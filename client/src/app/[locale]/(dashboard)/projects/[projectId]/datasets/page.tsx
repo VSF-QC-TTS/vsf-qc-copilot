@@ -3,9 +3,9 @@
 import { useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
-import { PlusIcon } from '@phosphor-icons/react';
+import { PlusIcon, DotsThreeIcon, PencilSimpleIcon, TrashIcon } from '@phosphor-icons/react';
 import { motion } from 'motion/react';
 
 import { cn } from '@/lib/utils';
@@ -14,9 +14,10 @@ import { PageShell } from '@/components/layout/page-shell';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { CreateDatasetDialog } from '@/components/datasets/create-dataset-dialog';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { DatasetDialog } from '@/components/datasets/create-dataset-dialog';
 import { apiClient } from '@/lib/api/client';
-import type { PageResponse, DatasetStatus } from '@/lib/api/types';
+import type { PageResponse, DatasetStatus, DatasetDetailResponse } from '@/lib/api/types';
 import { useRouter } from '@/i18n/navigation';
 
 // ---------------------------------------------------------------------------
@@ -72,14 +73,36 @@ const itemVariants = {
 
 export default function DatasetsPage() {
   const t = useTranslations('datasets');
+  const tCommon = useTranslations('common');
   const router = useRouter();
   const params = useParams();
   const projectId = params.projectId as string;
+  const queryClient = useQueryClient();
 
   // State
   const [page, setPage] = useState(0);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDataset, setEditDataset] = useState<DatasetResponse | null>(null);
+  const [deleteDataset, setDeleteDataset] = useState<DatasetResponse | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Delete Mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiClient.delete(`/api/v1/datasets/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['datasets', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['project-readiness', projectId] });
+      setDeleteDataset(null);
+    },
+    onSettled: () => setIsDeleting(false),
+  });
+
+  const handleDelete = () => {
+    if (!deleteDataset) return;
+    setIsDeleting(true);
+    deleteMutation.mutate(deleteDataset.publicId);
+  };
 
   // Build query URL
   const status = statusFilter === 'ALL' ? undefined : statusFilter;
@@ -133,8 +156,36 @@ export default function DatasetsPage() {
           </span>
         ),
       },
+      {
+        id: 'actions',
+        size: 80,
+        cell: ({ row }) => {
+          const item = row.original;
+          return (
+            <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setEditDataset(item)}
+                title={tCommon('edit', { fallback: 'Edit' })}
+              >
+                <PencilSimpleIcon weight="bold" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => setDeleteDataset(item)}
+                title={tCommon('delete', { fallback: 'Delete' })}
+              >
+                <TrashIcon weight="bold" />
+              </Button>
+            </div>
+          );
+        },
+      },
     ],
-    [t],
+    [t, tCommon],
   );
 
   // Handlers
@@ -237,11 +288,31 @@ export default function DatasetsPage() {
         )}
       </motion.div>
 
-      {/* Create dataset dialog */}
-      <CreateDatasetDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
+      {/* Create / Edit dataset dialog */}
+      <DatasetDialog
+        open={dialogOpen || !!editDataset}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDialogOpen(false);
+            setEditDataset(null);
+          } else {
+            setDialogOpen(true);
+          }
+        }}
         projectId={projectId}
+        initialData={editDataset as unknown as DatasetDetailResponse}
+      />
+
+      {/* Delete dataset dialog */}
+      <ConfirmDialog
+        open={!!deleteDataset}
+        onOpenChange={(open) => !open && setDeleteDataset(null)}
+        title={t('deleteDatasetTitle', { fallback: 'Delete Dataset' })}
+        description={t('deleteDatasetConfirm', { name: deleteDataset?.name ?? '' })}
+        confirmLabel={tCommon('delete', { fallback: 'Delete' })}
+        variant="destructive"
+        loading={isDeleting}
+        onConfirm={handleDelete}
       />
     </PageShell>
   );

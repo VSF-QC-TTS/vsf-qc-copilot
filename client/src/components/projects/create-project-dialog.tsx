@@ -21,9 +21,10 @@ import { useRouter } from '@/i18n/navigation';
 // Props
 // ---------------------------------------------------------------------------
 
-interface CreateProjectDialogProps {
+interface ProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialData?: ProjectResponse | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -40,10 +41,11 @@ const textareaClassName =
 // Component
 // ---------------------------------------------------------------------------
 
-export function CreateProjectDialog({
+export function ProjectDialog({
   open,
   onOpenChange,
-}: CreateProjectDialogProps) {
+  initialData,
+}: ProjectDialogProps) {
   const t = useTranslations('projects');
   const tCommon = useTranslations('common');
   const tErrors = useTranslations('errors');
@@ -64,6 +66,19 @@ export function CreateProjectDialog({
       description: '',
     },
   });
+
+  React.useEffect(() => {
+    if (open) {
+      reset(
+        initialData
+          ? {
+              name: initialData.name,
+              description: initialData.description ?? '',
+            }
+          : { name: '', description: '' },
+      );
+    }
+  }, [open, initialData, reset]);
 
   /* ---- Close helper: resets form + error ---- */
   const handleClose = React.useCallback(
@@ -107,13 +122,28 @@ export function CreateProjectDialog({
     setServerError(null);
 
     try {
-      const result = await apiClient.post<ProjectResponse>(
-        '/api/v1/projects',
-        values,
-      );
+      let result;
+      if (initialData) {
+        result = await apiClient.patch<ProjectResponse>(
+          `/api/v1/projects/${initialData.publicId}`,
+          values,
+        );
+      } else {
+        result = await apiClient.post<ProjectResponse>(
+          '/api/v1/projects',
+          values,
+        );
+      }
+      
       await queryClient.invalidateQueries({ queryKey: ['projects'] });
+      // Invalidate project detail query if we are on the project page
+      if (initialData) {
+        await queryClient.invalidateQueries({ queryKey: ['project', initialData.publicId] });
+      }
       handleClose(false);
-      router.push(`/projects/${result.publicId}`);
+      if (!initialData) {
+        router.push(`/projects/${result.publicId}`);
+      }
     } catch (error: unknown) {
       if (
         typeof error === 'object' &&
@@ -160,7 +190,7 @@ export function CreateProjectDialog({
           id="create-project-title"
           className="text-lg font-semibold text-card-foreground"
         >
-          {t('createProjectTitle')}
+          {initialData ? t('editProjectTitle', { fallback: 'Edit Project' }) : t('createProjectTitle')}
         </h2>
 
         <form
@@ -235,7 +265,11 @@ export function CreateProjectDialog({
               {tCommon('cancel')}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? t('creating') : t('createProject')}
+              {isSubmitting
+                ? tCommon('saving')
+                : initialData
+                ? tCommon('save')
+                : t('createProject')}
             </Button>
           </div>
         </form>

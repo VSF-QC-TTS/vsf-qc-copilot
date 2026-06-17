@@ -26,6 +26,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -359,5 +360,30 @@ public class TargetApiConnectorController {
       @Valid @RequestBody TestTargetConnectorRequest request,
       Principal principal) {
     return targetApiConnectorService.testConnector(connectorPublicId, request, principal.getName());
+  }
+
+  @Operation(summary = "Delete target connector", description = "Deletes a connector owned by the authenticated user.")
+  @ApiResponses({
+    @ApiResponse(responseCode = "204", description = "Connector deleted", content = @Content),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Authentication is required",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Connector not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @DeleteMapping("/api/v1/target-api-connectors/{connectorPublicId}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deleteConnector(
+      @PathVariable UUID connectorPublicId, Principal principal) {
+    targetApiConnectorService.deleteConnector(connectorPublicId, principal.getName());
   }
 }

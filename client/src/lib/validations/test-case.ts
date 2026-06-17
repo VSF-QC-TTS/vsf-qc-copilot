@@ -1,7 +1,11 @@
 import { z } from 'zod';
 
 export const createTestCaseSchema = z.object({
-  question: z.string().min(1, 'Question is required').max(5000),
+  question: z.string().max(5000).optional().or(z.literal('')),
+  turns: z.array(z.object({
+    role: z.string(),
+    content: z.string(),
+  })).optional().nullable(),
   groundTruth: z.string().max(5000).optional().or(z.literal('')),
   precondition: z.string().max(2000).optional().or(z.literal('')).refine(
     (val) => {

@@ -58,4 +58,12 @@ public interface DatasetService {
    */
   DatasetResponse updateDataset(
       UUID datasetPublicId, UpdateDatasetRequest request, String username);
+
+  /**
+   * Deletes a dataset owned by the authenticated user.
+   *
+   * @param datasetPublicId public dataset identifier
+   * @param username authenticated principal username/email
+   */
+  void deleteDataset(UUID datasetPublicId, String username);
 }

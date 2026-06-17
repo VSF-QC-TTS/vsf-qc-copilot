@@ -184,6 +184,12 @@ class JudgeModelControllerTest {
     }
 
     @Override
+    public void deleteJudgeModel(UUID judgeModelPublicId, String username) {
+      RecordingJudgeModelService.judgeModelPublicId = judgeModelPublicId;
+      RecordingJudgeModelService.username = username;
+    }
+
+    @Override
     public JudgeModelResponse testConnection(UUID judgeModelPublicId, String username) {
       RecordingJudgeModelService.judgeModelPublicId = judgeModelPublicId;
       RecordingJudgeModelService.username = username;

@@ -675,4 +675,12 @@ public class TargetApiConnectorServiceImpl implements TargetApiConnectorService 
     }
     return "****" + trimmed.substring(trimmed.length() - 4);
   }
+
+  @Override
+  @Transactional
+  public void deleteConnector(UUID connectorPublicId, String username) {
+    TargetApiConnector connector = findConnector(connectorPublicId, username);
+    targetApiConnectorRepository.delete(connector);
+    log.info("Deleted target connector {} by user {}", connectorPublicId, username);
+  }
 }

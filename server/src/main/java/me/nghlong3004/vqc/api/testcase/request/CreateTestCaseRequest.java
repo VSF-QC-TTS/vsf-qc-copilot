@@ -15,9 +15,11 @@ public record CreateTestCaseRequest(
     @Schema(description = "External/source row identifier.", example = "HEALTH_001", nullable = true)
         @Size(max = 255, message = "External ID must be at most 255 characters.")
         String externalId,
-    @Schema(description = "User question/input.", example = "How many steps did I walk today?")
-        @NotBlank(message = "Test case question is required.")
+    @Schema(description = "User question/input.", example = "How many steps did I walk today?", nullable = true)
+        @jakarta.validation.constraints.Pattern(regexp = ".*\\S.*", message = "Test case question must not be blank.")
         String question,
+    @Schema(description = "Multi-turn conversation history.", nullable = true)
+        java.util.List<me.nghlong3004.vqc.api.testcase.entity.TestCaseTurn> turns,
     @Schema(description = "Optional context/precondition.", nullable = true)
         Map<String, Object> precondition,
     @Schema(description = "Expected answer.", example = "The user walked 8,200 steps today.", nullable = true)

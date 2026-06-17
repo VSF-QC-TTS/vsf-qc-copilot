@@ -464,6 +464,12 @@ class DatasetControllerTest {
       RecordingDatasetService.username = username;
       return datasetResponse;
     }
+
+    @Override
+    public void deleteDataset(UUID datasetPublicId, String username) {
+      RecordingDatasetService.datasetPublicId = datasetPublicId;
+      RecordingDatasetService.username = username;
+    }
   }
 
   static class RecordingDatasetGenerationService implements DatasetGenerationService {

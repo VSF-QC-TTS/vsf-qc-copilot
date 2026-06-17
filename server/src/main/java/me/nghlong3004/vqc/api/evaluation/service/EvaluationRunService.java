@@ -89,4 +89,9 @@ public interface EvaluationRunService {
    */
   CreateEvaluationRunResponse quickEvaluate(
       UUID projectPublicId, QuickEvaluateRequest request, String username);
+
+  /**
+   * Bulk updates QC review decisions for multiple evaluation results.
+   */
+  void bulkReview(UUID runPublicId, me.nghlong3004.vqc.api.evaluation.request.BulkReviewRequest request, String username);
 }

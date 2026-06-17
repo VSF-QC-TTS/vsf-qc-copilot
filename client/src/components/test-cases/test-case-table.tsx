@@ -28,7 +28,8 @@ import { AIGenerateDialog } from './ai-generate-dialog';
 
 type TestCaseRow = {
   publicId: string;
-  question: string;
+  question: string | null;
+  turns: { role: string; content: string }[] | null;
   groundTruth: string | null;
   precondition: Record<string, unknown> | null;
   metadata: Record<string, unknown> | null;
@@ -214,7 +215,11 @@ export function TestCaseTable({
                   )}
                 >
                   <td className={cn(tdClassName, 'max-w-xs')}>
-                    {truncate(tc.question, 80) ?? tCommon('notAvailable')}
+                    {tc.turns ? (
+                      <span className="italic text-muted-foreground">Multi-turn conversation ({tc.turns.length} turns)</span>
+                    ) : (
+                      truncate(tc.question, 80) ?? tCommon('notAvailable')
+                    )}
                   </td>
                   <td className={cn(tdClassName, 'max-w-xs')}>
                     {truncate(tc.groundTruth, 80) ?? tCommon('notAvailable')}

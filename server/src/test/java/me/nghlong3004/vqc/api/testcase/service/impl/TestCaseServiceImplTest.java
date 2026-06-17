@@ -55,6 +55,7 @@ class TestCaseServiceImplTest {
             new CreateTestCaseRequest(
                 "  HEALTH_001  ",
                 "  How many steps did I walk today?  ",
+                null,
                 Map.of("steps", 8200),
                 "  The user walked 8,200 steps today.  ",
                 Map.of("userId", "demo-user-1"),
@@ -88,7 +89,7 @@ class TestCaseServiceImplTest {
             () ->
                 testCaseService.createTestCase(
                     UUID.randomUUID(),
-                    new CreateTestCaseRequest(null, "Question?", null, null, null, null, null),
+                    new CreateTestCaseRequest(null, "Question?", null, null, null, null, null, null),
                     "missing@example.com"))
         .isInstanceOf(ResourceException.class)
         .extracting(error -> ((ResourceException) error).getResponse().code())
@@ -111,7 +112,7 @@ class TestCaseServiceImplTest {
             () ->
                 testCaseService.createTestCase(
                     datasetPublicId,
-                    new CreateTestCaseRequest(null, "Question?", null, null, null, null, null),
+                    new CreateTestCaseRequest(null, "Question?", null, null, null, null, null, null),
                     "qc.demo@example.com"))
         .isInstanceOf(ResourceException.class)
         .extracting(error -> ((ResourceException) error).getResponse().code())
@@ -135,7 +136,7 @@ class TestCaseServiceImplTest {
             () ->
                 testCaseService.createTestCase(
                     dataset.getPublicId(),
-                    new CreateTestCaseRequest(null, "Question?", null, null, null, null, null),
+                    new CreateTestCaseRequest(null, "Question?", null, null, null, null, null, null),
                     "qc.demo@example.com"))
         .isInstanceOf(ResourceException.class)
         .extracting(error -> ((ResourceException) error).getResponse().code())
@@ -164,7 +165,7 @@ class TestCaseServiceImplTest {
             () ->
                 testCaseService.createTestCase(
                     dataset.getPublicId(),
-                    new CreateTestCaseRequest(null, "Question?", null, null, null, null, null),
+                    new CreateTestCaseRequest(null, "Question?", null, null, null, null, null, null),
                     "qc.demo@example.com"))
         .isInstanceOf(ResourceException.class)
         .extracting(error -> ((ResourceException) error).getResponse().code())
@@ -249,6 +250,7 @@ class TestCaseServiceImplTest {
             new UpdateTestCaseRequest(
                 "  HEALTH_002  ",
                 "  How many active calories today?  ",
+                null,
                 Map.of("calories", 500),
                 "  The user burned 500 active calories today.  ",
                 Map.of("userId", "demo-user-2"),
@@ -290,7 +292,7 @@ class TestCaseServiceImplTest {
             () ->
                 testCaseService.updateTestCase(
                     testCasePublicId,
-                    new UpdateTestCaseRequest(null, "Question?", null, null, null, null, null),
+                    new UpdateTestCaseRequest(null, "Question?", null, null, null, null, null, null),
                     "qc.demo@example.com"))
         .isInstanceOf(ResourceException.class)
         .extracting(error -> ((ResourceException) error).getResponse().code())
@@ -320,7 +322,7 @@ class TestCaseServiceImplTest {
             () ->
                 testCaseService.updateTestCase(
                     testCase.getPublicId(),
-                    new UpdateTestCaseRequest(null, "Question?", null, null, null, null, null),
+                    new UpdateTestCaseRequest(null, "Question?", null, null, null, null, null, null),
                     "qc.demo@example.com"))
         .isInstanceOf(ResourceException.class)
         .extracting(error -> ((ResourceException) error).getResponse().code())

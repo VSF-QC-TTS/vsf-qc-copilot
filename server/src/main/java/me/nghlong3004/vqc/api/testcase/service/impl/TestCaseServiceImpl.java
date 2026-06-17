@@ -60,7 +60,8 @@ public class TestCaseServiceImpl implements TestCaseService {
         TestCase.builder()
             .dataset(dataset)
             .externalId(trimToNull(request.externalId()))
-            .question(request.question().trim())
+            .question(request.question() != null ? request.question().trim() : null)
+            .turns(request.turns())
             .precondition(request.precondition())
             .groundTruth(trimToNull(request.groundTruth()))
             .metadata(request.metadata())
@@ -117,6 +118,11 @@ public class TestCaseServiceImpl implements TestCaseService {
     }
     if (request.question() != null) {
       testCase.setQuestion(request.question().trim());
+    } else if (request.turns() != null && !request.turns().isEmpty()) {
+      testCase.setQuestion(null);
+    }
+    if (request.turns() != null) {
+      testCase.setTurns(request.turns());
     }
     if (request.precondition() != null) {
       testCase.setPrecondition(request.precondition());

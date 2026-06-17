@@ -23,4 +23,6 @@ public interface JudgeModelService {
       UUID judgeModelPublicId, UpdateJudgeModelRequest request, String username);
 
   JudgeModelResponse testConnection(UUID judgeModelPublicId, String username);
+
+  void deleteJudgeModel(UUID judgeModelPublicId, String username);
 }

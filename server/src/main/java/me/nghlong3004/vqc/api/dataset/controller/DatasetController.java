@@ -25,6 +25,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -263,5 +264,30 @@ public class DatasetController {
       @Valid @RequestBody UpdateDatasetRequest request,
       Principal principal) {
     return datasetService.updateDataset(datasetPublicId, request, principal.getName());
+  }
+
+  @Operation(summary = "Delete dataset", description = "Deletes a dataset owned by the authenticated user.")
+  @ApiResponses({
+    @ApiResponse(responseCode = "204", description = "Dataset deleted", content = @Content),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Authentication is required",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Dataset not found",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @DeleteMapping("/api/v1/datasets/{datasetPublicId}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deleteDataset(
+      @PathVariable UUID datasetPublicId, Principal principal) {
+    datasetService.deleteDataset(datasetPublicId, principal.getName());
   }
 }

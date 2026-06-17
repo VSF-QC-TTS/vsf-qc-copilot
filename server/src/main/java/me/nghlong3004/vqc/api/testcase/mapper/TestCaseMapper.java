@@ -23,6 +23,7 @@ public class TestCaseMapper {
         testCase.getDataset().getPublicId(),
         testCase.getExternalId(),
         testCase.getQuestion(),
+        testCase.getTurns(),
         testCase.getPrecondition(),
         testCase.getGroundTruth(),
         testCase.getMetadata(),

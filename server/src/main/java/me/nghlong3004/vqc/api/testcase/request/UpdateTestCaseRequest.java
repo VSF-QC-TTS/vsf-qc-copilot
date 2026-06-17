@@ -18,6 +18,8 @@ public record UpdateTestCaseRequest(
     @Schema(description = "User question/input.", example = "How many steps did I walk today?", nullable = true)
         @Pattern(regexp = ".*\\S.*", message = "Test case question must not be blank.")
         String question,
+    @Schema(description = "Multi-turn conversation history.", nullable = true)
+        java.util.List<me.nghlong3004.vqc.api.testcase.entity.TestCaseTurn> turns,
     @Schema(description = "Optional context/precondition.", nullable = true)
         Map<String, Object> precondition,
     @Schema(description = "Expected answer.", nullable = true) String groundTruth,

@@ -159,4 +159,12 @@ public class JudgeModelServiceImpl implements JudgeModelService {
   private String trimToNull(String value) {
     return value == null || value.isBlank() ? null : value.trim();
   }
+
+  @Override
+  @Transactional
+  public void deleteJudgeModel(UUID judgeModelPublicId, String username) {
+    JudgeModel judgeModel = findJudgeModel(judgeModelPublicId, username);
+    judgeModelRepository.delete(judgeModel);
+    log.info("Deleted judge model {} by user {}", judgeModelPublicId, username);
+  }
 }
