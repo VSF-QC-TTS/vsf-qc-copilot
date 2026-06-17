@@ -326,7 +326,7 @@ export default function ProjectDetailPage() {
                 href={item.href}
                 className={cn(
                   'rounded-lg border bg-card p-4 transition-colors hover:bg-accent hover:text-accent-foreground flex flex-col',
-                  item.ready ? 'border-emerald-200' : 'border-amber-200',
+                  item.ready ? 'border-emerald-500/20 dark:border-emerald-500/10' : 'border-amber-500/20 dark:border-amber-500/10',
                 )}
               >
                 <div className="flex items-center justify-between gap-3 mb-2">
@@ -350,7 +350,7 @@ export default function ProjectDetailPage() {
       ) : (
         <motion.section variants={itemVariants} className="space-y-6">
           {/* Hero Action Banner */}
-          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-6 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden">
+          <div className="rounded-xl border border-emerald-500/10 bg-emerald-500/5 p-6 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden">
             <div className="absolute -right-10 -top-10 text-emerald-500/10 rotate-12">
                <BrainIcon size={120} weight="fill" />
             </div>
@@ -413,7 +413,7 @@ export default function ProjectDetailPage() {
 
       {/* ---- Red-Teaming (Security Testing) Banner ---- */}
       <motion.section variants={itemVariants} className="space-y-3">
-        <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-5 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden">
+        <div className="rounded-xl border border-red-500/10 bg-red-500/5 p-5 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden">
           <div className="absolute -right-6 -top-6 text-red-500/10 rotate-12 pointer-events-none">
             <ShieldCheckIcon size={110} weight="fill" />
           </div>

@@ -188,7 +188,7 @@ export function CreateRedTeamRunDialog({
         aria-modal="true"
         aria-labelledby="create-redteam-title"
         className={cn(
-          'relative z-10 w-full max-w-xl rounded-xl border bg-card p-6 shadow-2xl text-foreground',
+          'relative z-10 w-full max-w-xl max-h-[90vh] flex flex-col rounded-xl border bg-card p-6 shadow-2xl text-foreground overflow-y-auto',
           'animate-in fade-in-0 zoom-in-95 duration-200',
         )}
       >
