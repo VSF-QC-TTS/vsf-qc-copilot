@@ -113,7 +113,15 @@
     "createFirstProjectDesc": "Bạn chưa có dự án nào. Hãy tạo dự án mới để bắt đầu.",
     "createNewProject": "Tạo dự án mới",
     "viewAllProjects": "Xem tất cả dự án",
-    "quickActions": "Thao tác nhanh"
+    "quickActions": "Thao tác nhanh",
+    "recentEvaluations": "Đánh giá gần đây",
+    "noEvaluations": "Chưa có đánh giá nào",
+    "noEvaluationsDesc": "Bắt đầu đợt đánh giá đầu tiên từ trong dự án.",
+    "unknownProject": "Dự án không xác định",
+    "totalLabel": "tổng",
+    "passLabel": "đạt",
+    "failLabel": "lỗi",
+    "viewDetails": "Xem chi tiết"
   },
   "sidebar": {
     "collapse": "Thu gọn",
@@ -136,7 +144,11 @@
     "rubrics": "Tiêu chí chấm",
     "evaluations": "Đánh giá",
     "exports": "Xuất báo cáo",
-    "settings": "Cài đặt"
+    "settings": "Cài đặt",
+    "judgeModels": "Model chấm",
+    "redTeam": "Kiểm thử bảo mật",
+    "new": "Tạo mới",
+    "results": "Kết quả"
   },
   "status": {
     "ACTIVE": "Hoạt động",
@@ -157,6 +169,11 @@
     "NOT_REVIEWED": "Chưa đánh giá",
     "NEED_FIX": "Cần sửa",
     "IGNORED": "Bỏ qua"
+  },
+  "roles": {
+    "QC_MEMBER": "Thành viên QC",
+    "QC_LEAD": "Trưởng nhóm QC",
+    "ADMIN": "Quản trị viên"
   },
   "theme": {
     "light": "Sáng",
@@ -876,7 +893,8 @@
     "graderError": "Lỗi provider chấm điểm",
     "noCriteria": "Chưa có chi tiết tiêu chí.",
     "prevResult": "Trước",
-    "nextResult": "Sau"
+    "nextResult": "Sau",
+    "keyboardNav": "để điều hướng"
   },
   "exports": {
     "title": "Xuất file",
@@ -927,6 +945,7 @@
   "redTeam": {
     "title": "Kiểm thử bảo mật (Red-Teaming)",
     "description": "Tự động phát hiện và kiểm thử các lỗ hổng bảo mật, rò rỉ thông tin cá nhân và nguy cơ tấn công prompt của ứng dụng AI.",
+    "manageScan": "Quản lý quét bảo mật",
     "startScan": "Bắt đầu quét bảo mật",
     "createScanTitle": "Cấu hình quét bảo mật mới",
     "scanName": "Tên lượt quét",

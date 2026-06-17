@@ -26,6 +26,7 @@ function getInitials(name: string): string {
 export function Header() {
   const t = useTranslations('header');
   const tNav = useTranslations('navigation');
+  const tRoles = useTranslations('roles');
   const router = useRouter();
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
@@ -41,18 +42,18 @@ export function Header() {
       return mapping[segment] || segment.split('-')[0] + '...';
     }
     const map: Record<string, string> = {
-      projects: tNav('projects') || 'Projects',
-      rubrics: tNav('rubrics') || 'Rubrics',
-      settings: tNav('settings') || 'Settings',
-      dashboard: tNav('dashboard') || 'Dashboard',
-      connectors: 'Connectors',
-      datasets: 'Datasets',
-      evaluations: 'Evaluations',
-      'judge-models': 'Judge Models',
-      'red-team': 'Red-Teaming',
-      'red-team-runs': 'Red-Teaming',
-      new: 'New',
-      results: 'Results',
+      projects: tNav('projects'),
+      rubrics: tNav('rubrics'),
+      settings: tNav('settings'),
+      dashboard: tNav('dashboard'),
+      connectors: tNav('connectors'),
+      datasets: tNav('datasets'),
+      evaluations: tNav('evaluations'),
+      'judge-models': tNav('judgeModels'),
+      'red-team': tNav('redTeam'),
+      'red-team-runs': tNav('redTeam'),
+      new: tNav('new'),
+      results: tNav('results'),
     };
     return map[segment.toLowerCase()] || segment.charAt(0).toUpperCase() + segment.slice(1);
   };
@@ -161,9 +162,9 @@ export function Header() {
                 <p className="text-xs text-muted-foreground">{user?.email ?? ''}</p>
                 {user?.role && (
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    {user.role === 'QC_MEMBER' && 'QC Member'}
-                    {user.role === 'QC_LEAD' && 'QC Lead'}
-                    {user.role === 'ADMIN' && 'System Admin'}
+                    {user.role === 'QC_MEMBER' && tRoles('QC_MEMBER')}
+                    {user.role === 'QC_LEAD' && tRoles('QC_LEAD')}
+                    {user.role === 'ADMIN' && tRoles('ADMIN')}
                     {!['QC_MEMBER', 'QC_LEAD', 'ADMIN'].includes(user.role) && user.role}
                   </p>
                 )}

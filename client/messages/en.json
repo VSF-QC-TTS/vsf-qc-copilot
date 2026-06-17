@@ -113,7 +113,15 @@
     "createFirstProjectDesc": "You don't have any projects yet. Start by creating a new one.",
     "createNewProject": "Create new project",
     "viewAllProjects": "View all projects",
-    "quickActions": "Quick Actions"
+    "quickActions": "Quick Actions",
+    "recentEvaluations": "Recent Evaluations",
+    "noEvaluations": "No evaluations yet",
+    "noEvaluationsDesc": "Start your first evaluation run from within a project.",
+    "unknownProject": "Unknown Project",
+    "totalLabel": "total",
+    "passLabel": "pass",
+    "failLabel": "fail",
+    "viewDetails": "View Details"
   },
   "sidebar": {
     "collapse": "Collapse",
@@ -136,7 +144,11 @@
     "rubrics": "Rubrics",
     "evaluations": "Evaluations",
     "exports": "Exports",
-    "settings": "Settings"
+    "settings": "Settings",
+    "judgeModels": "Judge Models",
+    "redTeam": "Red-Teaming",
+    "new": "New",
+    "results": "Results"
   },
   "status": {
     "ACTIVE": "Active",
@@ -157,6 +169,11 @@
     "NOT_REVIEWED": "Not Reviewed",
     "NEED_FIX": "Needs Fix",
     "IGNORED": "Ignored"
+  },
+  "roles": {
+    "QC_MEMBER": "QC Member",
+    "QC_LEAD": "QC Lead",
+    "ADMIN": "Admin"
   },
   "theme": {
     "light": "Light",
@@ -876,7 +893,8 @@
     "graderError": "Judge provider error",
     "noCriteria": "No criteria details are available.",
     "prevResult": "Previous",
-    "nextResult": "Next"
+    "nextResult": "Next",
+    "keyboardNav": "to navigate"
   },
   "exports": {
     "title": "Export",
@@ -927,6 +945,7 @@
   "redTeam": {
     "title": "Security Testing (Red-Teaming)",
     "description": "Automatically detect and test security vulnerabilities, prompt injection, and PII leaks for your AI applications.",
+    "manageScan": "Manage Security Scans",
     "startScan": "Start Security Scan",
     "createScanTitle": "Configure New Security Scan",
     "scanName": "Scan Name",

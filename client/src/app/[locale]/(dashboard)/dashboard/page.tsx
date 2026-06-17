@@ -118,7 +118,7 @@ export default function DashboardPage() {
           className="lg:col-span-2 space-y-4"
         >
           <h2 className="text-lg font-semibold tracking-tight">
-            Recent Evaluations
+            {t('recentEvaluations')}
           </h2>
 
           {isLoading ? (
@@ -129,8 +129,8 @@ export default function DashboardPage() {
             </div>
           ) : recentEvaluations.length === 0 ? (
             <EmptyState
-              title="No evaluations yet"
-              description="Start your first evaluation run from within a project."
+              title={t('noEvaluations')}
+              description={t('noEvaluationsDesc')}
               icon={<ChartBarIcon size={48} weight="duotone" />}
               action={
                 <Button asChild>
@@ -157,7 +157,7 @@ export default function DashboardPage() {
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-foreground group-hover:text-primary transition-colors flex items-center gap-2">
-                        {run.project?.name || 'Unknown Project'}
+                        {run.project?.name || t('unknownProject')}
                         <span className="text-muted-foreground font-normal text-xs font-mono">
                           #{run.publicId.slice(0, 8)}
                         </span>
@@ -167,12 +167,12 @@ export default function DashboardPage() {
                     
                     <div className="flex items-center gap-4 text-sm text-muted-foreground pt-1">
                       <div>
-                        <span className="font-medium text-foreground">{run.totalCases}</span> total
+                        <span className="font-medium text-foreground">{run.totalCases}</span> {t('totalLabel')}
                       </div>
                       {run.status === 'COMPLETED' && run.totalCases > 0 && (
                         <div className="flex items-center gap-2">
-                          <span className="text-emerald-500 font-medium">{run.passedCases} pass</span>
-                          <span className="text-destructive font-medium">{run.failedCases} fail</span>
+                          <span className="text-emerald-500 font-medium">{run.passedCases} {t('passLabel')}</span>
+                          <span className="text-destructive font-medium">{run.failedCases} {t('failLabel')}</span>
                           <span className="text-xs px-1.5 py-0.5 rounded-sm bg-muted text-foreground">
                             {Math.round((run.passedCases / run.totalCases) * 100)}%
                           </span>
@@ -185,7 +185,7 @@ export default function DashboardPage() {
                         {new Date(run.createdAt).toLocaleString()}
                       </span>
                       <span className="flex items-center gap-1 text-primary/80 group-hover:translate-x-0.5 transition-transform">
-                        View Details <ArrowRightIcon size={12} weight="bold" />
+                        {t('viewDetails')} <ArrowRightIcon size={12} weight="bold" />
                       </span>
                     </div>
                   </Link>

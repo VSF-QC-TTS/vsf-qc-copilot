@@ -112,6 +112,7 @@ export default function ProjectDetailPage() {
   const t = useTranslations('projects');
   const tEval = useTranslations('evaluations');
   const tCommon = useTranslations('common');
+  const tRedTeam = useTranslations('redTeam');
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -422,16 +423,16 @@ export default function ProjectDetailPage() {
             </div>
             <div className="flex flex-col gap-1">
               <h3 className="text-base font-bold tracking-tight text-red-700 dark:text-red-400">
-                Kiểm thử bảo mật (Red-Teaming)
+                {tRedTeam('title')}
               </h3>
               <p className="text-xs text-red-700/80 dark:text-red-400/80 max-w-[55ch] leading-relaxed">
-                Tự động giả lập các đòn tấn công xâm nhập bằng Promptfoo để đánh giá độ an toàn của chatbot trước nguy cơ rò rỉ dữ liệu hoặc Prompt Injection.
+                {tRedTeam('description')}
               </p>
             </div>
           </div>
           <Button variant="outline" asChild className="w-full sm:w-auto shrink-0 border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/10 z-10">
             <Link href={`/projects/${projectId}/red-team`}>
-              Quản lý quét bảo mật <ArrowRightIcon className="ml-1.5 size-4" />
+               {tRedTeam('manageScan')} <ArrowRightIcon className="ml-1.5 size-4" />
             </Link>
           </Button>
         </div>

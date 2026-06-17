@@ -33,6 +33,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const tNav = useTranslations('navigation');
   const tSidebar = useTranslations('sidebar');
+  const tCommon = useTranslations('common');
 
   const isExpanded = !isCollapsed || (isHovered && !ignoreHover);
 
@@ -66,7 +67,7 @@ export function Sidebar() {
           'font-bold text-sm text-foreground truncate transition-[opacity,width] duration-300 ease-in-out',
           expanded ? 'opacity-100 w-auto' : 'lg:opacity-0 lg:w-0 lg:overflow-hidden opacity-100 w-auto'
         )}>
-          VF QC Copilot
+          {tCommon('appName')}
         </span>
       </div>
 

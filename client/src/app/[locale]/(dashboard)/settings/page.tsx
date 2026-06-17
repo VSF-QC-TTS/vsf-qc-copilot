@@ -38,11 +38,7 @@ const localeLabels: Record<Locale, string> = {
   en: 'EN',
 };
 
-const roleLabels: Record<UserRole, string> = {
-  QC_MEMBER: 'QC Member',
-  QC_LEAD: 'QC Lead',
-  ADMIN: 'Admin',
-};
+// roleLabels is defined inside the component to use translations
 
 // ---------------------------------------------------------------------------
 // Date formatter
@@ -81,6 +77,7 @@ const themeOptions: {
 export default function SettingsPage() {
   const t = useTranslations('settings');
   const tCommon = useTranslations('common');
+  const tRoles = useTranslations('roles');
   const user = useAuthStore((s) => s.user);
 
   // Theme
@@ -143,7 +140,7 @@ export default function SettingsPage() {
               <ShieldIcon size={20} className="mt-0.5 shrink-0 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">{t('role')}</p>
-                <p className="font-medium">{roleLabels[user.role]}</p>
+                <p className="font-medium">{tRoles(user.role)}</p>
               </div>
             </div>
 
