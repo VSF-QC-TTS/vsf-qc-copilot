@@ -75,7 +75,7 @@ The routing structure follows Next.js App Router localized paths: `client/src/ap
   - `projects/[projectId]/datasets/[datasetId]/page.tsx`: dataset detail containing test case table (supports manual edits, bulk import from Excel/CSV, multi-turn chatbot test cases, and AI test case generation, as well as dataset edit/delete).
   - `projects/[projectId]/evaluations/page.tsx`: lists evaluation runs.
   - `projects/[projectId]/evaluations/[runId]/page.tsx`: details of an evaluation run including event streams/polling, status, metrics, and charts.
-  - `projects/[projectId]/evaluations/[runId]/results/page.tsx`: results list with data table, filtering, multi-select bulk review action bar, inline quick review buttons, and expandable side panel for detailed breakdown.
+  - `projects/[projectId]/evaluations/[runId]/results/page.tsx`: results list with data table, filtering, multi-select bulk review action bar, inline quick review buttons, expandable side panel, and export report dropdown (Excel/JSON) for detailed breakdown.
   - `projects/[projectId]/judge-models/page.tsx`: lists provider model configurations and connection testing (supports inline create/edit/delete via Dialog).
   - `rubrics/page.tsx`: lists independent/user-scoped rubrics.
   - `rubrics/[rubricId]/page.tsx`: rubric detail with draft and published versions list.

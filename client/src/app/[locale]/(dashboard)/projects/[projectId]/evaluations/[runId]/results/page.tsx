@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
-import { Funnel as FunnelIcon, SortAscending as SortAscendingIcon, CaretDown as CaretDownIcon, Check as CheckIcon, X as XIcon, DownloadSimple as DownloadSimpleIcon, Spinner as SpinnerIcon } from '@phosphor-icons/react';
+import { FunnelIcon, SortAscendingIcon, CaretDownIcon, CheckIcon, XIcon, DownloadSimpleIcon, SpinnerIcon } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { getCriteria } from '@/lib/utils/criteria';
