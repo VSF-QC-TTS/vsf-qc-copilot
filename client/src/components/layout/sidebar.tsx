@@ -54,12 +54,12 @@ export function Sidebar() {
     <>
       {/* Logo */}
       <div className="flex h-16 items-center border-b px-3 gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center">
           <Image 
             src="/logo.png" 
             alt="Logo" 
-            width={40} 
-            height={40} 
+            width={32} 
+            height={32} 
             className="object-cover" 
           />
         </div>
