@@ -702,7 +702,21 @@
       "groundTruth": "Ground Truth",
       "status": "Status",
       "createdAt": "Created"
-    }
+    },
+    "multiTurn": "Multi-turn conversation",
+    "singleTurn": "Single question",
+    "addMessage": "Add message",
+    "roleUser": "User",
+    "roleAssistant": "Assistant (Bot)",
+    "roleSystem": "System",
+    "messageContent": "Message content",
+    "messageContentPlaceholder": "Enter message content...",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "removeMessage": "Remove message",
+    "turnsHint": "Add messages in conversation order. The last message will be sent to the chatbot.",
+    "turnsEmpty": "No messages yet. Click \"Add message\" to start.",
+    "turnNumber": "Message #{number}"
   },
   "rubrics": {
     "title": "Rubrics",

@@ -21,8 +21,8 @@ import { apiClient } from '@/lib/api/client';
 import { useRouter } from '@/i18n/navigation';
 import { ExportDialog } from '@/components/evaluations/export-dialog';
 import { useBreadcrumbStore } from '@/lib/store/breadcrumb-store';
-import type { JobEventResponse, PageResponse, EvaluationRunDetail, EvaluationResultRow, CriterionResult } from '@/lib/api/types';
-import { parseCriteriaJson, getCriteria } from '@/lib/utils/criteria';
+import type { JobEventResponse, PageResponse, EvaluationRunDetail, EvaluationResultRow } from '@/lib/api/types';
+import { getCriteria } from '@/lib/utils/criteria';
 import dynamic from 'next/dynamic';
 
 const RunDonutChart = dynamic(() => import('@/components/evaluations/run-donut-chart'), {

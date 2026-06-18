@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
-import { PlusIcon, DotsThreeIcon, PencilSimpleIcon, TrashIcon } from '@phosphor-icons/react';
+import { PlusIcon, PencilSimpleIcon, TrashIcon } from '@phosphor-icons/react';
 import { motion } from 'motion/react';
 
 import { cn } from '@/lib/utils';

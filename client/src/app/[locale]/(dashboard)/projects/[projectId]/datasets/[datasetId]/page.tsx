@@ -169,7 +169,6 @@ export default function DatasetDetailPage() {
   const canApprove =
     dataset.status === 'DRAFT' && dataset.activeTestCaseCount > 0;
   const isDraft = dataset.status === 'DRAFT';
-  const isApproved = dataset.status === 'APPROVED';
   const isArchived = dataset.status === 'ARCHIVED';
 
   return (

@@ -696,7 +696,21 @@
       "groundTruth": "Câu trả lời",
       "status": "Trạng thái",
       "createdAt": "Ngày tạo"
-    }
+    },
+    "multiTurn": "Đa lượt hội thoại",
+    "singleTurn": "Câu hỏi đơn",
+    "addMessage": "Thêm tin nhắn",
+    "roleUser": "Người dùng",
+    "roleAssistant": "Trợ lý (Bot)",
+    "roleSystem": "Hệ thống",
+    "messageContent": "Nội dung tin nhắn",
+    "messageContentPlaceholder": "Nhập nội dung tin nhắn...",
+    "moveUp": "Di chuyển lên",
+    "moveDown": "Di chuyển xuống",
+    "removeMessage": "Xóa tin nhắn",
+    "turnsHint": "Thêm các tin nhắn theo thứ tự hội thoại. Tin nhắn cuối cùng sẽ được gửi đến chatbot.",
+    "turnsEmpty": "Chưa có tin nhắn nào. Bấm \"Thêm tin nhắn\" để bắt đầu.",
+    "turnNumber": "Tin nhắn #{number}"
   },
   "rubrics": {
     "title": "Tiêu chí chấm",

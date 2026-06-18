@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion, useReducedMotion, type Variants } from "motion/react";
 import { cn } from "@/lib/utils";
 
 export interface EmptyStateProps {
@@ -27,7 +27,7 @@ export function EmptyState({
   const reduce = useReducedMotion();
 
   // Stagger variants
-  const containerVariants: any = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -37,7 +37,7 @@ export function EmptyState({
     },
   };
 
-  const itemVariants: any = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, y: 12 },
     show: { 
       opacity: 1, 

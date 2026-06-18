@@ -47,9 +47,6 @@ export function ResultDetailPanel({
   const tQc = useTranslations('qcReview');
   const tCommon = useTranslations('common');
   const panelRef = React.useRef<HTMLDivElement>(null);
-  const [expandedSections, setExpandedSections] = React.useState<Set<string>>(
-    () => new Set(['question']),
-  );
   const [expandedCriteria, setExpandedCriteria] = React.useState<Set<string>>(
     () => new Set(),
   );
@@ -97,18 +94,6 @@ export function ResultDetailPanel({
   const criteria = getCriteria(result).toSorted(
     (a, b) => criterionStatusRank(a.status) - criterionStatusRank(b.status),
   );
-
-  const toggleSection = (key: string) => {
-    setExpandedSections((current) => {
-      const next = new Set(current);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
-      return next;
-    });
-  };
 
   const toggleCriterion = (key: string) => {
     setExpandedCriteria((current) => {
@@ -428,6 +413,7 @@ function CollapsibleSection({
 
   // Auto-expand short content when result changes
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setExpanded(text.length <= COLLAPSE_THRESHOLD);
   }, [text]);
 

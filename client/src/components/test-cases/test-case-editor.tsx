@@ -5,7 +5,16 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
 import { useQueryClient } from '@tanstack/react-query';
-import { XIcon, TrashSimpleIcon } from '@phosphor-icons/react';
+import {
+  XIcon,
+  TrashSimpleIcon,
+  PlusIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
+  UserIcon,
+  RobotIcon,
+  GearSixIcon,
+} from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -22,10 +31,12 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
+type Turn = { role: string; content: string };
+
 type TestCaseResponse = {
   publicId: string;
   question: string | null;
-  turns: { role: string; content: string }[] | null;
+  turns: Turn[] | null;
   groundTruth: string | null;
   precondition: Record<string, unknown> | null;
   metadata: Record<string, unknown> | null;
@@ -41,6 +52,24 @@ interface TestCaseEditorProps {
   onClose: () => void;
   isReadOnly?: boolean;
 }
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const ROLES = ['user', 'assistant', 'system'] as const;
+
+const ROLE_ICON: Record<string, React.ElementType> = {
+  user: UserIcon,
+  assistant: RobotIcon,
+  system: GearSixIcon,
+};
+
+const ROLE_COLORS: Record<string, string> = {
+  user: 'border-l-blue-500 bg-blue-500/5',
+  assistant: 'border-l-emerald-500 bg-emerald-500/5',
+  system: 'border-l-amber-500 bg-amber-500/5',
+};
 
 // ---------------------------------------------------------------------------
 // Shared input styles
@@ -71,7 +100,8 @@ export function TestCaseEditor({
   const isEditMode = !!testCase;
 
   const [serverError, setServerError] = React.useState<string | null>(null);
-  const [turnsRaw, setTurnsRaw] = React.useState<string>('');
+  const [turns, setTurns] = React.useState<Turn[]>([]);
+  const [mode, setMode] = React.useState<'single' | 'multi'>('single');
   const [confirmDeleteOpen, setConfirmDeleteOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
 
@@ -99,6 +129,10 @@ export function TestCaseEditor({
     queueMicrotask(() => {
       if (cancelled) return;
 
+      const hasTurns = testCase?.turns && testCase.turns.length > 0;
+      setMode(hasTurns ? 'multi' : 'single');
+      setTurns(hasTurns ? [...testCase.turns!] : []);
+
       reset({
         question: testCase?.question ?? '',
         turns: testCase?.turns ?? null,
@@ -106,7 +140,6 @@ export function TestCaseEditor({
         precondition: testCase?.precondition ? JSON.stringify(testCase.precondition, null, 2) : '',
         metadata: testCase?.metadata ? JSON.stringify(testCase.metadata, null, 2) : '',
       });
-      setTurnsRaw(testCase?.turns ? JSON.stringify(testCase.turns, null, 2) : '');
       setServerError(null);
     });
 
@@ -140,24 +173,59 @@ export function TestCaseEditor({
     };
   }, [isOpen]);
 
-  /* ---- Submit (create / edit) ---- */
+  // -----------------------------------------------------------------------
+  // Turn management helpers
+  // -----------------------------------------------------------------------
+
+  const addTurn = () => {
+    // Alternate roles: if the last turn is 'user', add 'assistant' and vice versa
+    const lastRole = turns.length > 0 ? turns[turns.length - 1].role : 'assistant';
+    const nextRole = lastRole === 'user' ? 'assistant' : 'user';
+    setTurns((prev) => [...prev, { role: nextRole, content: '' }]);
+  };
+
+  const removeTurn = (index: number) => {
+    setTurns((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const updateTurnRole = (index: number, role: string) => {
+    setTurns((prev) =>
+      prev.map((turn, i) => (i === index ? { ...turn, role } : turn)),
+    );
+  };
+
+  const updateTurnContent = (index: number, content: string) => {
+    setTurns((prev) =>
+      prev.map((turn, i) => (i === index ? { ...turn, content } : turn)),
+    );
+  };
+
+  const moveTurn = (index: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= turns.length) return;
+    setTurns((prev) => {
+      const next = [...prev];
+      [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+      return next;
+    });
+  };
+
+  // -----------------------------------------------------------------------
+  // Submit (create / edit)
+  // -----------------------------------------------------------------------
+
   async function onSubmit(values: CreateTestCaseFormValues) {
     setServerError(null);
 
     try {
-      let parsedTurns = null;
-      if (turnsRaw.trim()) {
-        try {
-          parsedTurns = JSON.parse(turnsRaw);
-        } catch (e) {
-          setServerError('Invalid JSON in turns field');
-          return;
-        }
-      }
-
       const payload = {
         ...values,
-        turns: parsedTurns,
+        turns: mode === 'multi' && turns.length > 0 ? turns : null,
+        // In multi-turn mode, use the first user message as the question fallback
+        question:
+          mode === 'multi'
+            ? (turns.find((t) => t.role === 'user')?.content ?? values.question ?? '')
+            : (values.question ?? ''),
         precondition: values.precondition ? JSON.parse(values.precondition) : null,
         metadata: values.metadata ? JSON.parse(values.metadata) : null,
       };
@@ -289,52 +357,183 @@ export function TestCaseEditor({
               </div>
             )}
 
-            {/* Question */}
-            <div className="space-y-2">
-              <label
-                htmlFor="tc-question"
-                className="text-sm font-medium leading-none text-foreground"
-              >
-                {t('fieldQuestion')} <span className="text-destructive">*</span>
-              </label>
-              <textarea
-                id="tc-question"
-                disabled={isSubmitting || isReadOnly}
-                placeholder={t('fieldQuestionPlaceholder')}
+            {/* Mode toggle: Single-turn vs Multi-turn */}
+            <div className="flex gap-1 rounded-lg border bg-muted/30 p-1">
+              <button
+                type="button"
+                onClick={() => setMode('single')}
+                disabled={isReadOnly}
                 className={cn(
-                  textareaClassName,
-                  errors.question &&
-                    'border-destructive focus-visible:ring-destructive',
+                  'flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                  mode === 'single'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground',
                 )}
-                {...register('question')}
-              />
-              {errors.question && (
-                <p className="text-sm text-destructive">
-                  {errors.question.message}
-                </p>
-              )}
+              >
+                {t('singleTurn')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('multi')}
+                disabled={isReadOnly}
+                className={cn(
+                  'flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                  mode === 'multi'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {t('multiTurn')}
+              </button>
             </div>
 
-            {/* Turns (JSON read-only fallback) */}
-            <div className="space-y-2">
-              <label
-                htmlFor="tc-turns"
-                className="text-sm font-medium leading-none text-foreground"
-              >
-                Multi-turn conversation (JSON array)
-              </label>
-              <textarea
-                id="tc-turns"
-                disabled={isSubmitting || isReadOnly}
-                value={turnsRaw}
-                onChange={(e) => setTurnsRaw(e.target.value)}
-                placeholder={'[\n  { "role": "user", "content": "hello" }\n]'}
-                className={cn(textareaClassName, 'font-mono text-xs')}
-              />
-              <p className="text-xs text-muted-foreground">
-                Leave empty to use single-turn Question.
-              </p>
-            </div>
+            {/* Single-turn: Question field */}
+            {mode === 'single' && (
+              <div className="space-y-2">
+                <label
+                  htmlFor="tc-question"
+                  className="text-sm font-medium leading-none text-foreground"
+                >
+                  {t('fieldQuestion')} <span className="text-destructive">*</span>
+                </label>
+                <textarea
+                  id="tc-question"
+                  disabled={isSubmitting || isReadOnly}
+                  placeholder={t('fieldQuestionPlaceholder')}
+                  className={cn(
+                    textareaClassName,
+                    errors.question &&
+                      'border-destructive focus-visible:ring-destructive',
+                  )}
+                  {...register('question')}
+                />
+                {errors.question && (
+                  <p className="text-sm text-destructive">
+                    {errors.question.message}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Multi-turn: Dynamic message array */}
+            {mode === 'multi' && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium leading-none text-foreground">
+                    {t('multiTurn')}
+                  </label>
+                  {!isReadOnly && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addTurn}
+                      disabled={isSubmitting}
+                      className="h-7 gap-1 text-xs"
+                    >
+                      <PlusIcon className="size-3.5" />
+                      {t('addMessage')}
+                    </Button>
+                  )}
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                  {t('turnsHint')}
+                </p>
+
+                {turns.length === 0 && (
+                  <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-8 text-center bg-muted/10">
+                    <p className="text-sm text-muted-foreground">
+                      {t('turnsEmpty')}
+                    </p>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  {turns.map((turn, index) => {
+                    const RoleIcon = ROLE_ICON[turn.role] ?? UserIcon;
+                    const colorClass = ROLE_COLORS[turn.role] ?? 'border-l-gray-400 bg-muted/10';
+
+                    return (
+                      <div
+                        key={index}
+                        className={cn(
+                          'rounded-lg border border-l-4 p-3 space-y-2 transition-colors',
+                          colorClass,
+                        )}
+                      >
+                        {/* Turn header: role selector + actions */}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <RoleIcon className="size-4 text-muted-foreground shrink-0" />
+                            <select
+                              value={turn.role}
+                              onChange={(e) => updateTurnRole(index, e.target.value)}
+                              disabled={isReadOnly || isSubmitting}
+                              className="h-7 rounded-md border border-input bg-background px-2 text-xs font-medium text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {ROLES.map((r) => (
+                                <option key={r} value={r}>
+                                  {t(`role${r.charAt(0).toUpperCase()}${r.slice(1)}` as 'roleUser' | 'roleAssistant' | 'roleSystem')}
+                                </option>
+                              ))}
+                            </select>
+                            <span className="text-xs text-muted-foreground font-mono">
+                              #{index + 1}
+                            </span>
+                          </div>
+
+                          {!isReadOnly && (
+                            <div className="flex items-center gap-0.5">
+                              <button
+                                type="button"
+                                onClick={() => moveTurn(index, 'up')}
+                                disabled={index === 0 || isSubmitting}
+                                className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:hover:bg-transparent"
+                                title={t('moveUp')}
+                              >
+                                <ArrowUpIcon className="size-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => moveTurn(index, 'down')}
+                                disabled={index === turns.length - 1 || isSubmitting}
+                                className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:hover:bg-transparent"
+                                title={t('moveDown')}
+                              >
+                                <ArrowDownIcon className="size-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => removeTurn(index)}
+                                disabled={isSubmitting}
+                                className="rounded p-1 text-muted-foreground transition-colors hover:text-destructive hover:bg-destructive/10"
+                                title={t('removeMessage')}
+                              >
+                                <TrashSimpleIcon className="size-3.5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Content textarea */}
+                        <textarea
+                          value={turn.content}
+                          onChange={(e) => updateTurnContent(index, e.target.value)}
+                          disabled={isReadOnly || isSubmitting}
+                          placeholder={t('messageContentPlaceholder')}
+                          rows={2}
+                          className={cn(
+                            textareaClassName,
+                            'min-h-[60px] text-sm',
+                          )}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Ground Truth */}
             <div className="space-y-2">
