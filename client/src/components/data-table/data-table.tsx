@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   type ColumnDef,
@@ -26,6 +27,9 @@ interface DataTableProps<TData, TValue> {
   emptyMessage?: string;
   emptyAction?: React.ReactNode;
   onRowClick?: (row: TData) => void;
+  enableRowSelection?: boolean;
+  selectedRows?: Set<string>;
+  onSelectionChange?: (selected: Set<string>) => void;
 }
 
 function getColumnKey<TData, TValue>(
@@ -77,6 +81,7 @@ function makeCellContext<TData, TValue>(
   rowIndex: number,
   column: ColumnDef<TData, TValue>,
   columnIndex: number,
+  isSelected: boolean,
 ): CellContext<TData, TValue> {
   const columnId = getColumnKey(column, columnIndex);
   const value = getColumnValue(row, column);
@@ -85,14 +90,14 @@ function makeCellContext<TData, TValue>(
     cell: {
       id: `${rowIndex}_${columnId}`,
       column: { id: columnId, columnDef: column, getSize: () => getColumnSize(column) ?? 150 },
-      row: { id: String(rowIndex), original: row, getIsSelected: () => false },
+      row: { id: String(rowIndex), original: row, getIsSelected: () => isSelected },
       getValue: () => value,
       renderValue: () => value,
     },
     column: { id: columnId, columnDef: column, getSize: () => getColumnSize(column) ?? 150 },
     getValue: () => value,
     renderValue: () => value,
-    row: { id: String(rowIndex), original: row, getIsSelected: () => false },
+    row: { id: String(rowIndex), original: row, getIsSelected: () => isSelected },
     table: {},
   } as unknown as CellContext<TData, TValue>;
 }
@@ -118,15 +123,80 @@ export function DataTable<TData, TValue>({
   emptyMessage,
   emptyAction,
   onRowClick,
+  enableRowSelection = false,
+  selectedRows,
+  onSelectionChange,
 }: DataTableProps<TData, TValue>) {
   const t = useTranslations('table');
+
+  const effectiveColumns = useMemo(() => {
+    if (!enableRowSelection) return columns;
+
+    const selectColumn: ColumnDef<TData, TValue> = {
+      id: '_select',
+      size: 44,
+      header: () => {
+        const allSelected =
+          data.length > 0 &&
+          data.every((row, i) => {
+            const key = getRowKey(row, i);
+            return selectedRows?.has(key);
+          });
+        return (
+          <input
+            type="checkbox"
+            checked={allSelected}
+            onChange={(e) => {
+              if (!onSelectionChange) return;
+              if (e.target.checked) {
+                const all = new Set<string>(
+                  data.map((r, i) => getRowKey(r, i)),
+                );
+                onSelectionChange(all);
+              } else {
+                onSelectionChange(new Set());
+              }
+            }}
+            aria-label="Select all rows"
+            className="size-4 rounded border-input accent-primary"
+          />
+        );
+      },
+      cell: ({ row }) => {
+        const key = getRowKey(row.original, 0);
+        const isSelected = selectedRows?.has(key) ?? false;
+        return (
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={(e) => {
+              e.stopPropagation();
+              if (!onSelectionChange || !selectedRows) return;
+              const next = new Set(selectedRows);
+              if (e.target.checked) {
+                next.add(key);
+              } else {
+                next.delete(key);
+              }
+              onSelectionChange(next);
+            }}
+            onClick={(e) => e.stopPropagation()}
+            aria-label={`Select row ${key}`}
+            className="size-4 rounded border-input accent-primary"
+          />
+        );
+      },
+    };
+
+    return [selectColumn, ...columns];
+  }, [columns, enableRowSelection, data, selectedRows, onSelectionChange]);
 
   return (
     <div className="overflow-x-auto rounded-md border">
       <table className="w-full caption-bottom text-sm">
         <thead className="border-b bg-muted/50">
           <tr>
-            {columns.map((column, columnIndex) => {
+            {effectiveColumns.map((column, columnIndex) => {
               const columnSize = getColumnSize(column);
               const columnKey = getColumnKey(column, columnIndex);
 
@@ -148,7 +218,7 @@ export function DataTable<TData, TValue>({
         <tbody className="divide-y">
           {loading ? (
             <SkeletonTableRows
-              columns={columns.length}
+              columns={effectiveColumns.length}
               count={pageSize}
             />
           ) : data.length > 0 ? (
@@ -162,20 +232,22 @@ export function DataTable<TData, TValue>({
                   key={getRowKey(row, rowIndex)}
                   className={cn(
                     'transition-colors hover:bg-muted/50',
-                    onRowClick && 'cursor-pointer'
+                    onRowClick && 'cursor-pointer',
+                    selectedRows?.has(getRowKey(row, rowIndex)) && 'bg-primary/5',
                   )}
                   onClick={handleRowClick}
                 >
-                  {columns.map((column, columnIndex) => {
+                  {effectiveColumns.map((column, columnIndex) => {
                     const columnKey = getColumnKey(column, columnIndex);
                     const value = getColumnValue(row, column);
+                    const rowSelected = selectedRows?.has(getRowKey(row, rowIndex)) ?? false;
 
                     return (
                       <td key={columnKey} className="px-4 py-3 align-middle">
                         {column.cell
                           ? flexRender(
                               column.cell,
-                              makeCellContext(row, rowIndex, column, columnIndex),
+                              makeCellContext(row, rowIndex, column, columnIndex, rowSelected),
                             )
                           : String(value ?? '')}
                       </td>
@@ -186,7 +258,7 @@ export function DataTable<TData, TValue>({
             })
           ) : (
             <tr>
-              <td colSpan={columns.length} className="h-48">
+              <td colSpan={effectiveColumns.length} className="h-48">
                 <EmptyState title={emptyMessage ?? t('noData')} action={emptyAction} />
               </td>
             </tr>

@@ -3,9 +3,9 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
-import { FunnelIcon, SortAscendingIcon, CaretDownIcon } from '@phosphor-icons/react';
+import { FunnelIcon, SortAscendingIcon, CaretDownIcon, CheckIcon, XIcon } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { getCriteria } from '@/lib/utils/criteria';
@@ -14,6 +14,8 @@ import { PageShell } from '@/components/layout/page-shell';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
 import { ResultDetailPanel } from '@/components/panels/result-detail-panel';
 import { apiClient } from '@/lib/api/client';
 import type { PageResponse, EvaluationResultRow } from '@/lib/api/types';
@@ -108,6 +110,36 @@ export default function ResultsPage() {
   const [qcFilter, setQcFilter] = useState('ALL');
   const [sortBy, setSortBy] = useState('createdAt,asc');
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+
+  const queryClient = useQueryClient();
+
+  const quickReviewMutation = useMutation({
+    mutationFn: ({ resultPublicId, qcStatus }: { resultPublicId: string; qcStatus: 'PASS' | 'FAIL' }) =>
+      apiClient.put(
+        `/api/v1/evaluation-results/${resultPublicId}/review-decision`,
+        { qcStatus },
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['evaluation-results'] });
+    },
+  });
+
+  const bulkReviewMutation = useMutation({
+    mutationFn: ({ status, note }: { status: 'PASS' | 'FAIL'; note?: string }) =>
+      apiClient.put(
+        `/api/v1/evaluation-runs/${runId}/bulk-review`,
+        {
+          resultIds: Array.from(selectedRows),
+          status,
+          note: note || undefined,
+        },
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['evaluation-results'] });
+      setSelectedRows(new Set());
+    },
+  });
 
   // Build query params
   const queryParams = useMemo(() => {
@@ -225,8 +257,61 @@ export default function ResultsPage() {
           <StatusBadge status={row.original.qcStatus} size="sm" />
         ),
       },
+      {
+        id: 'actions',
+        header: '',
+        size: 100,
+        cell: ({ row }) => {
+          const result = row.original;
+          const isReviewed = result.qcStatus !== 'NOT_REVIEWED';
+          const isPending = quickReviewMutation.isPending;
+
+          if (isReviewed) {
+            return (
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                <StatusBadge status={result.qcStatus} size="sm" />
+              </span>
+            );
+          }
+
+          return (
+            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => quickReviewMutation.mutate({ resultPublicId: result.publicId, qcStatus: 'PASS' })}
+                      disabled={isPending}
+                      className="inline-flex items-center justify-center rounded-md p-1.5 text-green-600 hover:bg-green-100 dark:hover:bg-green-950 transition-colors disabled:opacity-50"
+                      aria-label={`Mark ${result.publicId} as PASS`}
+                    >
+                      <CheckIcon weight="bold" className="size-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>{tDetail('quickPass')}</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => quickReviewMutation.mutate({ resultPublicId: result.publicId, qcStatus: 'FAIL' })}
+                      disabled={isPending}
+                      className="inline-flex items-center justify-center rounded-md p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-950 transition-colors disabled:opacity-50"
+                      aria-label={`Mark ${result.publicId} as FAIL`}
+                    >
+                      <XIcon weight="bold" className="size-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>{tDetail('quickFail')}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          );
+        },
+      },
     ],
-    [tDetail, tCommon],
+    [tDetail, tCommon, quickReviewMutation],
   );
 
   const handleRowClick = (row: EvaluationResultRow) => {
@@ -255,6 +340,7 @@ export default function ResultsPage() {
               onChange={(e) => {
                 setJudgeFilter(e.target.value);
                 setPage(0);
+                setSelectedRows(new Set());
               }}
               className="h-9 w-[140px] appearance-none cursor-pointer rounded-md border border-input bg-background pl-8 pr-8 text-sm outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
             >
@@ -281,6 +367,7 @@ export default function ResultsPage() {
               onChange={(e) => {
                 setQcFilter(e.target.value);
                 setPage(0);
+                setSelectedRows(new Set());
               }}
               className="h-9 w-[160px] appearance-none cursor-pointer rounded-md border border-input bg-background pl-8 pr-8 text-sm outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
             >
@@ -309,6 +396,7 @@ export default function ResultsPage() {
               onChange={(e) => {
                 setSortBy(e.target.value);
                 setPage(0);
+                setSelectedRows(new Set());
               }}
               className="h-9 w-[180px] appearance-none cursor-pointer rounded-md border border-input bg-background pl-8 pr-8 text-sm outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
             >
@@ -324,6 +412,49 @@ export default function ResultsPage() {
         </div>
       </div>
 
+      {/* Bulk Action Bar */}
+      {selectedRows.size > 0 && (
+        <div
+          className="flex items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3 shadow-sm"
+          role="toolbar"
+          aria-label="Bulk actions"
+          aria-live="polite"
+        >
+          <span className="text-sm font-medium">
+            {selectedRows.size} {t('selected')}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => bulkReviewMutation.mutate({ status: 'PASS' })}
+              disabled={bulkReviewMutation.isPending}
+              className="text-green-600 border-green-200 hover:bg-green-50 dark:border-green-800 dark:hover:bg-green-950"
+            >
+              <CheckIcon weight="bold" className="mr-1 size-4" />
+              Bulk PASS
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => bulkReviewMutation.mutate({ status: 'FAIL' })}
+              disabled={bulkReviewMutation.isPending}
+              className="text-red-600 border-red-200 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-950"
+            >
+              <XIcon weight="bold" className="mr-1 size-4" />
+              Bulk FAIL
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setSelectedRows(new Set())}
+            >
+              {tCommon('cancel')}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       <DataTable
         columns={columns}
@@ -331,10 +462,16 @@ export default function ResultsPage() {
         totalItems={totalItems}
         pageIndex={page}
         pageSize={PAGE_SIZE}
-        onPaginationChange={(nextPage) => setPage(nextPage)}
+        onPaginationChange={(nextPage) => {
+          setPage(nextPage);
+          setSelectedRows(new Set());
+        }}
         loading={isLoading}
         onRowClick={handleRowClick}
         emptyMessage={t('noEvaluations')}
+        enableRowSelection
+        selectedRows={selectedRows}
+        onSelectionChange={setSelectedRows}
       />
 
       {totalItems > 0 && (

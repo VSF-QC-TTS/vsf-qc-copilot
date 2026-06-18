@@ -872,7 +872,8 @@
       "emptyRubric": "No published rubrics available.",
       "emptyConnector": "No API connectors available.",
       "emptyJudgeModel": "No judge models available."
-    }
+    },
+    "selected": "selected"
   },
   "judgeModels": {
     "title": "Judge Models",
@@ -934,7 +935,9 @@
     "noCriteria": "No criteria details are available.",
     "prevResult": "Previous",
     "nextResult": "Next",
-    "keyboardNav": "to navigate"
+    "keyboardNav": "to navigate",
+    "quickPass": "Quick Pass",
+    "quickFail": "Quick Fail"
   },
   "exports": {
     "title": "Export",

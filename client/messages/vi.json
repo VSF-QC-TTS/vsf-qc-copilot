@@ -866,7 +866,8 @@
       "emptyRubric": "Chưa có tiêu chí nào được xuất bản.",
       "emptyConnector": "Dự án chưa có kết nối API nào.",
       "emptyJudgeModel": "Dự án chưa có model chấm nào."
-    }
+    },
+    "selected": "đã chọn"
   },
   "judgeModels": {
     "title": "Model chấm",
@@ -928,7 +929,9 @@
     "noCriteria": "Chưa có chi tiết tiêu chí.",
     "prevResult": "Trước",
     "nextResult": "Sau",
-    "keyboardNav": "để điều hướng"
+    "keyboardNav": "để điều hướng",
+    "quickPass": "Đánh giá Đạt nhanh",
+    "quickFail": "Đánh giá Lỗi nhanh"
   },
   "exports": {
     "title": "Xuất file",
