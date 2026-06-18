@@ -142,9 +142,9 @@ export function AuthGuard({ children }: AuthGuardProps) {
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <div className="flex justify-between w-40 text-[10px] text-muted-foreground font-mono">
+            <div className="flex justify-between w-40 text-xs font-medium text-muted-foreground">
               <span>{t('loading')}</span>
-              <span>{Math.round(progress)}%</span>
+              <span className="font-mono text-[10px] mt-0.5">{Math.round(progress)}%</span>
             </div>
           </div>
         </div>
