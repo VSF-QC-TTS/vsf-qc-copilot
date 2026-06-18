@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
-import { PasswordInput } from "@/components/ui/password-input";
+import { FloatingPasswordInput } from "@/components/ui/floating-input";
 import { cn } from "@/lib/utils";
 import { resetPassword } from "@/lib/api/auth";
 import { getErrorMessageKey } from "@/lib/utils/error-messages";
@@ -17,8 +17,6 @@ import {
   type ResetPasswordFormValues,
 } from "@/lib/validations/auth";
 
-const inputClassName =
-  "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
 export default function ResetPasswordPage() {
   return (
@@ -121,19 +119,16 @@ function ResetPasswordContent() {
         )}
 
         <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="newPassword"
-            className="text-sm font-medium leading-none text-foreground"
-          >
-            {t("newPasswordLabel")}
-          </label>
-          <PasswordInput
+          <FloatingPasswordInput
             id="newPassword"
+            label={t("newPasswordLabel")}
             autoComplete="new-password"
             disabled={isLoading}
             showPasswordLabel={t("showPassword")}
             hidePasswordLabel={t("hidePassword")}
-            className={cn(inputClassName)}
+            className={cn(
+              errors.newPassword && "border-destructive focus-visible:ring-destructive/20 focus-visible:border-destructive"
+            )}
             {...register("newPassword")}
           />
           {errors.newPassword && (
@@ -144,19 +139,16 @@ function ResetPasswordContent() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="confirmPassword"
-            className="text-sm font-medium leading-none text-foreground"
-          >
-            {t("confirmPasswordLabel")}
-          </label>
-          <PasswordInput
+          <FloatingPasswordInput
             id="confirmPassword"
+            label={t("confirmPasswordLabel")}
             autoComplete="new-password"
             disabled={isLoading}
             showPasswordLabel={t("showPassword")}
             hidePasswordLabel={t("hidePassword")}
-            className={cn(inputClassName)}
+            className={cn(
+              errors.confirmPassword && "border-destructive focus-visible:ring-destructive/20 focus-visible:border-destructive"
+            )}
             {...register("confirmPassword")}
           />
           {errors.confirmPassword && (

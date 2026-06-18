@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
+import { FloatingInput } from '@/components/ui/floating-input';
 import { cn } from '@/lib/utils';
 import { forgotPassword } from '@/lib/api/auth';
 import {
@@ -13,8 +14,6 @@ import {
   type ForgotPasswordFormValues,
 } from '@/lib/validations/auth';
 
-const inputClassName =
-  "flex h-10 w-full rounded-lg border border-border/80 bg-background/50 px-3 py-2 text-sm transition-all duration-200 placeholder:text-muted-foreground hover:border-primary/30 focus-visible:border-primary/50 focus-visible:bg-background focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-50 shadow-xs";
 
 export default function ForgotPasswordPage() {
   const t = useTranslations('auth');
@@ -87,20 +86,13 @@ export default function ForgotPasswordPage() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="space-y-1.5">
-          <label
-            htmlFor="email"
-            className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/90"
-          >
-            {t('emailLabel')}
-          </label>
-          <input
+          <FloatingInput
             id="email"
             type="email"
-            placeholder={t('emailPlaceholder')}
+            label={t('emailLabel')}
             autoComplete="email"
             disabled={isLoading}
             className={cn(
-              inputClassName,
               errors.email &&
                 "border-destructive focus-visible:ring-destructive/20 focus-visible:border-destructive",
             )}
