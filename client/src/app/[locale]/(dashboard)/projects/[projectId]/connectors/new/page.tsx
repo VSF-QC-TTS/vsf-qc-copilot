@@ -167,10 +167,6 @@ export default function CreateConnectorPage() {
                   {t('rawCurl')}
                 </label>
               </div>
-              <p className="text-[13px] text-muted-foreground flex items-start gap-2 rounded-md border bg-blue-50/50 p-3 dark:bg-blue-950/20 dark:border-blue-900/30">
-                <InfoIcon className="mt-0.5 size-4 shrink-0 text-blue-500" weight="fill" />
-                <span>{t('curl.helpPlaceholder')}</span>
-              </p>
               <textarea
                 id="qc-rawCurl"
                 disabled={isSubmitting}
