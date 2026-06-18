@@ -19,14 +19,12 @@ import me.nghlong3004.vqc.api.rubric.request.CreateRubricRequest;
 import me.nghlong3004.vqc.api.rubric.request.CreateRubricWithVersionRequest;
 import me.nghlong3004.vqc.api.rubric.request.GenerateRubricPreviewRequest;
 import me.nghlong3004.vqc.api.rubric.request.UpdateRubricRequest;
-import me.nghlong3004.vqc.api.rubric.response.GenerateRubricPreviewResponse;
 import me.nghlong3004.vqc.api.rubric.response.RubricListItemResponse;
 import me.nghlong3004.vqc.api.rubric.response.RubricPageResponse;
 import me.nghlong3004.vqc.api.rubric.response.RubricResponse;
 import me.nghlong3004.vqc.api.rubric.response.RubricVersionResponse;
 import me.nghlong3004.vqc.api.rubric.request.CreateRubricCriterionRequest;
 import me.nghlong3004.vqc.api.rubric.service.RubricService;
-import me.nghlong3004.vqc.api.rubric.service.RubricGenerationService;
 import me.nghlong3004.vqc.api.rubric.service.RubricWorkflowService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,14 +61,13 @@ class RubricControllerTest {
   void resetTestDoubles() {
     RecordingRubricService.reset();
     RecordingRubricWorkflowService.reset();
-    RecordingRubricGenerationService.reset();
   }
 
   @Test
-  void generateRubricPreviewReturnsEditablePreview() throws Exception {
+  void generateAndCreateRubricReturnsDraftVersion() throws Exception {
     mockMvc
         .perform(
-            post("/api/v1/rubrics/generate-preview")
+            post("/api/v1/rubrics/generate")
                 .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
@@ -81,14 +78,51 @@ class RubricControllerTest {
                       "domainContext": "Vietnamese healthcare chatbot"
                     }
                     """))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.name").value("Healthcare chatbot"))
-        .andExpect(jsonPath("$.content").value("Judge medical answer quality."))
-        .andExpect(jsonPath("$.criteria[0].metricKey").value("correctness"));
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.publicId").value("5cfb4c51-3ac4-44bd-93b4-8eb4e3f46f3a"))
+        .andExpect(jsonPath("$.rubricPublicId").value("3c5582c5-96d8-40e4-9aa1-168f6d27c9dc"))
+        .andExpect(jsonPath("$.rubricName").value("Healthcare chatbot"))
+        .andExpect(jsonPath("$.versionNumber").value(1));
 
-    assertThat(RecordingRubricGenerationService.request.evaluationGoal())
+    assertThat(RecordingRubricWorkflowService.generateRequest.evaluationGoal())
         .isEqualTo("Check medical answer quality");
-    assertThat(RecordingRubricGenerationService.username).isEqualTo("qc.demo@example.com");
+    assertThat(RecordingRubricWorkflowService.username).isEqualTo("qc.demo@example.com");
+  }
+
+  @Test
+  void generateAndCreateRubricValidatesName() throws Exception {
+    mockMvc
+        .perform(
+            post("/api/v1/rubrics/generate")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "name": "",
+                      "evaluationGoal": "Check quality"
+                    }
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.errors[*].field", hasItem("name")));
+  }
+
+  @Test
+  void generateAndCreateRubricValidatesEvaluationGoal() throws Exception {
+    mockMvc
+        .perform(
+            post("/api/v1/rubrics/generate")
+                .principal(new TestingAuthenticationToken("qc.demo@example.com", null))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "name": "Test Rubric",
+                      "evaluationGoal": ""
+                    }
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.errors[*].field", hasItem("evaluationGoal")));
   }
 
   @Test
@@ -242,49 +276,12 @@ class RubricControllerTest {
       return new RecordingRubricWorkflowService();
     }
 
-    @Bean
-    RubricGenerationService rubricGenerationService() {
-      return new RecordingRubricGenerationService();
-    }
-  }
-
-  static class RecordingRubricGenerationService implements RubricGenerationService {
-
-    static GenerateRubricPreviewRequest request;
-    static String username;
-
-    @Override
-    public GenerateRubricPreviewResponse generatePreview(
-        GenerateRubricPreviewRequest request, String username) {
-      RecordingRubricGenerationService.request = request;
-      RecordingRubricGenerationService.username = username;
-      return new GenerateRubricPreviewResponse(
-          request.name(),
-          "AI generated rubric.",
-          "Judge medical answer quality.",
-          "{\"type\":\"object\"}",
-          List.of(
-              new CreateRubricCriterionRequest(
-                  "Correctness",
-                  "Answer matches expected facts.",
-                  50,
-                  "Check factual correctness.",
-                  "Accurate and complete.",
-                  "Incorrect or unsupported.",
-                  "correctness",
-                  false,
-                  0)));
-    }
-
-    static void reset() {
-      request = null;
-      username = null;
-    }
   }
 
   static class RecordingRubricWorkflowService implements RubricWorkflowService {
 
     static CreateRubricWithVersionRequest createRequest;
+    static GenerateRubricPreviewRequest generateRequest;
     static String username;
 
     @Override
@@ -292,14 +289,27 @@ class RubricControllerTest {
         CreateRubricWithVersionRequest request, String username) {
       RecordingRubricWorkflowService.createRequest = request;
       RecordingRubricWorkflowService.username = username;
+      return versionResponse(request.name(), request.content(), request.outputSchemaJson());
+    }
+
+    @Override
+    public RubricVersionResponse generateAndCreateRubric(
+        GenerateRubricPreviewRequest request, String username) {
+      RecordingRubricWorkflowService.generateRequest = request;
+      RecordingRubricWorkflowService.username = username;
+      return versionResponse(request.name(), "AI-generated content", null);
+    }
+
+    private static RubricVersionResponse versionResponse(
+        String name, String content, String outputSchemaJson) {
       return new RubricVersionResponse(
           UUID.fromString("5cfb4c51-3ac4-44bd-93b4-8eb4e3f46f3a"),
           UUID.fromString("3c5582c5-96d8-40e4-9aa1-168f6d27c9dc"),
-          request.name(),
+          name,
           1,
           me.nghlong3004.vqc.api.rubric.enums.RubricVersionStatus.DRAFT,
-          request.content(),
-          request.outputSchemaJson(),
+          content,
+          outputSchemaJson,
           0,
           OffsetDateTime.parse("2026-06-08T10:30:00Z"),
           null,
@@ -308,6 +318,7 @@ class RubricControllerTest {
 
     static void reset() {
       createRequest = null;
+      generateRequest = null;
       username = null;
     }
   }
