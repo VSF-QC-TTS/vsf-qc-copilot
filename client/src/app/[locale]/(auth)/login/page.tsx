@@ -176,6 +176,7 @@ export default function LoginPage() {
             id="email"
             type="email"
             autoComplete="email"
+            placeholder={t("emailPlaceholder")}
             disabled={isSubmitting}
             className={cn(
               inputClassName,
@@ -200,6 +201,7 @@ export default function LoginPage() {
           <PasswordInput
             id="password"
             autoComplete="current-password"
+            placeholder={t("passwordPlaceholder")}
             disabled={isSubmitting}
             showPasswordLabel={t("showPassword")}
             hidePasswordLabel={t("hidePassword")}
