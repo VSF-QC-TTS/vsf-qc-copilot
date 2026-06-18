@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   PlusIcon,
@@ -110,6 +110,7 @@ function ProjectDetailSkeleton() {
 // Page component
 // ---------------------------------------------------------------------------
 export default function ProjectDetailPage() {
+  const locale = useLocale();
   const t = useTranslations('projects');
   const tEval = useTranslations('evaluations');
   const tCommon = useTranslations('common');
@@ -306,7 +307,7 @@ export default function ProjectDetailPage() {
               {t('columns.createdAt')}:
             </span>{' '}
             <span className="font-medium ml-1">
-              {new Date(project.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+              {new Date(project.createdAt).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' })}
             </span>
           </div>
           <div>
@@ -314,7 +315,7 @@ export default function ProjectDetailPage() {
               {t('columns.updatedAt')}:
             </span>{' '}
             <span className="font-medium ml-1">
-              {new Date(project.updatedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+              {new Date(project.updatedAt).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' })}
             </span>
           </div>
         </div>
@@ -526,7 +527,7 @@ export default function ProjectDetailPage() {
                     <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 w-full sm:w-auto shrink-0 mt-1 sm:mt-0">
                       <StatusBadge status={run.status} size="sm" />
                       <span className="text-xs text-muted-foreground">
-                        {new Date(run.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                        {new Date(run.createdAt).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' })}
                       </span>
                     </div>
                   </Link>

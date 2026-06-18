@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   TableIcon,
@@ -44,12 +44,14 @@ const CriteriaBarChart = dynamic(() => import('@/components/evaluations/criteria
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
+function formatDateTime(iso: string, locale: string): string {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return d.toLocaleDateString(locale, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-    hour: '2-digit',
+  }) + ' ' + d.toLocaleTimeString(locale, {
     minute: '2-digit',
   });
 }
@@ -82,9 +84,10 @@ const itemVariants = {
 // Page component
 // ---------------------------------------------------------------------------
 
-export default function RunDetailPage() {
+export default function RunProgressPage() {
   const t = useTranslations('evaluations');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
   const router = useRouter();
   const queryClient = useQueryClient();
   const params = useParams();
@@ -415,7 +418,7 @@ export default function RunDetailPage() {
                       <div className="flex-1 space-y-0.5">
                         <p className="text-sm text-foreground">{renderEventMessage(evt)}</p>
                         <p className="text-xs text-muted-foreground">
-                          {formatDateTime(evt.createdAt)}
+                          {formatDateTime(evt.createdAt, locale)}
                         </p>
                       </div>
                       <StatusBadge status={evt.eventType} size="sm" />

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCircleIcon, ArchiveIcon } from '@phosphor-icons/react';
 import { motion } from 'motion/react';
@@ -25,8 +25,9 @@ import { Skeleton, SkeletonText } from '@/components/feedback/loading-skeleton';
 // Date formatter
 // ---------------------------------------------------------------------------
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
+function formatDate(iso: string, locale: string): string {
+  if (!iso) return '-';
+  return new Date(iso).toLocaleDateString(locale, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -88,6 +89,7 @@ function DatasetDetailSkeleton() {
 export default function DatasetDetailPage() {
   const t = useTranslations('datasets');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
   const params = useParams();
   const queryClient = useQueryClient();
   const projectId = params.projectId as string;
@@ -242,13 +244,13 @@ export default function DatasetDetailPage() {
                 <span className="font-medium text-foreground">
                   {t('columns.createdAt')}:
                 </span>{' '}
-                {formatDate(dataset.createdAt)}
+                {formatDate(dataset.createdAt, locale)}
               </div>
               <div>
                 <span className="font-medium text-foreground">
                   {t('updatedAt')}:
                 </span>{' '}
-                {formatDate(dataset.updatedAt)}
+                {formatDate(dataset.updatedAt, locale)}
               </div>
             </div>
           </div>

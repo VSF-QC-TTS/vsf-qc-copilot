@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
 import { PlusIcon, PencilSimpleIcon, TrashIcon } from '@phosphor-icons/react';
@@ -45,8 +45,9 @@ const PAGE_SIZE = 10;
 // Date formatter
 // ---------------------------------------------------------------------------
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
+function formatDate(iso: string, locale: string): string {
+  if (!iso) return '-';
+  return new Date(iso).toLocaleDateString(locale, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -74,6 +75,7 @@ const itemVariants = {
 export default function DatasetsPage() {
   const t = useTranslations('datasets');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
   const router = useRouter();
   const params = useParams();
   const projectId = params.projectId as string;
@@ -152,7 +154,7 @@ export default function DatasetsPage() {
         size: 140,
         cell: ({ row }) => (
           <span className="text-muted-foreground">
-            {formatDate(row.original.createdAt)}
+            {formatDate(row.original.createdAt, locale)}
           </span>
         ),
       },

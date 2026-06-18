@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
 import { PlusIcon } from '@phosphor-icons/react';
@@ -50,8 +50,9 @@ const METHOD_COLORS: Record<string, string> = {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
+function formatDate(iso: string, locale: string): string {
+  if (!iso) return '-';
+  return new Date(iso).toLocaleDateString(locale, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -69,6 +70,7 @@ function truncateUrl(url: string, max = 50): string {
 export default function ConnectorsPage() {
   const t = useTranslations('connectors');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
   const router = useRouter();
   const params = useParams();
   const projectId = params.projectId as string;
@@ -149,12 +151,12 @@ export default function ConnectorsPage() {
         size: 140,
         cell: ({ row }) => (
           <span className="text-muted-foreground">
-            {formatDate(row.original.createdAt)}
+            {formatDate(row.original.createdAt, locale)}
           </span>
         ),
       },
     ],
-    [t],
+    [t, locale],
   );
 
   // Handlers
