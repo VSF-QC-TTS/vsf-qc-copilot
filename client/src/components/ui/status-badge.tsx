@@ -93,7 +93,7 @@ export function StatusBadge({
       data-slot="status-badge"
       {...(isRunning ? { role: "status", "aria-live": "polite" } : {})}
       className={cn(
-        "inline-flex items-center rounded-full font-medium select-none",
+        "inline-flex items-center rounded-full font-medium select-none whitespace-nowrap",
         size === "sm" ? "text-xs px-2 py-0.5" : "text-xs px-2.5 py-1",
         CATEGORY_CLASSES[category],
         isRunning && "animate-pulse",
