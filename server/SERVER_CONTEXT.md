@@ -131,6 +131,7 @@ Implemented API slices after auth:
   - Dataset/test case access is owner-scoped by authenticated username/email through `createdBy`.
   - Datasets support `DRAFT`, `APPROVED`, and `ARCHIVED`; approving requires 1-100 active test cases.
   - Test cases support `ACTIVE` and `INACTIVE`; `DELETE` hard-deletes a test case per current API contract.
+  - Test cases support both single-turn and multi-turn conversational patterns via the `turns` field.
   - Archived datasets reject test case create/update/delete.
 - Rubrics, rubric versions, and criteria:
   - Rubrics are now **user-scoped** (not project-scoped). `project_id` is nullable; `is_template` flag marks system templates.
@@ -197,6 +198,7 @@ Implemented API slices after auth:
   - `RedTeamPromptfooExecutor` uses the local pinned Promptfoo CLI: `redteam generate` writes `redteam.yaml`, then `redteam eval` writes `results.json`. It sets `PROMPTFOO_DISABLE_TELEMETRY=1`, `--no-share`, local config/log dirs, connector secret env vars, and judge provider env vars. This path does not require Promptfoo Cloud/UI login; app APIs still require the normal JWT auth.
 - QC review:
   - `PUT /api/v1/evaluation-results/{resultPublicId}/review-decision` upserts one review decision per evaluation result.
+  - `PUT /api/v1/evaluation-runs/{runPublicId}/bulk-review` applies a single QC status and optional note to multiple result IDs simultaneously.
   - `GET /api/v1/evaluation-results/{resultPublicId}/review-decision` returns the persisted review decision or a default `NOT_REVIEWED` response when absent.
   - `PATCH /api/v1/review-decisions/{reviewDecisionPublicId}` updates an existing review decision.
   - `QcStatus`: `NOT_REVIEWED`, `PASS`, `FAIL`, `NEED_FIX`, `IGNORED`; write APIs accept only writable statuses (`PASS`, `FAIL`, `NEED_FIX`, `IGNORED`).

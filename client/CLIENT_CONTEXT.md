@@ -72,10 +72,10 @@ The routing structure follows Next.js App Router localized paths: `client/src/ap
   - `projects/[projectId]/connectors/[connectorId]/page.tsx`: edit/delete connector and test-run panel.
   - `projects/[projectId]/connectors/new/page.tsx`: create connector (supports manual config or auto-creating from cURL).
   - `projects/[projectId]/datasets/page.tsx`: lists datasets (supports inline edit/delete).
-  - `projects/[projectId]/datasets/[datasetId]/page.tsx`: dataset detail containing test case table (supports manual edits, bulk import from Excel/CSV, and AI test case generation, as well as dataset edit/delete).
+  - `projects/[projectId]/datasets/[datasetId]/page.tsx`: dataset detail containing test case table (supports manual edits, bulk import from Excel/CSV, multi-turn chatbot test cases, and AI test case generation, as well as dataset edit/delete).
   - `projects/[projectId]/evaluations/page.tsx`: lists evaluation runs.
   - `projects/[projectId]/evaluations/[runId]/page.tsx`: details of an evaluation run including event streams/polling, status, metrics, and charts.
-  - `projects/[projectId]/evaluations/[runId]/results/page.tsx`: results list with data table, filtering, and inline QC review panel.
+  - `projects/[projectId]/evaluations/[runId]/results/page.tsx`: results list with data table, filtering, multi-select bulk review action bar, inline quick review buttons, and expandable side panel for detailed breakdown.
   - `projects/[projectId]/judge-models/page.tsx`: lists provider model configurations and connection testing (supports inline create/edit/delete via Dialog).
   - `rubrics/page.tsx`: lists independent/user-scoped rubrics.
   - `rubrics/[rubricId]/page.tsx`: rubric detail with draft and published versions list.
@@ -110,6 +110,7 @@ Async job handling:
 - **Streaming**: Hook `useEvaluationRunEventsStream` establishes custom `fetch`-based stream connection to `GET /api/v1/evaluation-runs/{runPublicId}/events/stream`.
   - Appends `Authorization: Bearer <access_token>` manually since native browser `EventSource` cannot set custom headers.
   - Automatically reconnects up to 2 times on errors before falling back.
+  - Progress updates are visually tracked using a fully functional `<Progress>` bar component in both SSE and polling-fallback modes.
 
 ## [CONVENTIONS] Frontend Guidelines
 
