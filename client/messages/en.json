@@ -924,6 +924,8 @@
     "judgeStatus": "AI Judge Result",
     "judgeScore": "Score",
     "qcStatus": "QC Status",
+    "latency": "Latency",
+    "latencyMs": "{value}ms",
     "criteriaBreakdown": "Criteria Breakdown",
     "showDetails": "Show details",
     "hideDetails": "Hide details",

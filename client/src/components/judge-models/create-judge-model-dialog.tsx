@@ -1,6 +1,8 @@
 'use client';
 
 import * as React from 'react';
+import { useForm, useWatch } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -8,6 +10,10 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api/client';
 import type { JudgeModelResponse, JudgeProvider } from '@/lib/api/types';
+import {
+  createJudgeModelSchema,
+  type CreateJudgeModelFormValues,
+} from '@/lib/validations/judge-model';
 
 // ---------------------------------------------------------------------------
 // Props & Types
@@ -19,16 +25,6 @@ interface JudgeModelDialogProps {
   projectId: string;
   initialData?: JudgeModelResponse | null;
 }
-
-type CreateJudgeModelPayload = {
-  name: string;
-  provider: JudgeProvider;
-  modelName: string;
-  baseUrl: string;
-  apiKey: string;
-  configJson: string;
-  active: boolean;
-};
 
 const PROVIDERS: JudgeProvider[] = [
   'GEMINI',
@@ -44,18 +40,6 @@ const DEFAULT_MODELS: Record<JudgeProvider, string> = {
   DEEPSEEK: 'deepseek-chat',
   CUSTOM: '',
 };
-
-function initialPayload(): CreateJudgeModelPayload {
-  return {
-    name: '',
-    provider: 'GEMINI',
-    modelName: DEFAULT_MODELS.GEMINI,
-    baseUrl: '',
-    apiKey: '',
-    configJson: '',
-    active: true,
-  };
-}
 
 // ---------------------------------------------------------------------------
 // Shared input styles
@@ -81,48 +65,86 @@ export function JudgeModelDialog({
   const tCommon = useTranslations('common');
   const queryClient = useQueryClient();
 
-  const [form, setForm] = React.useState<CreateJudgeModelPayload>(() =>
-    initialData
-      ? {
-          name: initialData.name,
-          provider: initialData.provider,
-          modelName: initialData.modelName,
-          baseUrl: initialData.baseUrl ?? '',
-          apiKey: '', // don't prefill masked api key
-          configJson: initialData.configJson ?? '',
-          active: initialData.active,
-        }
-      : initialPayload(),
-  );
-  
-  React.useEffect(() => {
-    if (open) {
-      const timer = setTimeout(() => {
-        setForm(
-          initialData
-            ? {
-                name: initialData.name,
-                provider: initialData.provider,
-                modelName: initialData.modelName,
-                baseUrl: initialData.baseUrl ?? '',
-                apiKey: '',
-                configJson: initialData.configJson ?? '',
-                active: initialData.active,
-              }
-            : initialPayload(),
-        );
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-  }, [open, initialData]);
-
-  const [advancedOpen, setAdvancedOpen] = React.useState(!!initialData?.baseUrl || !!initialData?.configJson);
+  const nameInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [advancedToggled, setAdvancedToggled] = React.useState(false);
   const [serverError, setServerError] = React.useState<string | null>(null);
 
+  const isEdit = !!initialData;
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    control,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<CreateJudgeModelFormValues>({
+    resolver: zodResolver(createJudgeModelSchema),
+    defaultValues: {
+      name: '',
+      provider: 'GEMINI',
+      modelName: DEFAULT_MODELS.GEMINI,
+      apiKey: '',
+      active: true,
+      baseUrl: '',
+      configJson: '',
+    },
+  });
+
+  // ---- Derive advanced section default from initialData ----
+  const shouldShowAdvanced = !!initialData?.baseUrl || !!initialData?.configJson;
+
+  // ---- Reset + autofocus on dialog open ----
+  React.useEffect(() => {
+    if (open) {
+      reset(
+        initialData
+          ? {
+              name: initialData.name,
+              provider: initialData.provider,
+              modelName: initialData.modelName,
+              baseUrl: initialData.baseUrl ?? '',
+              apiKey: '', // don't prefill masked api key
+              configJson: initialData.configJson ?? '',
+              active: initialData.active,
+            }
+          : {
+              name: '',
+              provider: 'GEMINI',
+              modelName: DEFAULT_MODELS.GEMINI,
+              apiKey: '',
+              active: true,
+              baseUrl: '',
+              configJson: '',
+            },
+      );
+      // Auto-focus name input after DOM settles
+      requestAnimationFrame(() => {
+        nameInputRef.current?.focus();
+      });
+    }
+  }, [open, initialData, reset]);
+
+  // ---- Auto-set default model name when provider changes ----
+  const provider = useWatch({ control, name: 'provider' });
+  React.useEffect(() => {
+    const selectedProvider = provider as JudgeProvider;
+    if (selectedProvider && DEFAULT_MODELS[selectedProvider]) {
+      setValue('modelName', DEFAULT_MODELS[selectedProvider]);
+    }
+    if (selectedProvider !== 'CUSTOM') {
+      setValue('baseUrl', '');
+    }
+  }, [provider, setValue]);
+
+  // ---- Save mutation ----
   const saveMutation = useMutation({
-    mutationFn: (payload: CreateJudgeModelPayload) => {
+    mutationFn: async (payload: CreateJudgeModelFormValues) => {
       // If editing, omit empty apiKey unless it was changed
-      const body = initialData && !payload.apiKey ? { ...payload, apiKey: undefined } : payload;
+      const body =
+        initialData && !payload.apiKey
+          ? { ...payload, apiKey: undefined }
+          : payload;
       if (initialData) {
         return apiClient.patch<JudgeModelResponse>(
           `/api/v1/judge-models/${initialData.publicId}`,
@@ -160,13 +182,13 @@ export function JudgeModelDialog({
   const handleClose = React.useCallback(
     (nextOpen: boolean) => {
       if (!nextOpen) {
-        setForm(initialPayload());
+        reset();
         setServerError(null);
-        setAdvancedOpen(false);
+        setAdvancedToggled(false);
       }
       onOpenChange(nextOpen);
     },
-    [onOpenChange],
+    [onOpenChange, reset],
   );
 
   /* ---- Escape key ---- */
@@ -192,27 +214,22 @@ export function JudgeModelDialog({
     };
   }, [open]);
 
-  function updateField<K extends keyof CreateJudgeModelPayload>(
-    key: K,
-    value: CreateJudgeModelPayload[K],
-  ) {
-    setForm((current) => ({ ...current, [key]: value }));
-  }
-
-  function handleProviderChange(provider: JudgeProvider) {
-    setForm((current) => ({
-      ...current,
-      provider,
-      modelName: DEFAULT_MODELS[provider] || current.modelName,
-      baseUrl: provider === 'CUSTOM' ? current.baseUrl : '',
-    }));
-  }
-
-  function handleSubmit(event: React.SyntheticEvent) {
-    event.preventDefault();
+  /* ---- Form submit ---- */
+  function onSubmit(values: CreateJudgeModelFormValues) {
+    // Client-side: require apiKey on create
+    if (!isEdit && (!values.apiKey || values.apiKey.trim() === '')) {
+      // Manually set this since the schema allows optional for edit mode
+      setServerError(t('fields.apiKey') + ' is required');
+      return;
+    }
     setServerError(null);
-    saveMutation.mutate(form);
+    saveMutation.mutate(values);
   }
+
+  const isPending = isSubmitting || saveMutation.isPending;
+
+  // ---- Connect register to ref for auto-focus ----
+  const { ref: nameRegisterRef, ...nameRegisterRest } = register('name');
 
   if (!open) return null;
 
@@ -224,7 +241,7 @@ export function JudgeModelDialog({
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={() => !saveMutation.isPending && handleClose(false)}
+        onClick={() => !isPending && handleClose(false)}
         aria-hidden="true"
       />
 
@@ -245,7 +262,7 @@ export function JudgeModelDialog({
           {initialData ? t('editJudgeModel') : t('createJudgeModel')}
         </h2>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-4">
           {serverError && (
             <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {serverError}
@@ -253,123 +270,186 @@ export function JudgeModelDialog({
           )}
 
           <div className="grid gap-4 sm:grid-cols-2">
+            {/* Name */}
             <div className="space-y-2">
               <label htmlFor="judge-name" className="text-sm font-medium">
                 {t('fields.name')}
               </label>
               <input
                 id="judge-name"
-                required
-                disabled={saveMutation.isPending}
-                value={form.name}
-                onChange={(event) => updateField('name', event.target.value)}
-                className={inputClassName}
+                disabled={isPending}
+                className={cn(
+                  inputClassName,
+                  errors.name &&
+                    'border-destructive focus-visible:ring-destructive',
+                )}
+                ref={(el) => {
+                  nameRegisterRef(el);
+                  nameInputRef.current = el;
+                }}
+                {...nameRegisterRest}
               />
+              {errors.name && (
+                <p className="text-sm text-destructive">
+                  {errors.name.message}
+                </p>
+              )}
             </div>
 
+            {/* Provider */}
             <div className="space-y-2">
               <label htmlFor="judge-provider" className="text-sm font-medium">
                 {t('fields.provider')}
               </label>
               <select
                 id="judge-provider"
-                disabled={saveMutation.isPending}
-                value={form.provider}
-                onChange={(event) =>
-                  handleProviderChange(event.target.value as JudgeProvider)
-                }
-                className={inputClassName}
+                disabled={isPending}
+                className={cn(
+                  inputClassName,
+                  errors.provider &&
+                    'border-destructive focus-visible:ring-destructive',
+                )}
+                {...register('provider')}
               >
-                {PROVIDERS.map((provider) => (
-                  <option key={provider} value={provider}>
-                    {provider}
+                {PROVIDERS.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
                   </option>
                 ))}
               </select>
+              {errors.provider && (
+                <p className="text-sm text-destructive">
+                  {errors.provider.message}
+                </p>
+              )}
             </div>
 
+            {/* Model Name */}
             <div className="space-y-2">
-              <label htmlFor="judge-model-name" className="text-sm font-medium">
+              <label
+                htmlFor="judge-model-name"
+                className="text-sm font-medium"
+              >
                 {t('fields.modelName')}
               </label>
               <input
                 id="judge-model-name"
-                required
-                disabled={saveMutation.isPending}
-                value={form.modelName}
-                onChange={(event) => updateField('modelName', event.target.value)}
-                className={inputClassName}
+                disabled={isPending}
+                className={cn(
+                  inputClassName,
+                  errors.modelName &&
+                    'border-destructive focus-visible:ring-destructive',
+                )}
+                {...register('modelName')}
               />
+              {errors.modelName && (
+                <p className="text-sm text-destructive">
+                  {errors.modelName.message}
+                </p>
+              )}
             </div>
 
+            {/* API Key */}
             <div className="space-y-2">
               <label htmlFor="judge-api-key" className="text-sm font-medium">
                 {t('fields.apiKey')}
               </label>
               <input
                 id="judge-api-key"
-                required={!initialData}
                 type="password"
-                disabled={saveMutation.isPending}
-                value={form.apiKey}
-                onChange={(event) => updateField('apiKey', event.target.value)}
-                className={inputClassName}
-                placeholder={initialData ? t('leaveBlankToKeep') : undefined}
+                disabled={isPending}
+                placeholder={
+                  initialData ? t('leaveBlankToKeep') : undefined
+                }
+                className={cn(
+                  inputClassName,
+                  errors.apiKey &&
+                    'border-destructive focus-visible:ring-destructive',
+                )}
+                {...register('apiKey')}
               />
+              {errors.apiKey && (
+                <p className="text-sm text-destructive">
+                  {errors.apiKey.message}
+                </p>
+              )}
             </div>
 
+            {/* Active checkbox */}
             <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium">
               <input
                 type="checkbox"
-                disabled={saveMutation.isPending}
-                checked={form.active}
-                onChange={(event) => updateField('active', event.target.checked)}
+                disabled={isPending}
                 className="size-4 rounded border-input"
+                {...register('active')}
               />
               {t('fields.active')}
             </label>
 
+            {/* Advanced toggle */}
             <div className="sm:col-span-2">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setAdvancedOpen((current) => !current)}
+                onClick={() => setAdvancedToggled((current) => !current)}
               >
-                {advancedOpen ? t('hideAdvanced') : t('showAdvanced')}
+                {(shouldShowAdvanced || advancedToggled) ? t('hideAdvanced') : t('showAdvanced')}
               </Button>
             </div>
 
-            {advancedOpen && (
+            {(shouldShowAdvanced || advancedToggled) && (
               <>
+                {/* Base URL */}
                 <div className="space-y-2">
-                  <label htmlFor="judge-base-url" className="text-sm font-medium">
+                  <label
+                    htmlFor="judge-base-url"
+                    className="text-sm font-medium"
+                  >
                     {t('fields.baseUrl')}
                   </label>
                   <input
                     id="judge-base-url"
-                    disabled={saveMutation.isPending}
-                    value={form.baseUrl}
-                    onChange={(event) => updateField('baseUrl', event.target.value)}
-                    className={inputClassName}
+                    disabled={isPending}
                     placeholder="https://api.openai.com/v1"
+                    className={cn(
+                      inputClassName,
+                      errors.baseUrl &&
+                        'border-destructive focus-visible:ring-destructive',
+                    )}
+                    {...register('baseUrl')}
                   />
+                  {errors.baseUrl && (
+                    <p className="text-sm text-destructive">
+                      {errors.baseUrl.message}
+                    </p>
+                  )}
                 </div>
 
+                {/* Config JSON */}
                 <div className="space-y-2">
-                  <label htmlFor="judge-config-json" className="text-sm font-medium">
+                  <label
+                    htmlFor="judge-config-json"
+                    className="text-sm font-medium"
+                  >
                     {t('fields.configJson')}
                   </label>
                   <textarea
                     id="judge-config-json"
-                    disabled={saveMutation.isPending}
-                    value={form.configJson}
-                    onChange={(event) =>
-                      updateField('configJson', event.target.value)
-                    }
-                    className={textareaClassName}
-                    placeholder='{"temperature": 0}'
+                    disabled={isPending}
+                    placeholder={'{"temperature": 0}'}
+                    className={cn(
+                      textareaClassName,
+                      errors.configJson &&
+                        'border-destructive focus-visible:ring-destructive',
+                    )}
+                    {...register('configJson')}
                   />
+                  {errors.configJson && (
+                    <p className="text-sm text-destructive">
+                      {errors.configJson.message}
+                    </p>
+                  )}
                 </div>
               </>
             )}
@@ -379,13 +459,13 @@ export function JudgeModelDialog({
             <Button
               type="button"
               variant="outline"
-              disabled={saveMutation.isPending}
+              disabled={isPending}
               onClick={() => handleClose(false)}
             >
               {tCommon('cancel')}
             </Button>
-            <Button type="submit" disabled={saveMutation.isPending}>
-              {saveMutation.isPending ? tCommon('saving') : tCommon('save')}
+            <Button type="submit" disabled={isPending}>
+              {isPending ? tCommon('saving') : tCommon('save')}
             </Button>
           </div>
         </form>

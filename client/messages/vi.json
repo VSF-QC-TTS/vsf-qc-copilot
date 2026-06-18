@@ -918,6 +918,8 @@
     "judgeStatus": "Kết quả AI Judge",
     "judgeScore": "Điểm",
     "qcStatus": "Trạng thái QC",
+    "latency": "Độ trễ",
+    "latencyMs": "{value}ms",
     "criteriaBreakdown": "Chi tiết tiêu chí",
     "showDetails": "Xem chi tiết",
     "hideDetails": "Ẩn chi tiết",

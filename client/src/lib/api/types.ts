@@ -317,10 +317,17 @@ export type EvaluationResultRow = {
   precondition: string | null;
   groundTruth: string | null;
   actualAnswer: string | null;
-  judgeStatus: string | null;
+  judgeStatus: JudgeStatus | null;
   judgeScore: number | null;
+  latencyMs: number | null;
   criteriaResultsJson: string | null;
   criteriaResults?: CriterionResult[] | null;
-  qcStatus: string;
+  qcStatus: QcStatus;
   qcNote: string | null;
+};
+
+export type BulkReviewInput = {
+  resultIds: string[];
+  status: 'PASS' | 'FAIL';
+  note?: string;
 };

@@ -196,6 +196,22 @@ export default function ResultsPage() {
         },
       },
       {
+        accessorKey: 'latencyMs',
+        header: tDetail('latency'),
+        size: 90,
+        meta: { className: 'hidden md:table-cell' },
+        cell: ({ row }) => {
+          const ms = row.original.latencyMs;
+          return ms !== null && ms !== undefined ? (
+            <span className="text-muted-foreground tabular-nums text-xs">
+              {ms}ms
+            </span>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          );
+        },
+      },
+      {
         id: 'criteria',
         header: tDetail('criteriaBreakdown'),
         size: 190,

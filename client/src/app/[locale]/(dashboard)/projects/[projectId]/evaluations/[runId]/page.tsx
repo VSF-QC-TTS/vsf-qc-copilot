@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { PageShell } from '@/components/layout/page-shell';
 import { MetricCard } from '@/components/ui/metric-card';
+import { Progress } from '@/components/ui/progress';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useJobProgress } from '@/hooks/use-job-progress';
 import { useEvaluationRunEventsStream } from '@/hooks/use-evaluation-run-events-stream';
@@ -198,7 +199,7 @@ export default function RunDetailPage() {
       : polledEvents;
 
   // Poll job detail only as a fallback when the event stream cannot stay open.
-  const { job, isPolling } = useJobProgress(
+  const { job } = useJobProgress(
     isActive && eventStream.isFallbackRecommended ? (run?.jobPublicId ?? null) : null,
     {
       enabled: isActive && eventStream.isFallbackRecommended,
@@ -207,9 +208,9 @@ export default function RunDetailPage() {
     },
   );
 
-  const progressPercent =
+  const progressValue =
     job && job.progressTotal > 0
-      ? `${Math.round((job.progressCurrent / job.progressTotal) * 100)}%`
+      ? Math.round((job.progressCurrent / job.progressTotal) * 100)
       : null;
 
   const renderEventMessage = React.useCallback(
@@ -260,11 +261,6 @@ export default function RunDetailPage() {
           {/* Status */}
           <motion.div variants={itemVariants} className="flex items-center gap-3">
             {run && <StatusBadge status={run.status} />}
-            {isPolling && progressPercent && (
-              <span className="text-sm text-muted-foreground animate-pulse">
-                {progressPercent}
-              </span>
-            )}
             {isActive && eventStream.status === 'reconnecting' && (
               <span className="text-sm text-muted-foreground">
                 {t('streamReconnecting')}
@@ -276,6 +272,22 @@ export default function RunDetailPage() {
               </span>
             )}
           </motion.div>
+
+          {/* Progress Bar */}
+          {isActive && (
+            <motion.div variants={itemVariants} className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">{t('progress')}</span>
+                {progressValue !== null && (
+                  <span className="text-sm font-medium tabular-nums">{progressValue}%</span>
+                )}
+              </div>
+              <Progress
+                value={progressValue}
+                label={t('progress')}
+              />
+            </motion.div>
+          )}
 
           {/* Configuration Card */}
           {run && (

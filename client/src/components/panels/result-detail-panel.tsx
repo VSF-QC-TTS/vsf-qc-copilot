@@ -188,6 +188,11 @@ export function ResultDetailPanel({
                 {t('judgeScore')}: {result.judgeScore}
               </span>
             )}
+            {result.latencyMs !== null && result.latencyMs !== undefined && (
+              <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium tabular-nums">
+                {result.latencyMs}ms
+              </span>
+            )}
           </div>
 
           {/* Question / Turns */}

@@ -146,3 +146,12 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
+/*
+ * === Animations ===
+ */
+@keyframes progress-indeterminate {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(200%); }
+  100% { transform: translateX(-100%); }
+}
