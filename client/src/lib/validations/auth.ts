@@ -4,11 +4,11 @@ import { z } from "zod";
 export const loginSchema = z.object({
   email: z
     .string()
-    .min(1, "Email is required")
+    .min(1, 'required')
     .pipe(z.email("Invalid email address")),
   password: z
     .string()
-    .min(1, "Password is required"),
+    .min(1, 'required'),
 });
 
 export type LoginFormValues = z.infer<typeof loginSchema>;
@@ -18,12 +18,12 @@ export const registerSchema = z
   .object({
     email: z
       .string()
-      .min(1, "Email is required")
+      .min(1, 'required')
       .pipe(z.email("Invalid email address")),
     fullName: z
       .string()
-      .min(1, "Display name is required")
-      .max(100, "Display name is too long"),
+      .min(1, 'required')
+      .max(100),
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")
@@ -32,7 +32,7 @@ export const registerSchema = z
       .regex(/[0-9]/, "Password must contain a number"),
     confirmPassword: z
       .string()
-      .min(1, "Please confirm your password"),
+      .min(1, 'required'),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
@@ -45,7 +45,7 @@ export type RegisterFormValues = z.infer<typeof registerSchema>;
 export const forgotPasswordSchema = z.object({
   email: z
     .string()
-    .min(1, "Email is required")
+    .min(1, 'required')
     .pipe(z.email("Invalid email address")),
 });
 
@@ -62,7 +62,7 @@ export const resetPasswordSchema = z
       .regex(/[0-9]/, "Password must contain a number"),
     confirmPassword: z
       .string()
-      .min(1, "Please confirm your password"),
+      .min(1, 'required'),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: "Passwords do not match",

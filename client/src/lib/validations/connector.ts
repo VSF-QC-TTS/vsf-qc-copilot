@@ -14,8 +14,8 @@ export const RESPONSE_FORMATS = ['JSON', 'TEXT', 'SSE'] as const;
 // ---------------------------------------------------------------------------
 
 export const createConnectorSchema = z.object({
-  name: z.string().min(1, 'Connector name is required').max(200, 'Name too long'),
-  description: z.string().max(1000, 'Description too long').optional().or(z.literal('')),
+  name: z.string().min(1, 'required').max(200),
+  description: z.string().max(1000).optional().or(z.literal('')),
   protocol: z.string().optional().or(z.literal('')),
   method: z.enum(HTTP_METHODS, { message: 'HTTP method is required' }),
   baseUrl: z.url('Must be a valid URL'),
@@ -24,19 +24,19 @@ export const createConnectorSchema = z.object({
   bodyTemplate: z.string().optional().or(z.literal('')),
   bodyTemplateText: z.string().optional().or(z.literal('')),
   responseFormat: z.enum(RESPONSE_FORMATS).optional(),
-  responseSelector: z.string().trim().min(1, 'Response selector is required'),
+  responseSelector: z.string().trim().min(1, 'required'),
   authType: z.enum(AUTH_TYPES).optional(),
   timeoutSeconds: z.coerce
     .number()
     .int()
-    .min(1, 'Minimum 1 second')
-    .max(300, 'Maximum 300 seconds')
+    .min(1, 'required')
+    .max(300)
     .default(30),
   retryCount: z.coerce
     .number()
     .int()
     .min(0, 'Minimum 0')
-    .max(5, 'Maximum 5 retries')
+    .max(5)
     .default(0),
   active: z.boolean().default(true),
   isStreaming: z.boolean().default(false),
@@ -45,21 +45,21 @@ export const createConnectorSchema = z.object({
 export type CreateConnectorFormValues = z.input<typeof createConnectorSchema>;
 
 export const createConnectorFromCurlSchema = z.object({
-  name: z.string().min(1, 'Connector name is required').max(200, 'Name too long'),
-  rawCurl: z.string().min(1, 'cURL command is required'),
-  description: z.string().max(1000, 'Description too long').optional().or(z.literal('')),
+  name: z.string().min(1, 'required').max(200),
+  rawCurl: z.string().min(1, 'required'),
+  description: z.string().max(1000).optional().or(z.literal('')),
   responseSelector: z.string().trim().optional().or(z.literal('')),
   timeoutSeconds: z.coerce
     .number()
     .int()
-    .min(1, 'Minimum 1 second')
-    .max(300, 'Maximum 300 seconds')
+    .min(1, 'required')
+    .max(300)
     .default(60),
   retryCount: z.coerce
     .number()
     .int()
     .min(0, 'Minimum 0')
-    .max(5, 'Maximum 5 retries')
+    .max(5)
     .default(1),
 });
 
@@ -70,7 +70,7 @@ export type CreateConnectorFromCurlFormValues = z.input<typeof createConnectorFr
 // ---------------------------------------------------------------------------
 
 export const testRunSchema = z.object({
-  question: z.string().min(1, 'Question is required'),
+  question: z.string().min(1, 'required'),
   precondition: z.string().optional().or(z.literal('')),
   metadata: z.string().optional().or(z.literal('')),
 });

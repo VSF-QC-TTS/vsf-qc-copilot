@@ -1099,5 +1099,17 @@
       "errorDetail": "Server Error Details",
       "viewReport": "View Full Security Report"
     }
+  },
+  "zod": {
+    "required": "This field is required",
+    "invalidType": "Invalid data type",
+    "invalidEmail": "Invalid email address",
+    "invalidUrl": "Invalid URL",
+    "stringMin": "Minimum {min} characters required",
+    "stringMax": "Maximum {max} characters allowed",
+    "numberMin": "Value must be at least {min}",
+    "numberMax": "Value must be at most {max}",
+    "arrayMin": "Select at least {min} item(s)",
+    "arrayMax": "Select at most {max} item(s)"
   }
 }

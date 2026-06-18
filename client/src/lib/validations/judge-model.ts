@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 export const createJudgeModelSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(200),
-  provider: z.string().min(1, 'Provider is required'),
-  modelName: z.string().min(1, 'Model name is required').max(200),
+  name: z.string().min(1, 'required').max(200),
+  provider: z.string().min(1, 'required'),
+  modelName: z.string().min(1, 'required').max(200),
   apiKey: z.string().optional().or(z.literal('')),
   active: z.boolean().default(true),
   baseUrl: z

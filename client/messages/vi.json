@@ -599,6 +599,8 @@
     "approve": "Phê duyệt",
     "approveConfirm": "Phê duyệt bộ dữ liệu \"{name}\"? Test case sẽ bị khóa chỉnh sửa.",
     "approveDisabled": "Cần ít nhất 1 test case hoạt động để phê duyệt.",
+    "editDatasetTitle": "Chỉnh sửa bộ dữ liệu",
+    "deleteDatasetTitle": "Xóa bộ dữ liệu",
     "approveDisabledHint": "Thêm ít nhất một test case hoạt động trước khi phê duyệt bộ dữ liệu.",
     "readyToApprove": "Sẵn sàng phê duyệt",
     "readyToApproveHint": "Bạn có {count} test cases hoạt động. Vui lòng phê duyệt bộ dữ liệu này để sử dụng trong các đợt chấm điểm.",
@@ -1093,5 +1095,17 @@
       "errorDetail": "Chi tiết lỗi từ máy chủ",
       "viewReport": "Xem báo cáo bảo mật chi tiết"
     }
+  },
+  "zod": {
+    "required": "Trường này là bắt buộc",
+    "invalidType": "Dữ liệu không hợp lệ",
+    "invalidEmail": "Email không hợp lệ",
+    "invalidUrl": "URL không hợp lệ",
+    "stringMin": "Yêu cầu ít nhất {min} ký tự",
+    "stringMax": "Chỉ được tối đa {max} ký tự",
+    "numberMin": "Giá trị phải lớn hơn hoặc bằng {min}",
+    "numberMax": "Giá trị phải nhỏ hơn hoặc bằng {max}",
+    "arrayMin": "Chọn ít nhất {min} mục",
+    "arrayMax": "Chỉ được chọn tối đa {max} mục"
   }
 }
