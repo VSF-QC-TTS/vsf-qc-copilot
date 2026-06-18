@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { PasswordInput } from "@/components/ui/password-input";
+import { FloatingInput, FloatingPasswordInput } from "@/components/ui/floating-input";
 import { loginUser } from "@/lib/api/auth";
 import type { ApiError } from "@/lib/api/types";
 import { useAuthStore } from "@/lib/store/auth-store";
@@ -15,13 +15,6 @@ import { cn } from "@/lib/utils";
 import { getErrorMessageKey } from "@/lib/utils/error-messages";
 import { loginSchema, type LoginFormValues } from "@/lib/validations/auth";
 import { Link } from "@/i18n/navigation";
-
-// ---------------------------------------------------------------------------
-// Shared input class
-// ---------------------------------------------------------------------------
-
-const inputClassName =
-  "flex h-10 w-full rounded-lg border border-border/80 bg-background/50 px-3 py-2 text-sm transition-all duration-200 placeholder:text-muted-foreground hover:border-primary/30 focus-visible:border-primary/50 focus-visible:bg-background focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-50 shadow-xs";
 
 // ---------------------------------------------------------------------------
 // OAuth provider config
@@ -166,20 +159,13 @@ export default function LoginPage() {
 
         {/* Email field */}
         <div className="space-y-1.5">
-          <label
-            htmlFor="email"
-            className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/90"
-          >
-            {t("email")}
-          </label>
-          <input
+          <FloatingInput
             id="email"
             type="email"
+            label={t("email")}
             autoComplete="email"
-            placeholder={t("emailPlaceholder")}
             disabled={isSubmitting}
             className={cn(
-              inputClassName,
               errors.email &&
                 "border-destructive focus-visible:ring-destructive/20 focus-visible:border-destructive",
             )}
@@ -192,21 +178,14 @@ export default function LoginPage() {
 
         {/* Password field */}
         <div className="space-y-1.5">
-          <label
-            htmlFor="password"
-            className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/90"
-          >
-            {t("password")}
-          </label>
-          <PasswordInput
+          <FloatingPasswordInput
             id="password"
+            label={t("password")}
             autoComplete="current-password"
-            placeholder={t("passwordPlaceholder")}
             disabled={isSubmitting}
             showPasswordLabel={t("showPassword")}
             hidePasswordLabel={t("hidePassword")}
             className={cn(
-              inputClassName,
               errors.password &&
                 "border-destructive focus-visible:ring-destructive/20 focus-visible:border-destructive",
             )}

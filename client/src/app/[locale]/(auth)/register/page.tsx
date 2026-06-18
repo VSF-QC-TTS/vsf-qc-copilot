@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { CheckIcon } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
-import { PasswordInput } from "@/components/ui/password-input";
+import { FloatingInput, FloatingPasswordInput } from "@/components/ui/floating-input";
 import { Link } from "@/i18n/navigation";
 import { registerUser } from "@/lib/api/auth";
 import type { ApiError } from "@/lib/api/types";
@@ -18,8 +18,6 @@ import {
   type RegisterFormValues,
 } from "@/lib/validations/auth";
 
-const inputClassName =
-  "flex h-10 w-full rounded-lg border border-border/80 bg-background/50 px-3 py-2 text-sm transition-all duration-200 placeholder:text-muted-foreground hover:border-primary/30 focus-visible:border-primary/50 focus-visible:bg-background focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-50 shadow-xs";
 
 export default function RegisterPage() {
   const t = useTranslations("auth");
@@ -146,20 +144,13 @@ export default function RegisterPage() {
 
         {/* Full Name */}
         <div className="space-y-1.5">
-          <label
-            htmlFor="fullName"
-            className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/90"
-          >
-            {t("fullNameLabel")}
-          </label>
-          <input
+          <FloatingInput
             id="fullName"
             type="text"
+            label={t("fullNameLabel")}
             autoComplete="name"
-            placeholder={t("fullNamePlaceholder")}
             disabled={isSubmitting}
             className={cn(
-              inputClassName,
               errors.fullName &&
                 "border-destructive focus-visible:ring-destructive/20 focus-visible:border-destructive",
             )}
@@ -174,20 +165,13 @@ export default function RegisterPage() {
 
         {/* Email */}
         <div className="space-y-1.5">
-          <label
-            htmlFor="email"
-            className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/90"
-          >
-            {t("emailLabel")}
-          </label>
-          <input
+          <FloatingInput
             id="email"
             type="email"
+            label={t("emailLabel")}
             autoComplete="email"
-            placeholder={t("emailPlaceholder")}
             disabled={isSubmitting}
             className={cn(
-              inputClassName,
               errors.email &&
                 "border-destructive focus-visible:ring-destructive/20 focus-visible:border-destructive",
             )}
@@ -200,21 +184,14 @@ export default function RegisterPage() {
 
         {/* Password */}
         <div className="space-y-1.5">
-          <label
-            htmlFor="password"
-            className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/90"
-          >
-            {t("passwordLabel")}
-          </label>
-          <PasswordInput
+          <FloatingPasswordInput
             id="password"
+            label={t("passwordLabel")}
             autoComplete="new-password"
-            placeholder={t("passwordPlaceholder")}
             disabled={isSubmitting}
             showPasswordLabel={t("showPassword")}
             hidePasswordLabel={t("hidePassword")}
             className={cn(
-              inputClassName,
               errors.password &&
                 "border-destructive focus-visible:ring-destructive/20 focus-visible:border-destructive",
             )}
@@ -277,21 +254,14 @@ export default function RegisterPage() {
 
         {/* Confirm Password */}
         <div className="space-y-1.5">
-          <label
-            htmlFor="confirmPassword"
-            className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/90"
-          >
-            {t("confirmPasswordLabel")}
-          </label>
-          <PasswordInput
+          <FloatingPasswordInput
             id="confirmPassword"
+            label={t("confirmPasswordLabel")}
             autoComplete="new-password"
-            placeholder={t("confirmPasswordPlaceholder")}
             disabled={isSubmitting}
             showPasswordLabel={t("showPassword")}
             hidePasswordLabel={t("hidePassword")}
             className={cn(
-              inputClassName,
               errors.confirmPassword &&
                 "border-destructive focus-visible:ring-destructive/20 focus-visible:border-destructive",
             )}
