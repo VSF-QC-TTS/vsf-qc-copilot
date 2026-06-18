@@ -10,7 +10,7 @@ import {
   DatabaseIcon,
   BookOpenIcon,
   HardDrivesIcon,
-  BrainIcon,
+  CpuIcon,
   CaretRightIcon,
   CaretLeftIcon,
   LightningIcon,
@@ -487,7 +487,7 @@ export function StartEvaluationDialog({
                 {/* Judge Models */}
                 <div>
                   <div className="flex items-center gap-2 mb-4 text-foreground/80">
-                    <BrainIcon size={20} className="text-primary" />
+                    <CpuIcon size={20} className="text-primary" />
                     <h3 className="font-medium">{t('judgeModel')}</h3>
                   </div>
 

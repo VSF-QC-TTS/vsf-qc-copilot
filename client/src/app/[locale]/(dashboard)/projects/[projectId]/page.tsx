@@ -11,7 +11,7 @@ import {
   ListChecksIcon,
   ChartBarIcon,
   ArchiveIcon,
-  BrainIcon,
+  CpuIcon,
   ArrowRightIcon,
   ShieldCheckIcon,
 } from '@phosphor-icons/react';
@@ -232,7 +232,7 @@ export default function ProjectDetailPage() {
       key: 'readinessJudgeModel',
       href: `/projects/${projectId}/judge-models`,
       ready: (activeJudgeModelsData?.totalItems ?? 0) > 0,
-      icon: BrainIcon,
+      icon: CpuIcon,
     },
     {
       key: 'readinessRubric',
@@ -346,8 +346,8 @@ export default function ProjectDetailPage() {
                 <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                 <div className="flex items-center justify-between gap-3 mb-3 relative z-10">
                   <div className="flex items-center gap-2.5">
-                    <div className={cn("p-1.5 rounded-md", item.ready ? "bg-emerald-500/10" : "bg-amber-500/10")}>
-                      <Icon size={18} weight="duotone" className={item.ready ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'} />
+                    <div className={cn("p-1.5 rounded-md", item.ready ? "bg-primary/5" : "bg-muted")}>
+                      <Icon size={18} weight="duotone" className={item.ready ? 'text-primary' : 'text-muted-foreground'} />
                     </div>
                     <span className="text-sm font-semibold tracking-tight">{t(item.key)}</span>
                   </div>
@@ -367,19 +367,19 @@ export default function ProjectDetailPage() {
       ) : (
         <motion.section variants={itemVariants} className="space-y-6">
           {/* Hero Action Banner */}
-          <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-background p-6 md:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden backdrop-blur-md shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]">
-            <div className="absolute -right-10 -top-10 text-emerald-500/10 rotate-12 mix-blend-overlay">
-               <BrainIcon size={140} weight="fill" />
+          <div className="rounded-2xl border border-border/50 bg-card/60 p-6 md:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden backdrop-blur-xs shadow-sm">
+            <div className="absolute -right-10 -top-10 text-primary/5 rotate-12 mix-blend-overlay">
+               <CpuIcon size={140} weight="fill" />
             </div>
             <div className="flex flex-col gap-2 relative z-10">
-              <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-emerald-800 dark:text-emerald-400">
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
                 {t('readyToEvaluate')}
               </h2>
-              <p className="text-sm text-emerald-700/80 dark:text-emerald-500/80 max-w-[50ch]">
+              <p className="text-sm text-muted-foreground max-w-[50ch]">
                 {t('readyToEvaluateDesc')}
               </p>
             </div>
-            <Button size="lg" onClick={() => setStartDialogOpen(true)} className="w-full sm:w-auto shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 z-10">
+            <Button size="lg" onClick={() => setStartDialogOpen(true)} className="w-full sm:w-auto shrink-0 shadow-xs z-10">
               <PlusIcon className="mr-2 h-5 w-5" weight="bold" />
               {tEval('startEvaluation')}
             </Button>
@@ -433,24 +433,24 @@ export default function ProjectDetailPage() {
 
       {/* ---- Red-Teaming (Security Testing) Banner ---- */}
       <motion.section variants={itemVariants} className="space-y-3">
-        <div className="rounded-2xl border border-red-500/20 bg-gradient-to-r from-red-500/10 via-red-500/5 to-background p-6 md:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden backdrop-blur-md shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]">
-          <div className="absolute -right-6 -top-6 text-red-500/10 rotate-12 pointer-events-none mix-blend-overlay">
+        <div className="rounded-2xl border border-border/50 bg-card/60 p-6 md:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden backdrop-blur-xs shadow-sm">
+          <div className="absolute -right-6 -top-6 text-primary/5 rotate-12 pointer-events-none mix-blend-overlay">
             <ShieldCheckIcon size={130} weight="fill" />
           </div>
           <div className="flex items-start gap-3 relative z-10">
-            <div className="p-3 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 shrink-0 hidden sm:flex items-center justify-center shadow-inner">
+            <div className="p-3 rounded-xl bg-primary/5 text-primary border border-primary/10 shrink-0 hidden sm:flex items-center justify-center shadow-inner">
               <ShieldCheckIcon size={26} weight="duotone" />
             </div>
             <div className="flex flex-col gap-1.5">
-              <h3 className="text-lg font-bold tracking-tight text-red-800 dark:text-red-400">
+              <h3 className="text-lg font-bold tracking-tight text-foreground">
                 {tRedTeam('title')}
               </h3>
-              <p className="text-sm text-red-800/80 dark:text-red-400/80 max-w-[55ch] leading-relaxed">
+              <p className="text-sm text-muted-foreground max-w-[55ch] leading-relaxed">
                 {tRedTeam('description')}
               </p>
             </div>
           </div>
-          <Button variant="outline" asChild className="w-full sm:w-auto shrink-0 border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/10 z-10">
+          <Button variant="outline" asChild className="w-full sm:w-auto shrink-0 z-10">
             <Link href={`/projects/${projectId}/red-team`}>
                {tRedTeam('manageScan')} <ArrowRightIcon className="ml-1.5 size-4" />
             </Link>

@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  BrainIcon,
+  CpuIcon,
   CheckCircleIcon,
   XCircleIcon,
   CircleNotchIcon,
@@ -198,7 +198,7 @@ export function AIGenerateDialog({
         )}
       >
         <div className="flex items-center gap-2">
-          <BrainIcon className="size-5 text-primary" />
+          <CpuIcon className="size-5 text-primary" />
           <h2
             id="ai-generate-title"
             className="text-lg font-semibold text-card-foreground"
