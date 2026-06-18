@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig, ResponseType } from 'axios';
 import type { ApiError, RefreshTokenResponse } from './types';
 
 // ---------------------------------------------------------------------------
@@ -205,6 +205,7 @@ function notifyApiError(error: ApiError) {
 export type RequestOptions = Omit<RequestInit, 'method' | 'body'> & {
   auth?: 'auto' | 'none';
   _skipRefresh?: boolean;
+  responseType?: ResponseType;
 };
 
 function toAxiosConfig(opts?: RequestOptions): AxiosRequestConfig {

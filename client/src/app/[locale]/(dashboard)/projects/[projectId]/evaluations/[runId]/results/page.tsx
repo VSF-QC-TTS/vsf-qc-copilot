@@ -21,7 +21,6 @@ import { Button } from '@/components/ui/button';
 import { ResultDetailPanel } from '@/components/panels/result-detail-panel';
 import { apiClient } from '@/lib/api/client';
 import type { PageResponse, EvaluationResultRow } from '@/lib/api/types';
-import type { AxiosRequestConfig } from 'axios';
 
 // ---------------------------------------------------------------------------
 // Filter constants
@@ -138,7 +137,7 @@ export default function ResultsPage() {
       try {
         const response = await apiClient.get<Blob>(
           `/api/v1/exports/${jobData.resourcePublicId}/file`,
-          { responseType: 'blob' } as AxiosRequestConfig
+          { responseType: 'blob' }
         );
         const url = window.URL.createObjectURL(new Blob([response as unknown as BlobPart]));
         const link = document.createElement('a');
