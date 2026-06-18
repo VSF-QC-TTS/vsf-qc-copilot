@@ -16,11 +16,12 @@ import { DataTablePagination } from '@/components/data-table/data-table-paginati
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useJobProgress } from '@/hooks/use-job-progress';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipProvider } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { ResultDetailPanel } from '@/components/panels/result-detail-panel';
 import { apiClient } from '@/lib/api/client';
 import type { PageResponse, EvaluationResultRow } from '@/lib/api/types';
+import type { AxiosRequestConfig } from 'axios';
 
 // ---------------------------------------------------------------------------
 // Filter constants
@@ -137,7 +138,7 @@ export default function ResultsPage() {
       try {
         const response = await apiClient.get<Blob>(
           `/api/v1/exports/${jobData.resourcePublicId}/file`,
-          { responseType: 'blob' }
+          { responseType: 'blob' } as AxiosRequestConfig
         );
         const url = window.URL.createObjectURL(new Blob([response as unknown as BlobPart]));
         const link = document.createElement('a');
@@ -321,33 +322,33 @@ export default function ResultsPage() {
           return (
             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
               <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={() => quickReviewMutation.mutate({ resultPublicId: result.publicId, qcStatus: 'PASS' })}
-                      disabled={isPending}
-                      className="inline-flex items-center justify-center rounded-md p-1.5 text-green-600 hover:bg-green-100 dark:hover:bg-green-950 transition-colors disabled:opacity-50"
-                      aria-label={`Mark ${result.publicId} as PASS`}
-                    >
-                      <CheckIcon weight="bold" className="size-4" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>{tDetail('quickPass')}</TooltipContent>
+                <Tooltip content={tDetail('quickPass')}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={isPending}
+                    className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-500 dark:hover:bg-emerald-500/10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      quickReviewMutation.mutate({ resultPublicId: result.publicId, qcStatus: 'PASS' });
+                    }}
+                  >
+                    <CheckIcon size={18} weight="bold" />
+                  </Button>
                 </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={() => quickReviewMutation.mutate({ resultPublicId: result.publicId, qcStatus: 'FAIL' })}
-                      disabled={isPending}
-                      className="inline-flex items-center justify-center rounded-md p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-950 transition-colors disabled:opacity-50"
-                      aria-label={`Mark ${result.publicId} as FAIL`}
-                    >
-                      <XIcon weight="bold" className="size-4" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>{tDetail('quickFail')}</TooltipContent>
+                <Tooltip content={tDetail('quickFail')}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={isPending}
+                    className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-500 dark:hover:bg-red-500/10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      quickReviewMutation.mutate({ resultPublicId: result.publicId, qcStatus: 'FAIL' });
+                    }}
+                  >
+                    <XIcon size={18} weight="bold" />
+                  </Button>
                 </Tooltip>
               </TooltipProvider>
             </div>

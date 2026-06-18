@@ -231,11 +231,11 @@ export default function LoginPage() {
       <div className="flex flex-col items-center gap-2.5 text-sm pt-2">
         <Link
           href="/forgot-password"
-          className="text-xs font-medium text-muted-foreground underline-offset-4 hover:text-primary transition-colors hover:underline"
+          className="text-sm font-medium text-muted-foreground underline-offset-4 hover:text-primary transition-colors hover:underline"
         >
           {t("forgotPassword")}
         </Link>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           {t("noAccount")}{" "}
           <Link
             href="/register"

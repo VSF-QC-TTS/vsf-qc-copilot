@@ -100,7 +100,7 @@ export default function ProjectsPage() {
         header: t('columns.createdAt'),
         size: 140,
         cell: ({ row }) => (
-          <span className="text-muted-foreground">
+          <span className="font-mono text-[11px] tracking-widest uppercase text-muted-foreground">
             {formatDate(row.original.createdAt)}
           </span>
         ),
@@ -110,7 +110,7 @@ export default function ProjectsPage() {
         header: t('columns.updatedAt'),
         size: 140,
         cell: ({ row }) => (
-          <span className="text-muted-foreground">
+          <span className="font-mono text-[11px] tracking-widest uppercase text-muted-foreground">
             {formatDate(row.original.updatedAt)}
           </span>
         ),
@@ -153,7 +153,7 @@ export default function ProjectsPage() {
         className="space-y-4"
       >
         {/* Status filter tabs */}
-        <motion.div variants={itemVariants} className="flex items-center gap-1 p-1 bg-muted/40 border border-border/50 rounded-lg w-fit">
+        <motion.div variants={itemVariants} className="flex items-center gap-1 p-1.5 bg-card/60 backdrop-blur-xs border border-border/50 rounded-xl w-fit shadow-sm">
           {filterOptions.map((opt) => {
             const isActive = statusFilter === opt.value;
             return (
@@ -171,7 +171,7 @@ export default function ProjectsPage() {
                 {isActive && (
                   <motion.div
                     layoutId="projectsFilterTab"
-                    className="absolute inset-0 bg-background shadow-xs border border-border/50 rounded-md"
+                    className="absolute inset-0 bg-background shadow-sm border border-border/50 rounded-lg"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
@@ -182,7 +182,7 @@ export default function ProjectsPage() {
         </motion.div>
 
         {/* Data table */}
-        <motion.div variants={itemVariants}>
+        <motion.div variants={itemVariants} className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-xs overflow-hidden shadow-sm [&_.rounded-md]:rounded-none [&_.border]:border-0">
           <DataTable
             columns={columns}
             data={projects}

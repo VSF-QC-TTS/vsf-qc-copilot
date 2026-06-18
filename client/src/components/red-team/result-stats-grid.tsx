@@ -49,8 +49,8 @@ export function ResultStatsGrid({ stats, vulnerabilityRate, totalTests }: Result
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {/* Circular Risk Score Gauge */}
-      <motion.div variants={itemVariants} className="rounded-xl border bg-card p-5 flex flex-col items-center justify-center relative col-span-1 min-h-[190px]">
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 self-start">
+      <motion.div variants={itemVariants} className="rounded-xl border bg-card/60 backdrop-blur-xs shadow-sm p-5 flex flex-col items-center justify-center relative col-span-1 min-h-[180px]">
+        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest font-mono mb-2 self-start">
           {t('results.vulnerabilityScore')}
         </span>
         <RedTeamResultsChart
@@ -62,49 +62,49 @@ export function ResultStatsGrid({ stats, vulnerabilityRate, totalTests }: Result
       </motion.div>
 
       {/* Attacks Counter */}
-      <motion.div variants={itemVariants} className="rounded-xl border bg-card p-5 flex flex-col justify-between min-h-[190px]">
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+      <motion.div variants={itemVariants} className="rounded-xl border bg-card/60 backdrop-blur-xs shadow-sm p-6 flex flex-col justify-between min-h-[180px]">
+        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest font-mono">
           {t('results.totalTests')}
         </span>
         <div className="my-auto">
-          <span className="text-4xl font-extrabold text-foreground tracking-tight">
+          <span className="text-4xl font-semibold font-mono tracking-tighter text-foreground">
             {formatNumber(totalTests)}
           </span>
         </div>
-        <div className="text-[10px] text-muted-foreground flex justify-between border-t pt-2 font-mono">
+        <div className="text-[11px] text-muted-foreground flex justify-between border-t border-border/50 pt-3 font-mono">
           <span>{t('results.pluginPowered')}</span>
         </div>
       </motion.div>
 
       {/* Exploited Counter */}
-      <motion.div variants={itemVariants} className="rounded-xl border bg-card p-5 flex flex-col justify-between min-h-[190px]">
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+      <motion.div variants={itemVariants} className="rounded-xl border bg-card/60 backdrop-blur-xs shadow-sm p-6 flex flex-col justify-between min-h-[180px]">
+        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest font-mono">
           {t('results.exploited')}
         </span>
         <div className="my-auto">
           <span className={cn(
-            'text-4xl font-extrabold tracking-tight',
-            stats.failures > 0 ? 'text-red-600 dark:text-red-500' : 'text-emerald-600 dark:text-emerald-500'
+            'text-4xl font-semibold font-mono tracking-tighter',
+            stats.failures > 0 ? 'text-destructive' : 'text-emerald-500'
           )}>
             {formatNumber(stats.failures)}
           </span>
         </div>
-        <div className="text-[10px] text-muted-foreground flex justify-between border-t pt-2 font-mono">
+        <div className="text-[11px] text-muted-foreground flex justify-between border-t border-border/50 pt-3 font-mono">
           <span>{t('results.exploitedDesc')}</span>
         </div>
       </motion.div>
 
       {/* Shielded Counter */}
-      <motion.div variants={itemVariants} className="rounded-xl border bg-card p-5 flex flex-col justify-between min-h-[190px]">
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+      <motion.div variants={itemVariants} className="rounded-xl border bg-card/60 backdrop-blur-xs shadow-sm p-6 flex flex-col justify-between min-h-[180px]">
+        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest font-mono">
           {t('results.shielded')}
         </span>
         <div className="my-auto">
-          <span className="text-4xl font-extrabold text-emerald-600 dark:text-emerald-500 tracking-tight">
+          <span className="text-4xl font-semibold font-mono tracking-tighter text-emerald-500">
             {formatNumber(stats.successes)}
           </span>
         </div>
-        <div className="text-[10px] text-muted-foreground flex justify-between border-t pt-2 font-mono">
+        <div className="text-[11px] text-muted-foreground flex justify-between border-t border-border/50 pt-3 font-mono">
           <span>{t('results.shieldedDesc')}</span>
         </div>
       </motion.div>

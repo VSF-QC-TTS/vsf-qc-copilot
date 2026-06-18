@@ -316,7 +316,7 @@ export default function RegisterPage() {
 
       {/* Bottom link */}
       <div className="flex flex-col items-center gap-2 text-sm pt-2">
-        <p className="text-xs text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           {t("alreadyHaveAccount")}{" "}
           <Link
             href="/login"

@@ -97,71 +97,71 @@ export function AttackDetailDrawer({ result, onClose }: AttackDetailDrawerProps)
             className="fixed inset-y-0 right-0 z-50 flex w-full flex-col border-l bg-background shadow-2xl lg:w-[680px] text-foreground overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b px-4 py-4">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="uppercase bg-muted border font-mono text-xs text-muted-foreground">
+            <div className="flex items-center justify-between border-b border-border/50 bg-muted/20 px-5 py-4">
+              <div className="flex items-center gap-3">
+                <Badge variant="outline" className="uppercase bg-muted/40 border-border/50 font-mono text-[10px] font-medium tracking-tight text-muted-foreground px-1.5 py-0">
                   {result.pluginId.split(':').pop() || result.pluginId}
                 </Badge>
-                <span className="text-sm text-muted-foreground font-medium">
+                <span className="text-sm text-foreground font-semibold tracking-tight">
                   {t('results.attackDetail')}
                 </span>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
-                className="size-8 text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
+                className="size-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 cursor-pointer"
                 onClick={onClose}
               >
-                <XIcon size={18} />
+                <XIcon size={16} weight="bold" />
               </Button>
             </div>
 
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-6">
+            <div className="flex-1 overflow-y-auto p-5 space-y-8">
               {/* Status Banner */}
               <div className={cn(
-                'rounded-lg border p-4 flex items-center justify-between',
+                'rounded-xl border p-5 flex items-center justify-between shadow-sm',
                 result.success
-                  ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400'
-                  : 'border-destructive/20 bg-destructive/5 text-red-600 dark:text-red-400'
+                  ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-500'
+                  : 'border-destructive/20 bg-destructive/5 text-destructive'
               )}>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3.5">
                   {result.success ? (
-                    <ShieldCheckIcon size={24} weight="fill" className="text-emerald-600 dark:text-emerald-500" />
+                    <ShieldCheckIcon size={24} weight="fill" className="text-emerald-500" />
                   ) : (
-                    <ShieldWarningIcon size={24} weight="fill" className="text-red-600 dark:text-red-500" />
+                    <ShieldWarningIcon size={24} weight="fill" className="text-destructive" />
                   )}
                   <div className="space-y-0.5">
-                    <span className="font-bold text-sm block">
+                    <span className="font-semibold text-[13px] tracking-tight block text-foreground">
                       {result.success ? t('results.shielded') : t('results.vulnerabilityFound')}
                     </span>
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-[11px] font-medium text-muted-foreground">
                       {result.success
                         ? t('results.shieldedExplanation')
                         : t('results.vulnerableExplanation')}
                     </span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-xs text-muted-foreground block">{t('results.score')}</span>
-                  <span className="font-mono font-bold text-sm">
+                <div className="text-right border-l border-border/50 pl-4">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground block mb-0.5">{t('results.score')}</span>
+                  <span className="font-mono font-bold text-base text-foreground tracking-tighter">
                     {result.score.toFixed(2)}
                   </span>
                 </div>
               </div>
 
               {/* Adversarial Prompt */}
-              <div className="space-y-2">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
+              <div className="space-y-2.5">
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest font-mono block">
                   {t('results.promptInjected')}
                 </span>
                 <div className="relative group">
-                  <pre className="rounded-lg border bg-muted/40 p-4 text-xs font-mono text-foreground overflow-x-auto whitespace-pre-wrap leading-relaxed">
+                  <pre className="rounded-xl border border-border/50 bg-muted/30 p-5 text-[12px] font-mono text-foreground overflow-x-auto whitespace-pre-wrap leading-relaxed shadow-sm">
                     {typeof result.prompt === 'object' ? result.prompt.raw : result.prompt}
                   </pre>
                   <button
                     onClick={() => handleCopy(typeof result.prompt === 'object' ? result.prompt.raw : result.prompt)}
-                    className="absolute right-3 top-3 p-1.5 rounded bg-background border hover:border-muted-foreground/50 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                    className="absolute right-3 top-3 p-1.5 rounded-md bg-background border border-border/50 hover:bg-muted text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-all cursor-pointer shadow-xs"
                     title={t('results.copyPrompt')}
                   >
                     {copied ? <CheckIcon size={14} className="text-emerald-500" /> : <CopyIcon size={14} />}
@@ -170,15 +170,15 @@ export function AttackDetailDrawer({ result, onClose }: AttackDetailDrawerProps)
               </div>
 
               {/* Model Response */}
-              <div className="space-y-2">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
+              <div className="space-y-2.5">
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest font-mono block">
                   {t('results.modelResponse')}
                 </span>
                 <pre className={cn(
-                  'rounded-lg border p-4 text-xs font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed',
+                  'rounded-xl border p-5 text-[12px] font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed shadow-sm',
                   result.success
-                    ? 'bg-muted/20 text-muted-foreground'
-                    : 'border-destructive/30 bg-destructive/5 text-red-600 dark:text-red-300'
+                    ? 'border-border/50 bg-muted/10 text-muted-foreground'
+                    : 'border-destructive/20 bg-destructive/5 text-destructive'
                 )}>
                   {typeof result.response === 'object' ? result.response.raw : result.response}
                 </pre>
@@ -186,11 +186,11 @@ export function AttackDetailDrawer({ result, onClose }: AttackDetailDrawerProps)
 
               {/* Grading Reason */}
               {result.gradingResult?.reason && (
-                <div className="space-y-2">
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
+                <div className="space-y-2.5">
+                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest font-mono block">
                     {t('results.gradingReason')}
                   </span>
-                  <div className="rounded-lg border bg-muted/30 p-4 text-xs text-muted-foreground leading-relaxed">
+                  <div className="rounded-xl border border-border/50 bg-muted/20 p-5 text-[12px] text-muted-foreground leading-relaxed shadow-sm">
                     {result.gradingResult.reason}
                   </div>
                 </div>
@@ -198,21 +198,23 @@ export function AttackDetailDrawer({ result, onClose }: AttackDetailDrawerProps)
 
               {/* Remediation Block */}
               {!result.success && (
-                <div className="space-y-2 pt-2 border-t">
-                  <span className="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wider flex items-center gap-1">
-                    <ShieldCheckIcon size={16} />
-                    {t('results.remediationTitle')}
-                  </span>
-                  <p className="text-xs text-muted-foreground">
+                <div className="space-y-3 pt-6 border-t border-border/50">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheckIcon size={16} weight="bold" className="text-emerald-500" />
+                    <span className="text-[11px] font-semibold text-foreground uppercase tracking-widest font-mono">
+                      {t('results.remediationTitle')}
+                    </span>
+                  </div>
+                  <p className="text-[13px] text-muted-foreground font-medium">
                     {t('results.remediationDesc')}
                   </p>
-                  <div className="relative group mt-2">
-                    <pre className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-xs font-mono text-foreground overflow-x-auto whitespace-pre-wrap leading-relaxed">
+                  <div className="relative group mt-3">
+                    <pre className="rounded-xl border border-border/50 bg-background p-5 text-[12px] font-mono text-foreground overflow-x-auto whitespace-pre-wrap leading-relaxed shadow-sm">
                       {getRemediation(result.pluginId)}
                     </pre>
                     <button
                       onClick={() => handleCopy(getRemediation(result.pluginId))}
-                      className="absolute right-3 top-3 p-1.5 rounded bg-background border hover:border-muted-foreground/50 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                      className="absolute right-3 top-3 p-1.5 rounded-md bg-muted/50 border border-border/50 hover:bg-muted text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-all cursor-pointer shadow-xs"
                       title={t('results.copyRemediation')}
                     >
                       {copied ? <CheckIcon size={14} className="text-emerald-500" /> : <CopyIcon size={14} />}

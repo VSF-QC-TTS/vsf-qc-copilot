@@ -83,34 +83,34 @@ export default function RedTeamRunProgressPage() {
     >
       <div className="max-w-2xl mx-auto space-y-6 mt-4">
         {/* Run context summary card */}
-        <div className="rounded-xl border bg-card p-5 space-y-4 text-foreground">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+        <div className="rounded-xl border bg-card/50 backdrop-blur-xs p-5 space-y-4 text-foreground shadow-sm">
+          <h2 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest font-mono">
             {t('progress.scanInfo')}
           </h2>
-          <div className="grid gap-3 sm:grid-cols-2 text-sm">
-            <div>
-              <span className="text-muted-foreground">{t('progress.apiConnector')}:</span>{' '}
-              <span className="font-medium text-foreground">{run.connectorName || '—'}</span>
+          <div className="grid gap-4 sm:grid-cols-2 text-[13px]">
+            <div className="space-y-1">
+              <span className="text-muted-foreground font-mono text-[11px] uppercase tracking-wider">{t('progress.apiConnector')}</span>
+              <div className="font-medium text-foreground">{run.connectorName || '—'}</div>
             </div>
-            <div>
-              <span className="text-muted-foreground">{t('progress.judgeModel')}:</span>{' '}
-              <span className="font-medium text-foreground">{run.judgeModelDisplayName || t('progress.judgeDefault')}</span>
+            <div className="space-y-1">
+              <span className="text-muted-foreground font-mono text-[11px] uppercase tracking-wider">{t('progress.judgeModel')}</span>
+              <div className="font-medium text-foreground">{run.judgeModelDisplayName || t('progress.judgeDefault')}</div>
             </div>
-            <div className="sm:col-span-2">
-              <span className="text-muted-foreground">{t('progress.chatbotPurpose')}:</span>
-              <p className="mt-1 text-xs text-muted-foreground leading-relaxed bg-muted/40 p-2.5 rounded-lg border font-mono">
+            <div className="sm:col-span-2 space-y-1">
+              <span className="text-muted-foreground font-mono text-[11px] uppercase tracking-wider">{t('progress.chatbotPurpose')}</span>
+              <p className="text-xs text-muted-foreground leading-relaxed bg-muted/30 p-3 rounded-md border font-mono">
                 {run.purpose}
               </p>
             </div>
-            <div>
-              <span className="text-muted-foreground">{t('progress.numAttacks')}:</span>{' '}
-              <span className="font-semibold text-foreground">{t('progress.numAttacksPerType', { count: run.numTests })}</span>
+            <div className="space-y-1">
+              <span className="text-muted-foreground font-mono text-[11px] uppercase tracking-wider">{t('progress.numAttacks')}</span>
+              <div className="font-semibold text-foreground">{t('progress.numAttacksPerType', { count: run.numTests })}</div>
             </div>
-            <div>
-              <span className="text-muted-foreground">{t('progress.pluginsActivated')}:</span>
-              <div className="flex flex-wrap gap-1 mt-1.5">
+            <div className="space-y-1">
+              <span className="text-muted-foreground font-mono text-[11px] uppercase tracking-wider">{t('progress.pluginsActivated')}</span>
+              <div className="flex flex-wrap gap-1.5 mt-0.5">
                 {run.plugins.map((p) => (
-                  <Badge key={p} variant="outline" className="text-[10px] bg-muted border py-0.5 text-muted-foreground">
+                  <Badge key={p} variant="outline" className="text-[10px] bg-muted/40 border py-0 text-muted-foreground uppercase tracking-tight font-medium">
                     {p.split(':').pop() || p}
                   </Badge>
                 ))}
@@ -120,17 +120,28 @@ export default function RedTeamRunProgressPage() {
         </div>
 
         {/* Live progress cockpit */}
-        <div className="rounded-xl border bg-card p-6 space-y-6 text-foreground">
+        <div className={cn(
+          "rounded-xl border p-6 space-y-6 text-foreground shadow-sm relative overflow-hidden transition-colors",
+          status === 'RUNNING' ? 'border-primary/30 bg-primary/5' : 'bg-card'
+        )}>
+          {status === 'RUNNING' && (
+            <motion.div
+              className="absolute left-0 top-0 bottom-0 w-[2px] bg-primary/50"
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{ repeat: Infinity, duration: 1.5 }}
+            />
+          )}
           <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <h3 className="font-bold text-lg text-foreground">
+            <div className="space-y-1.5">
+              <h3 className="font-semibold text-base text-foreground tracking-tight flex items-center gap-2">
+                {status === 'RUNNING' && <span className="relative flex size-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span><span className="relative inline-flex rounded-full size-2 bg-primary"></span></span>}
                 {status === 'PENDING' && t('progress.preparing')}
                 {status === 'RUNNING' && t('progress.scanning')}
                 {status === 'COMPLETED' && t('progress.completed')}
                 {status === 'FAILED' && t('progress.failed')}
                 {status === 'CANCELLED' && t('progress.cancelled')}
               </h3>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[13px] text-muted-foreground font-medium">
                 {status === 'RUNNING' && t('progress.scanningDesc', { current: currentProgress, total: totalProgress })}
                 {status === 'COMPLETED' && t('progress.completedDesc')}
                 {status === 'PENDING' && t('progress.preparingDesc')}
@@ -155,21 +166,23 @@ export default function RedTeamRunProgressPage() {
           </div>
 
           {/* Progress bar */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-muted-foreground">{t('progress.progressLabel')}</span>
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
+              <span>{t('progress.progressLabel')}</span>
               <span className={cn(
                 'font-bold',
-                status === 'COMPLETED' ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-500'
+                status === 'COMPLETED' ? 'text-emerald-500' : 
+                status === 'RUNNING' ? 'text-primary' : 'text-muted-foreground'
               )}>
                 {percent}%
               </span>
             </div>
-            <div className="h-2 w-full bg-muted overflow-hidden rounded-full border">
+            <div className="h-1.5 w-full bg-muted overflow-hidden rounded-full border border-background/50">
               <motion.div
                 className={cn(
                   'h-full',
-                  status === 'COMPLETED' ? 'bg-emerald-500' : 'bg-red-500'
+                  status === 'COMPLETED' ? 'bg-emerald-500' : 
+                  status === 'FAILED' ? 'bg-destructive' : 'bg-primary'
                 )}
                 initial={{ width: 0 }}
                 animate={{ width: `${percent}%` }}
@@ -192,7 +205,8 @@ export default function RedTeamRunProgressPage() {
           {status === 'COMPLETED' && (
             <Button
               onClick={() => router.push(`/projects/${projectId}/red-team/${runId}/results`)}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center justify-center gap-1.5 py-5 shadow-lg shadow-emerald-600/10"
+              className="w-full font-medium flex items-center justify-center gap-2 py-5 shadow-sm"
+              variant="default"
             >
               {t('progress.viewReport')}
               <ArrowRightIcon weight="bold" size={16} />

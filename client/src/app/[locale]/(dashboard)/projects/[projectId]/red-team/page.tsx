@@ -83,11 +83,11 @@ export default function RedTeamRunsPage() {
           const runNumber = totalItems - (page * PAGE_SIZE) - row.index;
           const displayName = row.original.name || t('defaultScanName', { number: runNumber });
           return (
-            <div className="flex flex-col">
-              <span className="font-semibold text-foreground">
+            <div className="flex flex-col gap-0.5">
+              <span className="font-medium text-foreground tracking-tight">
                 {displayName}
               </span>
-              <span className="text-[10px] text-muted-foreground font-mono">
+              <span className="text-[11px] text-muted-foreground font-mono">
                 {row.original.publicId.slice(0, 8)}
               </span>
             </div>
@@ -106,7 +106,7 @@ export default function RedTeamRunsPage() {
         accessorKey: 'connectorName',
         header: t('fields.connector'),
         cell: ({ row }) => (
-          <span className="text-muted-foreground font-medium">
+          <span className="text-muted-foreground font-medium text-[13px] tracking-tight">
             {row.original.connectorName ?? tCommon('notAvailable')}
           </span>
         ),
@@ -117,17 +117,17 @@ export default function RedTeamRunsPage() {
         cell: ({ row }) => {
           const plugins = row.original.plugins ?? [];
           return (
-            <div className="flex flex-wrap gap-1 max-w-[240px]">
+            <div className="flex flex-wrap gap-1.5 max-w-[240px]">
               {plugins.slice(0, 2).map((p) => {
                 const shortLabel = p.split(':').pop() || p;
                 return (
-                  <Badge key={p} variant="outline" className="text-[10px] px-1 py-0 capitalize">
+                  <Badge key={p} variant="outline" className="text-[10px] px-1.5 py-0 font-medium tracking-tight bg-muted/40 uppercase">
                     {shortLabel}
                   </Badge>
                 );
               })}
               {plugins.length > 2 && (
-                <Badge variant="outline" className="text-[10px] px-1 py-0 bg-muted/20">
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-medium bg-muted/20">
                   +{plugins.length - 2}
                 </Badge>
               )}
@@ -150,15 +150,15 @@ export default function RedTeamRunsPage() {
 
           return (
             <div className="flex items-center gap-2">
-              <span className={hasVulns ? 'text-destructive font-bold text-sm' : 'text-emerald-500 font-semibold text-sm'}>
+              <span className={hasVulns ? 'text-destructive font-medium font-mono text-xs' : 'text-emerald-500 font-medium font-mono text-xs'}>
                 {failed} / {total}
               </span>
               {hasVulns ? (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-destructive/10 text-destructive font-semibold">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-destructive/10 border border-destructive/20 text-destructive font-medium tracking-tight">
                   Vuln
                 </span>
               ) : (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-semibold">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-500 font-medium tracking-tight">
                   Safe
                 </span>
               )}
@@ -170,7 +170,7 @@ export default function RedTeamRunsPage() {
         accessorKey: 'createdAt',
         header: tCommon('createdAt'),
         cell: ({ row }) => (
-          <span className="text-muted-foreground text-xs">
+          <span className="text-muted-foreground text-[11px] font-mono tracking-tight">
             {formatDate(row.original.createdAt)}
           </span>
         ),

@@ -289,7 +289,7 @@ export default function ProjectDetailPage() {
         className="space-y-6"
       >
         {/* ---- Project info card ---- */}
-      <motion.div variants={itemVariants} className="rounded-lg border bg-card p-4 sm:p-6 space-y-4">
+      <motion.div variants={itemVariants} className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-xs p-5 sm:p-7 space-y-5 shadow-sm">
         <div className="flex items-center gap-3">
           <StatusBadge status={project.status} />
         </div>
@@ -305,13 +305,17 @@ export default function ProjectDetailPage() {
             <span className="font-medium text-foreground">
               {t('columns.createdAt')}:
             </span>{' '}
-            {new Date(project.createdAt).toLocaleDateString()}
+            <span className="font-mono text-[11px] tracking-widest uppercase ml-1">
+              {new Date(project.createdAt).toLocaleDateString()}
+            </span>
           </div>
           <div>
             <span className="font-medium text-foreground">
               {t('columns.updatedAt')}:
             </span>{' '}
-            {new Date(project.updatedAt).toLocaleDateString()}
+            <span className="font-mono text-[11px] tracking-widest uppercase ml-1">
+              {new Date(project.updatedAt).toLocaleDateString()}
+            </span>
           </div>
         </div>
       </motion.div>
@@ -335,21 +339,24 @@ export default function ProjectDetailPage() {
                 key={item.key}
                 href={item.href}
                 className={cn(
-                  'rounded-lg border bg-card p-4 transition-colors hover:bg-accent hover:text-accent-foreground flex flex-col',
-                  item.ready ? 'border-emerald-500/20 dark:border-emerald-500/10' : 'border-amber-500/20 dark:border-amber-500/10',
+                  'rounded-xl border bg-card/60 backdrop-blur-xs p-5 transition-all duration-300 hover:bg-accent/40 hover:-translate-y-0.5 hover:shadow-md flex flex-col group relative overflow-hidden',
+                  item.ready ? 'border-emerald-500/30 dark:border-emerald-500/20' : 'border-amber-500/30 dark:border-amber-500/20',
                 )}
               >
-                <div className="flex items-center justify-between gap-3 mb-2">
-                  <div className="flex items-center gap-2">
-                    <Icon size={20} weight="duotone" className={item.ready ? 'text-emerald-500' : 'text-amber-500'} />
-                    <span className="text-sm font-medium">{t(item.key)}</span>
+                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                <div className="flex items-center justify-between gap-3 mb-3 relative z-10">
+                  <div className="flex items-center gap-2.5">
+                    <div className={cn("p-1.5 rounded-md", item.ready ? "bg-emerald-500/10" : "bg-amber-500/10")}>
+                      <Icon size={18} weight="duotone" className={item.ready ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'} />
+                    </div>
+                    <span className="text-sm font-semibold tracking-tight">{t(item.key)}</span>
                   </div>
                   <StatusBadge
                     status={item.ready ? 'ACTIVE' : 'PENDING'}
                     size="sm"
                   />
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-auto text-xs text-muted-foreground relative z-10">
                   {item.ready ? t('readinessReady') : t('readinessMissing')}
                 </p>
               </Link>
@@ -360,12 +367,12 @@ export default function ProjectDetailPage() {
       ) : (
         <motion.section variants={itemVariants} className="space-y-6">
           {/* Hero Action Banner */}
-          <div className="rounded-xl border border-emerald-500/10 bg-emerald-500/5 p-6 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden">
-            <div className="absolute -right-10 -top-10 text-emerald-500/10 rotate-12">
-               <BrainIcon size={120} weight="fill" />
+          <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-background p-6 md:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden backdrop-blur-md shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]">
+            <div className="absolute -right-10 -top-10 text-emerald-500/10 rotate-12 mix-blend-overlay">
+               <BrainIcon size={140} weight="fill" />
             </div>
             <div className="flex flex-col gap-2 relative z-10">
-              <h2 className="text-2xl font-bold tracking-tight text-emerald-700 dark:text-emerald-500">
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-emerald-800 dark:text-emerald-400">
                 {t('readyToEvaluate')}
               </h2>
               <p className="text-sm text-emerald-700/80 dark:text-emerald-500/80 max-w-[50ch]">
@@ -380,26 +387,29 @@ export default function ProjectDetailPage() {
 
           {/* Quick Metrics Bento */}
           <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
-            <div className="rounded-xl border bg-card p-4 sm:p-5 flex flex-col justify-center gap-1">
-              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-xs p-5 flex flex-col justify-center gap-2 shadow-sm relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+              <div className="font-mono text-[11px] tracking-widest uppercase text-muted-foreground flex items-center gap-2 relative z-10">
                 <ChartBarIcon size={16} />
                 {t('latestPassRate')}
               </div>
-              <div className="text-3xl font-bold tracking-tight">
+              <div className="text-3xl font-bold tracking-tight relative z-10">
                 {trendData.length > 0 ? `${trendData[trendData.length - 1].passRate}%` : '--%'}
               </div>
             </div>
-            <div className="rounded-xl border bg-card p-4 sm:p-5 flex flex-col justify-center gap-1">
-              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-xs p-5 flex flex-col justify-center gap-2 shadow-sm relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+              <div className="font-mono text-[11px] tracking-widest uppercase text-muted-foreground flex items-center gap-2 relative z-10">
                 <ArchiveIcon size={16} />
                 {t('totalRuns')}
               </div>
-              <div className="text-3xl font-bold tracking-tight">
+              <div className="text-3xl font-bold tracking-tight relative z-10">
                 {evaluationsData?.totalItems ?? 0}
               </div>
             </div>
-            <div className="rounded-xl border bg-card p-4 sm:p-5 flex flex-col justify-center gap-1 col-span-2 sm:col-span-1">
-              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-xs p-5 flex flex-col justify-center gap-2 col-span-2 sm:col-span-1 shadow-sm relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+              <div className="font-mono text-[11px] tracking-widest uppercase text-muted-foreground flex items-center gap-2 relative z-10">
                 <DatabaseIcon size={16} />
                 {t('readiness')}
               </div>
@@ -423,19 +433,19 @@ export default function ProjectDetailPage() {
 
       {/* ---- Red-Teaming (Security Testing) Banner ---- */}
       <motion.section variants={itemVariants} className="space-y-3">
-        <div className="rounded-xl border border-red-500/10 bg-red-500/5 p-5 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden">
-          <div className="absolute -right-6 -top-6 text-red-500/10 rotate-12 pointer-events-none">
-            <ShieldCheckIcon size={110} weight="fill" />
+        <div className="rounded-2xl border border-red-500/20 bg-gradient-to-r from-red-500/10 via-red-500/5 to-background p-6 md:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden backdrop-blur-md shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]">
+          <div className="absolute -right-6 -top-6 text-red-500/10 rotate-12 pointer-events-none mix-blend-overlay">
+            <ShieldCheckIcon size={130} weight="fill" />
           </div>
           <div className="flex items-start gap-3 relative z-10">
-            <div className="p-2 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 shrink-0 hidden sm:block">
-              <ShieldCheckIcon size={24} weight="duotone" />
+            <div className="p-3 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 shrink-0 hidden sm:flex items-center justify-center shadow-inner">
+              <ShieldCheckIcon size={26} weight="duotone" />
             </div>
-            <div className="flex flex-col gap-1">
-              <h3 className="text-base font-bold tracking-tight text-red-700 dark:text-red-400">
+            <div className="flex flex-col gap-1.5">
+              <h3 className="text-lg font-bold tracking-tight text-red-800 dark:text-red-400">
                 {tRedTeam('title')}
               </h3>
-              <p className="text-xs text-red-700/80 dark:text-red-400/80 max-w-[55ch] leading-relaxed">
+              <p className="text-sm text-red-800/80 dark:text-red-400/80 max-w-[55ch] leading-relaxed">
                 {tRedTeam('description')}
               </p>
             </div>
@@ -482,8 +492,8 @@ export default function ProjectDetailPage() {
         ) : (
           <div className="grid gap-6 lg:grid-cols-3">
             {/* Trend Chart (left/top) */}
-            <div className="lg:col-span-2 rounded-lg border bg-card p-4 shadow-xs flex flex-col justify-between">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+            <div className="lg:col-span-2 rounded-xl border border-border/50 bg-card/60 backdrop-blur-xs p-5 shadow-sm flex flex-col justify-between">
+              <h3 className="font-mono text-[11px] tracking-widest uppercase text-muted-foreground mb-4">
                 {tEval('passRate')}
               </h3>
               {trendData.length > 1 ? (
@@ -496,26 +506,26 @@ export default function ProjectDetailPage() {
             </div>
 
             {/* Recent Runs list (right/bottom) */}
-            <div className="lg:col-span-1 divide-y rounded-lg border bg-card h-fit">
+            <div className="lg:col-span-1 flex flex-col gap-2">
               {recentEvaluations.map((run, index) => {
                 const runNumber = (evaluationsData?.totalItems ?? 0) - index;
                 return (
                   <Link
                     key={run.publicId}
                     href={`/projects/${projectId}/evaluations/${run.publicId}`}
-                    className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 px-4 py-3 transition-colors hover:bg-muted/50"
+                    className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 px-4 py-3.5 rounded-xl border border-border/50 bg-card/60 backdrop-blur-xs transition-all hover:bg-accent/40 hover:-translate-y-[1px] hover:shadow-sm"
                   >
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-sm font-medium text-foreground">
+                    <div className="flex flex-col min-w-0 gap-1">
+                      <span className="text-sm font-semibold text-foreground tracking-tight">
                         {tEval('runNumber', { number: runNumber })}
                       </span>
-                      <span className="text-[10px] text-muted-foreground font-mono truncate">
+                      <span className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground/80 truncate">
                         {run.publicId.slice(0, 8)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end sm:shrink-0">
+                    <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 w-full sm:w-auto shrink-0 mt-1 sm:mt-0">
                       <StatusBadge status={run.status} size="sm" />
-                      <span className="text-xs text-muted-foreground">
+                      <span className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground/60">
                         {new Date(run.createdAt).toLocaleDateString()}
                       </span>
                     </div>

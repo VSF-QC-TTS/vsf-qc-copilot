@@ -136,7 +136,7 @@ export default function RedTeamResultsPage() {
           const plugin = row.original.pluginId;
           const shortLabel = plugin.split(':').pop() || plugin;
           return (
-            <Badge variant="outline" className="text-xs uppercase bg-muted border font-mono text-muted-foreground">
+            <Badge variant="outline" className="text-[10px] uppercase bg-muted/40 border-border/50 font-mono font-medium text-muted-foreground tracking-tight px-1.5 py-0">
               {shortLabel}
             </Badge>
           );
@@ -177,20 +177,20 @@ export default function RedTeamResultsPage() {
           const isError = item.gradingResult?.componentResults?.some((c) => (c as { graderError?: boolean })?.graderError) || false;
           if (isError) {
             return (
-              <Badge className="bg-muted text-muted-foreground border text-[10px] py-0.5 px-2">
+              <Badge className="bg-muted/50 text-muted-foreground border-border/50 text-[10px] font-medium tracking-tight py-0.5 px-2">
                 {t('results.table.statusError')}
               </Badge>
             );
           }
           if (item.success) {
             return (
-              <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border border-emerald-500/20 text-[10px] py-0.5 px-2">
+              <Badge className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[10px] font-medium tracking-tight py-0.5 px-2">
                 {t('results.table.statusShielded')}
               </Badge>
             );
           }
           return (
-            <Badge className="bg-red-500/10 text-red-600 dark:text-red-500 border border-red-500/20 text-[10px] py-0.5 px-2">
+            <Badge className="bg-destructive/10 text-destructive border border-destructive/20 text-[10px] font-medium tracking-tight py-0.5 px-2">
               {t('results.table.statusVulnerable')}
             </Badge>
           );
@@ -232,9 +232,9 @@ export default function RedTeamResultsPage() {
         />
 
         {/* Filter Controls Toolbar */}
-        <motion.div variants={itemVariants} className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl border bg-card">
-          {/* Status Segmented Controls — Phosphor icons instead of emoji */}
-          <div className="flex gap-1 bg-muted p-1 rounded-lg border">
+        <motion.div variants={itemVariants} className="flex flex-wrap items-center justify-between gap-4 p-3 rounded-xl border bg-card/60 backdrop-blur-xs shadow-sm">
+          {/* Status Segmented Controls */}
+          <div className="flex gap-1 bg-muted/50 p-1 rounded-lg border border-border/50">
             {(['ALL', 'VULNERABLE', 'SHIELDED', 'ERROR'] as const).map((mode) => (
               <button
                 key={mode}
@@ -243,22 +243,22 @@ export default function RedTeamResultsPage() {
                   setPage(0);
                 }}
                 className={cn(
-                  'px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5',
+                  'px-3 py-1.5 rounded-md text-[11px] font-medium tracking-tight transition-all cursor-pointer flex items-center gap-1.5',
                   statusFilter === mode
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'bg-background text-foreground shadow-xs border border-border/50'
+                    : 'text-muted-foreground hover:text-foreground border border-transparent'
                 )}
               >
                 {mode === 'ALL' && t('results.filterAll')}
-                {mode === 'VULNERABLE' && <><ShieldWarningIcon className="size-3.5 text-red-600 dark:text-red-500" /> {t('results.filterVulnerable')}</>}
-                {mode === 'SHIELDED' && <><ShieldCheckIcon className="size-3.5 text-emerald-600 dark:text-emerald-500" /> {t('results.filterShielded')}</>}
-                {mode === 'ERROR' && <><WarningCircleIcon className="size-3.5 text-yellow-600 dark:text-yellow-500" /> {t('results.filterError')}</>}
+                {mode === 'VULNERABLE' && <><ShieldWarningIcon className="size-3.5 text-destructive" /> {t('results.filterVulnerable')}</>}
+                {mode === 'SHIELDED' && <><ShieldCheckIcon className="size-3.5 text-emerald-500" /> {t('results.filterShielded')}</>}
+                {mode === 'ERROR' && <><WarningCircleIcon className="size-3.5 text-yellow-500" /> {t('results.filterError')}</>}
               </button>
             ))}
           </div>
 
           {/* Plugin Category Filter */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-medium uppercase tracking-wider">
             <span>{t('results.categoryLabel')}:</span>
             <select
               value={pluginFilter}
@@ -266,7 +266,7 @@ export default function RedTeamResultsPage() {
                 setPluginFilter(e.target.value);
                 setPage(0);
               }}
-              className="bg-muted border rounded-lg text-foreground px-2.5 py-1.5 outline-hidden focus:border-ring"
+              className="bg-background border border-border/50 rounded-md text-foreground px-2 py-1.5 outline-hidden focus:border-ring shadow-xs"
             >
               <option value="ALL">{t('results.categoryAll')}</option>
               {uniquePlugins.map((p) => (

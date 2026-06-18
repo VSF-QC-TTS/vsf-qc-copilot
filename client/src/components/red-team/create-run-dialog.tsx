@@ -188,17 +188,17 @@ export function CreateRedTeamRunDialog({
         aria-modal="true"
         aria-labelledby="create-redteam-title"
         className={cn(
-          'relative z-10 w-full max-w-xl max-h-[90vh] flex flex-col rounded-xl border bg-card p-6 shadow-2xl text-foreground overflow-y-auto',
+          'relative z-10 w-full max-w-xl max-h-[90vh] flex flex-col rounded-xl border border-border/50 bg-card/90 backdrop-blur-md p-6 shadow-2xl text-foreground overflow-y-auto',
           'animate-in fade-in-0 zoom-in-95 duration-200',
         )}
       >
-        <div className="flex items-center gap-2 mb-2">
-          <div className="p-1.5 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20">
-            <ShieldCheckIcon size={20} weight="duotone" />
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
+            <ShieldCheckIcon size={20} weight="bold" />
           </div>
           <h2
             id="create-redteam-title"
-            className="text-lg font-bold tracking-tight"
+            className="text-lg font-semibold tracking-tight"
           >
             {t('createScanTitle')}
           </h2>
@@ -240,7 +240,7 @@ export function CreateRedTeamRunDialog({
           >
             {/* Run name input */}
             <div className="space-y-1.5">
-              <label htmlFor="name" className="text-sm font-semibold text-foreground">
+              <label htmlFor="name" className="text-[13px] font-medium text-foreground">
                 {t('scanName')}
               </label>
               <input
@@ -249,10 +249,10 @@ export function CreateRedTeamRunDialog({
                 placeholder={t('scanNamePlaceholder')}
                 {...register('name')}
                 disabled={isSubmitting}
-                className="w-full rounded-lg border bg-muted/50 px-3 py-2 text-sm text-foreground outline-hidden placeholder:text-muted-foreground focus:border-ring focus:ring-1 focus:ring-ring disabled:opacity-50"
+                className="w-full rounded-md border border-border/50 bg-background px-3 py-2 text-sm text-foreground outline-hidden placeholder:text-muted-foreground focus:border-ring focus:ring-1 shadow-xs disabled:opacity-50 transition-all"
               />
               {errors.name && (
-                <p className="text-xs text-destructive mt-1">{errors.name.message}</p>
+                <p className="text-[11px] text-destructive mt-1 font-medium">{errors.name.message}</p>
               )}
             </div>
 
@@ -265,7 +265,7 @@ export function CreateRedTeamRunDialog({
             >
               <label
                 htmlFor="targetConnectorPublicId"
-                className="text-sm font-semibold text-foreground"
+                className="text-[13px] font-medium text-foreground"
               >
                 {t('fields.connector')}
               </label>
@@ -273,7 +273,7 @@ export function CreateRedTeamRunDialog({
                 id="targetConnectorPublicId"
                 {...register('targetConnectorPublicId')}
                 disabled={isSubmitting}
-                className="w-full rounded-lg border bg-muted/50 px-3 py-2 text-sm text-foreground outline-hidden focus:border-ring disabled:opacity-50"
+                className="w-full rounded-md border border-border/50 bg-background px-3 py-2 text-sm text-foreground outline-hidden focus:border-ring focus:ring-1 shadow-xs disabled:opacity-50 transition-all"
               >
                 <option value="">
                   {t('fields.connectorPlaceholder')}
@@ -285,7 +285,7 @@ export function CreateRedTeamRunDialog({
                 ))}
               </select>
               {errors.targetConnectorPublicId && (
-                <p className="text-xs text-destructive mt-1">
+                <p className="text-[11px] text-destructive mt-1 font-medium">
                   {errors.targetConnectorPublicId.message}
                 </p>
               )}
@@ -300,15 +300,15 @@ export function CreateRedTeamRunDialog({
             >
               <label
                 htmlFor="judgeModelPublicId"
-                className="text-sm font-semibold text-foreground"
+                className="text-[13px] font-medium text-foreground flex items-center gap-1.5"
               >
-                {t('fields.judgeModel')} <span className="text-[10px] text-muted-foreground font-normal">({tCommon('yes')} / {tCommon('no')} - optional)</span>
+                {t('fields.judgeModel')} <span className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest font-medium border border-border/50 rounded-sm px-1 py-0.5 ml-1 bg-muted/30">Optional</span>
               </label>
               <select
                 id="judgeModelPublicId"
                 {...register('judgeModelPublicId')}
                 disabled={isSubmitting}
-                className="w-full rounded-lg border bg-muted/50 px-3 py-2 text-sm text-foreground outline-hidden focus:border-ring disabled:opacity-50"
+                className="w-full rounded-md border border-border/50 bg-background px-3 py-2 text-sm text-foreground outline-hidden focus:border-ring focus:ring-1 shadow-xs disabled:opacity-50 transition-all"
               >
                 <option value="">
                   {t('fields.judgeModelPlaceholder')}
@@ -320,7 +320,7 @@ export function CreateRedTeamRunDialog({
                 ))}
               </select>
               {errors.judgeModelPublicId && (
-                <p className="text-xs text-destructive mt-1">
+                <p className="text-[11px] text-destructive mt-1 font-medium">
                   {errors.judgeModelPublicId.message}
                 </p>
               )}
@@ -328,7 +328,7 @@ export function CreateRedTeamRunDialog({
 
             {/* Chatbot Purpose textarea */}
             <div className="space-y-1.5">
-              <label htmlFor="purpose" className="text-sm font-semibold text-foreground">
+              <label htmlFor="purpose" className="text-[13px] font-medium text-foreground">
                 {t('fields.purpose')}
               </label>
               <textarea
@@ -337,12 +337,12 @@ export function CreateRedTeamRunDialog({
                 placeholder={t('fields.purposePlaceholder')}
                 {...register('purpose')}
                 disabled={isSubmitting}
-                className="w-full rounded-lg border bg-muted/50 px-3 py-2 text-sm text-foreground outline-hidden placeholder:text-muted-foreground focus:border-ring focus:ring-1 focus:ring-ring disabled:opacity-50 resize-none"
+                className="w-full rounded-md border border-border/50 bg-background px-3 py-2 text-sm text-foreground outline-hidden placeholder:text-muted-foreground focus:border-ring focus:ring-1 shadow-xs disabled:opacity-50 resize-none transition-all"
               />
               {errors.purpose ? (
-                <p className="text-xs text-destructive mt-1">{errors.purpose.message}</p>
+                <p className="text-[11px] text-destructive mt-1 font-medium">{errors.purpose.message}</p>
               ) : (
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[11px] text-muted-foreground font-medium">
                   {t('fields.purposeHint')}
                 </p>
               )}
@@ -351,21 +351,21 @@ export function CreateRedTeamRunDialog({
             {/* Plugins Checklist & NumTests */}
             <div className="grid gap-4 sm:grid-cols-2">
               {/* Plugins multi-select */}
-              <div className="space-y-2">
-                <span className="text-sm font-semibold text-foreground block">
+              <div className="space-y-2.5">
+                <span className="text-[13px] font-medium text-foreground block">
                   {t('fields.plugins')}
                 </span>
-                <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+                <div className="space-y-2 rounded-md border border-border/50 bg-background p-3 shadow-xs">
                   {['harmful:privacy', 'prompt-extraction', 'pii:direct'].map((plugin) => (
-                    <label key={plugin} className="flex items-center gap-2 text-xs font-medium cursor-pointer text-foreground/80 hover:text-foreground">
+                    <label key={plugin} className="flex items-center gap-2.5 text-xs font-medium cursor-pointer text-foreground/80 hover:text-foreground">
                       <input
                         type="checkbox"
                         value={plugin}
                         {...register('plugins')}
                         disabled={isSubmitting}
-                        className="rounded border bg-muted text-red-600 focus:ring-0 focus:ring-offset-0"
+                        className="rounded-sm border-border bg-background text-primary focus:ring-primary/50 focus:ring-offset-0 size-3.5 transition-colors"
                       />
-                      <span>
+                      <span className="font-mono tracking-tight text-[11px] uppercase">
                         {plugin === 'harmful:privacy' && t('plugins.privacy')}
                         {plugin === 'prompt-extraction' && t('plugins.extraction')}
                         {plugin === 'pii:direct' && t('plugins.pii')}
@@ -374,24 +374,24 @@ export function CreateRedTeamRunDialog({
                   ))}
                 </div>
                 {errors.plugins && (
-                  <p className="text-xs text-destructive mt-1">{errors.plugins.message}</p>
+                  <p className="text-[11px] text-destructive mt-1 font-medium">{errors.plugins.message}</p>
                 )}
               </div>
 
               {/* Num tests input */}
               <div className="space-y-2 flex flex-col justify-between">
-                <div className="space-y-1.5">
-                  <label htmlFor="numTests" className="text-sm font-semibold text-foreground block">
+                <div className="space-y-2.5">
+                  <label htmlFor="numTests" className="text-[13px] font-medium text-foreground block">
                     {t('fields.numTests')}
                   </label>
                   <Controller
                     control={control}
                     name="numTests"
                     render={({ field }) => (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground font-mono">
                           <span>1</span>
-                          <span className="font-bold text-red-600 dark:text-red-500 text-sm">{t('fields.numTestsPerPlugin', { count: field.value })}</span>
+                          <span className="font-semibold text-primary text-[13px]">{t('fields.numTestsPerPlugin', { count: field.value })}</span>
                           <span>10</span>
                         </div>
                         <input
@@ -403,42 +403,43 @@ export function CreateRedTeamRunDialog({
                           disabled={isSubmitting}
                           value={field.value}
                           onChange={(e) => field.onChange(parseInt(e.target.value))}
-                          className="w-full accent-red-500 h-1 bg-muted rounded-lg appearance-none cursor-pointer"
+                          className="w-full accent-primary h-1.5 bg-muted rounded-full appearance-none cursor-pointer border border-border/50"
                         />
                       </div>
                     )}
                   />
                   {errors.numTests && (
-                    <p className="text-xs text-destructive mt-1">{errors.numTests.message}</p>
+                    <p className="text-[11px] text-destructive mt-1 font-medium">{errors.numTests.message}</p>
                   )}
                 </div>
 
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[11px] text-muted-foreground font-medium">
                   {t('fields.numTestsHint')}
                 </p>
               </div>
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-end gap-3 pt-3 border-t">
+            <div className="flex items-center justify-end gap-3 pt-5 border-t border-border/50 mt-2">
               <Button
                 ref={cancelRef}
                 type="button"
                 variant="ghost"
                 disabled={isSubmitting}
                 onClick={() => onOpenChange(false)}
-                className="text-muted-foreground hover:text-foreground hover:bg-muted"
+                className="text-muted-foreground hover:text-foreground font-medium"
               >
                 {tCommon('cancel')}
               </Button>
               <Button
                 type="submit"
+                variant="default"
                 disabled={!canStart || isSubmitting}
-                className="bg-red-600 hover:bg-red-700 text-white font-semibold shadow-lg shadow-red-600/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="font-medium shadow-xs min-w-[120px]"
               >
                 {isSubmitting && (
                   <svg
-                    className="mr-1.5 size-4 animate-spin text-white"
+                    className="mr-1.5 size-4 animate-spin"
                     viewBox="0 0 24 24"
                     fill="none"
                   >
