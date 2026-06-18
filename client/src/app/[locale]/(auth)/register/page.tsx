@@ -105,7 +105,7 @@ export default function RegisterPage() {
           <CheckIcon size={28} weight="bold" />
         </div>
         <div className="space-y-1.5">
-          <h3 className="text-lg font-bold text-foreground">Đăng ký tài khoản thành công</h3>
+          <h3 className="text-lg font-bold text-foreground">{t("registerSuccessTitle")}</h3>
           <p className="text-sm text-muted-foreground max-w-[280px]">{t("registerSuccess")}</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 mt-2 w-full max-w-[300px] justify-center">
@@ -116,7 +116,7 @@ export default function RegisterPage() {
           </Button>
           <Button asChild className="transition-transform active:scale-[0.98] w-full sm:flex-1">
             <a href={mailUrl} target="_blank" rel="noopener noreferrer">
-              Kiểm tra email
+              {t("checkEmail")}
             </a>
           </Button>
         </div>
@@ -220,7 +220,7 @@ export default function RegisterPage() {
           >
             <div className="rounded-lg border bg-muted/20 p-3 space-y-2 dark:bg-muted/5">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/85">
-                Yêu cầu mật khẩu
+                {t("passwordRequirements")}
               </p>
               <ul className="grid grid-cols-2 gap-2 text-xs">
                 {requirements.map((req) => (

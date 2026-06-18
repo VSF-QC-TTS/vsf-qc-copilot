@@ -59,7 +59,7 @@ export default function ForgotPasswordPage() {
           </svg>
         </div>
         <div className="space-y-1.5">
-          <h3 className="text-lg font-bold text-foreground">Kiểm tra hộp thư của bạn</h3>
+          <h3 className="text-lg font-bold text-foreground">{t('checkYourInbox')}</h3>
           <p className="text-sm text-muted-foreground max-w-[280px]">
             {t('forgotPasswordSuccess')}
           </p>
