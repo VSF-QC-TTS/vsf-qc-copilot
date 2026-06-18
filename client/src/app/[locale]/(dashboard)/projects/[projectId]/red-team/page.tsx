@@ -150,15 +150,15 @@ export default function RedTeamRunsPage() {
 
           return (
             <div className="flex items-center gap-2">
-              <span className={hasVulns ? 'text-destructive font-medium font-mono text-xs' : 'text-emerald-500 font-medium font-mono text-xs'}>
+              <span className={hasVulns ? 'text-rose-500/90 font-medium font-mono text-xs' : 'text-emerald-500/80 font-medium font-mono text-xs'}>
                 {failed} / {total}
               </span>
               {hasVulns ? (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-destructive/10 border border-destructive/20 text-destructive font-medium tracking-tight">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-rose-500/10 border border-rose-500/20 text-rose-600/90 dark:text-rose-400/90 font-medium tracking-tight">
                   Vuln
                 </span>
               ) : (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-500 font-medium tracking-tight">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-emerald-500/10 border border-emerald-500/20 text-emerald-600/80 dark:text-emerald-500/80 font-medium tracking-tight">
                   Safe
                 </span>
               )}

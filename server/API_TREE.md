@@ -154,8 +154,8 @@ Auth
 |           `-- Xóa test case theo API contract hiện tại
 |
 |-- /api/v1/rubrics [auth]
-|   |-- POST /generate-preview
-|   |   `-- AI generates editable rubric content/output schema/criteria preview; no DB write
+|   |-- POST /generate
+|   |   `-- AI generates rubric content/criteria and persists as new DRAFT rubric+version in one step
 |   |-- POST /
 |   |   `-- Tạo user-scoped rubric + draft v1; request gồm rubric content/output schema/optional criteria
 |   |-- GET /
@@ -329,8 +329,8 @@ User
     `-- alternative: bulk import test cases từ excel/csv
 10c. POST /api/v1/datasets/{datasetPublicId}/generate
     `-- alternative: auto-generate test cases qua AI
-11. POST /api/v1/rubrics/generate-preview
-    `-- AI tạo preview content/schema/criteria để QC chỉnh trước khi lưu
+11. POST /api/v1/rubrics/generate
+    `-- AI tạo rubric content/criteria và lưu thành DRAFT rubric+version trong 1 request
 12. POST /api/v1/rubrics
     `-- tạo reusable rubric + draft v1, gồm content/output schema/optional criteria
 13. POST /api/v1/rubrics/{rubricPublicId}/versions

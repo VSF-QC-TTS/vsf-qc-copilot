@@ -136,7 +136,7 @@ Implemented API slices after auth:
 - Rubrics, rubric versions, and criteria:
   - Rubrics are now **user-scoped** (not project-scoped). `project_id` is nullable; `is_template` flag marks system templates.
   - `POST /api/v1/rubrics` creates a user-scoped rubric plus draft v1 in one transaction. Request includes `name`, optional `description`, required rubric `content`, optional `outputSchemaJson`, and optional criteria. If criteria are omitted, service seeds a small default criteria set.
-  - `POST /api/v1/rubrics/generate-preview` calls Spring AI `ChatClient` and returns editable rubric `content`, `outputSchemaJson`, and criteria without persisting. Frontend uses this as the QC-friendly rubric wizard preview step.
+  - `POST /api/v1/rubrics/generate` calls Spring AI `ChatClient` to generate rubric content, criteria, and output schema, then persists the result as a new DRAFT rubric + version in one transaction. Returns `RubricVersionResponse` with `rubricPublicId` and `publicId`. Frontend redirects QC to the version detail page for editing.
   - `POST /api/v1/projects/{projectPublicId}/rubrics` creates a rubric linked to a project (backward compat).
   - `GET /api/v1/projects/{projectPublicId}/rubrics` lists rubrics under a project.
   - `GET /api/v1/rubrics` lists all rubrics owned by the authenticated user (user-scoped).

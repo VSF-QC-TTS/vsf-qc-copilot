@@ -193,8 +193,8 @@ export function CreateRedTeamRunDialog({
         )}
       >
         <div className="flex items-center gap-3 mb-2">
-          <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
-            <ShieldCheckIcon size={20} weight="bold" />
+          <div className="p-2 rounded-lg bg-muted text-foreground/80 border border-border/50">
+            <ShieldCheckIcon size={20} weight="duotone" />
           </div>
           <h2
             id="create-redteam-title"

@@ -15,7 +15,10 @@ import me.nghlong3004.vqc.api.rubric.repository.RubricRepository;
 import me.nghlong3004.vqc.api.rubric.repository.RubricVersionRepository;
 import me.nghlong3004.vqc.api.rubric.request.CreateRubricCriterionRequest;
 import me.nghlong3004.vqc.api.rubric.request.CreateRubricWithVersionRequest;
+import me.nghlong3004.vqc.api.rubric.request.GenerateRubricPreviewRequest;
+import me.nghlong3004.vqc.api.rubric.response.GenerateRubricPreviewResponse;
 import me.nghlong3004.vqc.api.rubric.response.RubricVersionResponse;
+import me.nghlong3004.vqc.api.rubric.service.RubricGenerationService;
 import me.nghlong3004.vqc.api.rubric.service.RubricWorkflowService;
 import me.nghlong3004.vqc.api.user.entity.User;
 import me.nghlong3004.vqc.api.user.repository.UserRepository;
@@ -40,6 +43,7 @@ public class RubricWorkflowServiceImpl implements RubricWorkflowService {
   private final RubricCriterionRepository rubricCriterionRepository;
   private final UserRepository userRepository;
   private final RubricMapper rubricMapper;
+  private final RubricGenerationService rubricGenerationService;
 
   @Override
   @Transactional
@@ -76,6 +80,22 @@ public class RubricWorkflowServiceImpl implements RubricWorkflowService {
     rubricCriterionRepository.saveAll(criteria);
 
     return rubricMapper.toVersionResponse(savedVersion, criteria);
+  }
+
+  @Override
+  @Transactional
+  public RubricVersionResponse generateAndCreateRubric(
+      GenerateRubricPreviewRequest request, String username) {
+    GenerateRubricPreviewResponse preview =
+        rubricGenerationService.generatePreview(request, username);
+    CreateRubricWithVersionRequest createRequest =
+        new CreateRubricWithVersionRequest(
+            preview.name(),
+            preview.description(),
+            preview.content(),
+            preview.outputSchemaJson(),
+            preview.criteria());
+    return createRubricWithVersion(createRequest, username);
   }
 
   private RubricCriterion toCriterion(

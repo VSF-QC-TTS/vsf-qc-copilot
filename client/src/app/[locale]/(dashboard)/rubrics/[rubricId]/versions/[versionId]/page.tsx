@@ -9,6 +9,8 @@ import {
   PencilSimpleIcon,
   TrashIcon,
   WarningIcon,
+  ChecksIcon,
+  ArchiveIcon,
 } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
@@ -155,16 +157,98 @@ export default function VersionDetailPage({
     [deleteMutation],
   );
 
+  // Publish version
+  const publishMutation = useMutation({
+    mutationFn: () =>
+      apiClient.patch<VersionDetailResponse>(
+        `/api/v1/rubric-versions/${versionId}`,
+        { status: 'PUBLISHED' },
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ['rubric-version', versionId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ['rubric-versions', rubricId],
+      });
+    },
+    onError: (error: unknown) => {
+      setActionError(errorMessage(error, tErrors));
+    },
+  });
+
+  // Archive version
+  const archiveMutation = useMutation({
+    mutationFn: () =>
+      apiClient.patch<VersionDetailResponse>(
+        `/api/v1/rubric-versions/${versionId}`,
+        { status: 'ARCHIVED' },
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ['rubric-version', versionId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ['rubric-versions', rubricId],
+      });
+    },
+    onError: (error: unknown) => {
+      setActionError(errorMessage(error, tErrors));
+    },
+  });
+
+  const handlePublish = useCallback(() => {
+    setActionError(null);
+    if (criteria.length === 0) {
+      setActionError(t('publishDisabled'));
+      return;
+    }
+    publishMutation.mutate();
+  }, [criteria.length, publishMutation, t]);
+
+  const handleArchive = useCallback(() => {
+    setActionError(null);
+    archiveMutation.mutate();
+  }, [archiveMutation]);
+
   return (
     <PageShell
       title={
         version
-          ? `v${version.versionNumber} - ${version.rubricName}`
+          ? `${t('versionLabel', { number: version.versionNumber })} - ${version.rubricName}`
           : t('title')
       }
       backHref={`/rubrics/${rubricId}`}
       backLabel={tCommon('back')}
-      actions={version && <StatusBadge status={version.status} />}
+      actions={
+        version && (
+          <div className="flex items-center gap-3">
+            <StatusBadge status={version.status} />
+            {version.status === 'DRAFT' && (
+              <Button
+                size="sm"
+                variant="default"
+                disabled={publishMutation.isPending || criteria.length === 0}
+                onClick={handlePublish}
+              >
+                <ChecksIcon weight="bold" className="mr-1.5 size-4" />
+                {t('publish')}
+              </Button>
+            )}
+            {(version.status === 'DRAFT' || version.status === 'PUBLISHED') && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={archiveMutation.isPending}
+                onClick={handleArchive}
+              >
+                <ArchiveIcon weight="bold" className="mr-1.5 size-4" />
+                {t('archive')}
+              </Button>
+            )}
+          </div>
+        )
+      }
     >
       {/* Locked Warning Banners */}
       {version && version.status !== 'DRAFT' && (

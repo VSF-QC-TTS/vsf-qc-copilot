@@ -121,7 +121,7 @@ export default function RubricDetailPage({
   const [editDescription, setEditDescription] = useState('');
   const [metaError, setMetaError] = useState<string | null>(null);
   const [createVersionOpen, setCreateVersionOpen] = useState(false);
-  const [selectedSourceVersionId, setSelectedSourceVersionId] = useState<string | null>(null);
+  const [selectedSourceVersionId, setSelectedSourceVersionId] = useState<string | null | undefined>(undefined);
   const [createVersionError, setCreateVersionError] = useState<string | null>(null);
 
   // Versions pagination
@@ -157,7 +157,7 @@ export default function RubricDetailPage({
   });
   const sourceVersions = allVersionsData?.items ?? versions;
   const effectiveSelectedSourceVersionId =
-    selectedSourceVersionId ?? sourceVersions[0]?.publicId ?? null;
+    selectedSourceVersionId !== undefined ? selectedSourceVersionId : (sourceVersions[0]?.publicId ?? null);
 
   // Start editing
   const startEdit = useCallback(() => {
@@ -235,7 +235,7 @@ export default function RubricDetailPage({
 
   const openCreateVersion = () => {
     setCreateVersionError(null);
-    setSelectedSourceVersionId(sourceVersions[0]?.publicId ?? null);
+    setSelectedSourceVersionId(undefined); // undefined means default (first version), null means blank
     setCreateVersionOpen(true);
   };
 
@@ -315,7 +315,7 @@ export default function RubricDetailPage({
         header: '#',
         size: 60,
         cell: ({ row }) => (
-          <span className="font-medium">v{row.original.versionNumber}</span>
+          <span className="font-medium">{t('versionLabel', { number: row.original.versionNumber })}</span>
         ),
       },
       {
@@ -544,7 +544,7 @@ export default function RubricDetailPage({
                 <div className="flex flex-col gap-2 relative z-10">
                   <div className="flex items-center gap-3">
                     <span className="text-2xl font-bold tracking-tight text-emerald-700 dark:text-emerald-400">
-                      v{activeV.versionNumber}
+                      {t('versionLabel', { number: activeV.versionNumber })}
                     </span>
                     <StatusBadge status={activeV.status} size="sm" />
                   </div>
@@ -680,7 +680,7 @@ function CreateVersionDialog({
               {tCommon('loading')}
             </div>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2 max-h-[50vh] overflow-y-auto pr-1">
+            <div className="grid gap-3 sm:grid-cols-2 max-h-[50vh] overflow-y-auto p-1 -m-1">
               {/* Clone Option */}
               {versions.length > 0 && (
                 <div className="space-y-2 sm:col-span-2">
@@ -704,7 +704,7 @@ function CreateVersionDialog({
                         />
                         <div className="flex flex-col gap-1">
                           <span className="text-sm font-semibold text-foreground">
-                            v{version.versionNumber}
+                            {t('versionLabel', { number: version.versionNumber })}
                           </span>
                           <span className="text-xs text-muted-foreground flex items-center gap-2">
                             <span>{version.criteriaCount} {t('criteria')}</span>

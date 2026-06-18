@@ -77,9 +77,9 @@ The routing structure follows Next.js App Router localized paths: `client/src/ap
   - `projects/[projectId]/evaluations/[runId]/page.tsx`: details of an evaluation run including event streams/polling, status, metrics, and charts.
   - `projects/[projectId]/evaluations/[runId]/results/page.tsx`: results list with data table, filtering, multi-select bulk review action bar, inline quick review buttons, expandable side panel, and export report dropdown (Excel/JSON) for detailed breakdown.
   - `projects/[projectId]/judge-models/page.tsx`: lists provider model configurations and connection testing (supports inline create/edit/delete via Dialog).
-  - `rubrics/page.tsx`: lists independent/user-scoped rubrics.
+  - `rubrics/page.tsx`: lists independent/user-scoped rubrics. "Create" button opens a lightweight AI-generation modal (`create-rubric-dialog.tsx`) that calls `POST /api/v1/rubrics/generate` to create a DRAFT rubric in one step and redirects to the version detail page for editing.
   - `rubrics/[rubricId]/page.tsx`: rubric detail with draft and published versions list.
-  - `rubrics/[rubricId]/versions/[versionId]/page.tsx`: rubric version criteria list; page is split into page.tsx and criteria-editor-panel.tsx.
+  - `rubrics/[rubricId]/versions/[versionId]/page.tsx`: rubric version criteria list with inline content editor, criteria slide-in panel, weight distribution chart, and publish/archive actions; this is the primary editing surface for AI-generated rubrics.
   - `projects/[projectId]/red-team/page.tsx`: lists red-team security scanning runs.
   - `projects/[projectId]/red-team/[runId]/page.tsx`: overview of a specific red-team scan.
   - `projects/[projectId]/red-team/[runId]/results/page.tsx`: detailed results and attack vectors for a security scan.

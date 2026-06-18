@@ -16,11 +16,9 @@ import me.nghlong3004.vqc.api.rubric.request.CreateRubricRequest;
 import me.nghlong3004.vqc.api.rubric.request.CreateRubricWithVersionRequest;
 import me.nghlong3004.vqc.api.rubric.request.GenerateRubricPreviewRequest;
 import me.nghlong3004.vqc.api.rubric.request.UpdateRubricRequest;
-import me.nghlong3004.vqc.api.rubric.response.GenerateRubricPreviewResponse;
 import me.nghlong3004.vqc.api.rubric.response.RubricPageResponse;
 import me.nghlong3004.vqc.api.rubric.response.RubricResponse;
 import me.nghlong3004.vqc.api.rubric.response.RubricVersionResponse;
-import me.nghlong3004.vqc.api.rubric.service.RubricGenerationService;
 import me.nghlong3004.vqc.api.rubric.service.RubricService;
 import me.nghlong3004.vqc.api.rubric.service.RubricWorkflowService;
 import org.springframework.data.domain.Pageable;
@@ -49,18 +47,35 @@ public class RubricController {
 
   private final RubricService rubricService;
   private final RubricWorkflowService rubricWorkflowService;
-  private final RubricGenerationService rubricGenerationService;
 
   @Operation(
-      summary = "Generate rubric preview",
-      description = "Generates an editable rubric preview without persisting it.")
+      summary = "Generate rubric with AI",
+      description =
+          "Generates rubric content and criteria using AI, then persists as a new DRAFT rubric.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "201",
+        description = "AI-generated rubric created as draft",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = RubricVersionResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Validation failed",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                schema = @Schema(implementation = ErrorResponse.class)))
+  })
   @PostMapping(
-      value = "/api/v1/rubrics/generate-preview",
+      value = "/api/v1/rubrics/generate",
       consumes = MediaType.APPLICATION_JSON_VALUE,
       produces = MediaType.APPLICATION_JSON_VALUE)
-  public GenerateRubricPreviewResponse generateRubricPreview(
+  @ResponseStatus(HttpStatus.CREATED)
+  public RubricVersionResponse generateAndCreateRubric(
       @Valid @RequestBody GenerateRubricPreviewRequest request, Principal principal) {
-    return rubricGenerationService.generatePreview(request, principal.getName());
+    return rubricWorkflowService.generateAndCreateRubric(request, principal.getName());
   }
 
   @Operation(

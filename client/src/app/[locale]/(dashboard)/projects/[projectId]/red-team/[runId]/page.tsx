@@ -122,19 +122,19 @@ export default function RedTeamRunProgressPage() {
         {/* Live progress cockpit */}
         <div className={cn(
           "rounded-xl border p-6 space-y-6 text-foreground shadow-sm relative overflow-hidden transition-colors",
-          status === 'RUNNING' ? 'border-primary/30 bg-primary/5' : 'bg-card'
+          status === 'RUNNING' ? 'border-border bg-muted/20' : 'bg-card'
         )}>
           {status === 'RUNNING' && (
             <motion.div
-              className="absolute left-0 top-0 bottom-0 w-[2px] bg-primary/50"
-              animate={{ opacity: [0.3, 1, 0.3] }}
-              transition={{ repeat: Infinity, duration: 1.5 }}
+              className="absolute left-0 top-0 bottom-0 w-[2px] bg-foreground/30"
+              animate={{ opacity: [0.3, 0.6, 0.3] }}
+              transition={{ repeat: Infinity, duration: 2 }}
             />
           )}
           <div className="flex items-center justify-between">
             <div className="space-y-1.5">
               <h3 className="font-semibold text-base text-foreground tracking-tight flex items-center gap-2">
-                {status === 'RUNNING' && <span className="relative flex size-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span><span className="relative inline-flex rounded-full size-2 bg-primary"></span></span>}
+                {status === 'RUNNING' && <span className="relative flex size-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-foreground/60 opacity-75"></span><span className="relative inline-flex rounded-full size-2 bg-foreground/80"></span></span>}
                 {status === 'PENDING' && t('progress.preparing')}
                 {status === 'RUNNING' && t('progress.scanning')}
                 {status === 'COMPLETED' && t('progress.completed')}

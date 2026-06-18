@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  CpuIcon,
+  SparkleIcon,
   CheckCircleIcon,
   XCircleIcon,
   CircleNotchIcon,
@@ -45,7 +45,7 @@ const inputClassName =
 
 
 const textareaClassName =
-  'flex min-h-[80px] w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
+  'flex min-h-[160px] w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
 // ---------------------------------------------------------------------------
 // Component
@@ -198,7 +198,7 @@ export function AIGenerateDialog({
         )}
       >
         <div className="flex items-center gap-2">
-          <CpuIcon className="size-5 text-primary" />
+          <SparkleIcon weight="fill" className="size-5 text-primary" />
           <h2
             id="ai-generate-title"
             className="text-lg font-semibold text-card-foreground"
