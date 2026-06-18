@@ -198,7 +198,7 @@ export function DatasetDialog({
           {initialData ? t('editDatasetTitle', { fallback: 'Edit Dataset' }) : t('createDatasetTitle')}
         </h2>
 
-        <form
+        <form noValidate
           onSubmit={handleSubmit(onSubmit)}
           className="mt-4 space-y-4"
         >

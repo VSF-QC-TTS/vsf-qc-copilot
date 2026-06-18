@@ -827,7 +827,7 @@ export default function ConnectorDetailPage() {
               <div className="grid gap-6 lg:grid-cols-2">
                 {/* Form Side */}
                 <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm transition-all hover:shadow-md">
-                  <form
+                  <form noValidate
                     onSubmit={testForm.handleSubmit(onTestRun)}
                     className="space-y-4"
                   >

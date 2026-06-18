@@ -111,7 +111,7 @@ function ResetPasswordContent() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+      <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         {apiError && (
           <p className="text-center text-sm text-destructive" role="alert">
             {apiError}

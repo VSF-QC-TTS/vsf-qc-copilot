@@ -223,7 +223,7 @@ export function AIGenerateDialog({
 
           {/* ---- Form ---- */}
           {showForm && (
-            <form
+            <form noValidate
               onSubmit={handleSubmit(onSubmit)}
               className="space-y-4"
             >

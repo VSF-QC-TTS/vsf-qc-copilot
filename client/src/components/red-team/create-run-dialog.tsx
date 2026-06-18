@@ -234,7 +234,7 @@ export function CreateRedTeamRunDialog({
             {tCommon('loading')}
           </div>
         ) : (
-          <form
+          <form noValidate
             onSubmit={handleSubmit(onSubmit)}
             className="mt-4 space-y-4"
           >

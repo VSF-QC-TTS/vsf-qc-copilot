@@ -346,7 +346,7 @@ export function TestCaseEditor({
         </div>
 
         {/* Body */}
-        <form
+        <form noValidate
           onSubmit={handleSubmit(onSubmit)}
           className="flex h-[calc(100%-65px)] flex-col"
         >

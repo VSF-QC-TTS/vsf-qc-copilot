@@ -188,7 +188,7 @@ export function CriteriaEditorPanel({
         </div>
 
         {/* Form body */}
-        <form
+        <form noValidate
           onSubmit={handleSubmit(onSubmit)}
           className="flex-1 space-y-4 overflow-y-auto px-6 py-4"
         >

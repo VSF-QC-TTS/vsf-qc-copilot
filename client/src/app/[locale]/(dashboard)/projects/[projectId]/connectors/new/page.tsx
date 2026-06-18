@@ -140,7 +140,7 @@ export default function CreateConnectorPage() {
       backHref={`/projects/${projectId}/connectors`}
       backLabel={tCommon('back')}
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <FormSection title={t('sections.basicInfo')}>
           <div className="grid gap-4 sm:grid-cols-2">
             {/* Name */}

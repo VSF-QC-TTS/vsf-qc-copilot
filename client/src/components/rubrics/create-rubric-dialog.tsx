@@ -559,7 +559,7 @@ export function CreateRubricDialog({
               </div>
             </div>
           ) : (
-            <form onSubmit={handleSubmit(onGenerate)} className="mt-4 space-y-4">
+            <form noValidate onSubmit={handleSubmit(onGenerate)} className="mt-4 space-y-4">
               <div className="space-y-2">
                 <label htmlFor="rubric-name" className="text-sm font-medium">
                   {t('rubricName')}

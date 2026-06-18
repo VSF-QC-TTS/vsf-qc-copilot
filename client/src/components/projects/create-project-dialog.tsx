@@ -193,7 +193,7 @@ export function ProjectDialog({
           {initialData ? t('editProjectTitle', { fallback: 'Edit Project' }) : t('createProjectTitle')}
         </h2>
 
-        <form
+        <form noValidate
           onSubmit={handleSubmit(onSubmit)}
           className="mt-4 space-y-4"
         >

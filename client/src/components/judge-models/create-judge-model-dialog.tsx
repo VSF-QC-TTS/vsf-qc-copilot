@@ -262,7 +262,7 @@ export function JudgeModelDialog({
           {initialData ? t('editJudgeModel') : t('createJudgeModel')}
         </h2>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-4">
+        <form noValidate onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-4">
           {serverError && (
             <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {serverError}

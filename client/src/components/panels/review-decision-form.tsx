@@ -263,7 +263,7 @@ export function ReviewDecisionForm({ resultPublicId }: ReviewDecisionFormProps) 
 
   // Form (create or edit mode)
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+    <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-3">
       {submitError && (
         <div className="rounded-md bg-red-50 p-2 text-xs text-red-800 dark:bg-red-950 dark:text-red-300">
           {submitError}
