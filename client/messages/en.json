@@ -937,7 +937,11 @@
     "nextResult": "Next",
     "keyboardNav": "to navigate",
     "quickPass": "Quick Pass",
-    "quickFail": "Quick Fail"
+    "quickFail": "Quick Fail",
+    "exportReport": "Export Report",
+    "exportExcel": "Export as Excel",
+    "exportJson": "Export as JSON",
+    "exporting": "Exporting..."
   },
   "exports": {
     "title": "Export",

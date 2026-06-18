@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
-import { FunnelIcon, SortAscendingIcon, CaretDownIcon, CheckIcon, XIcon } from '@phosphor-icons/react';
+import { Funnel as FunnelIcon, SortAscending as SortAscendingIcon, CaretDown as CaretDownIcon, Check as CheckIcon, X as XIcon, DownloadSimple as DownloadSimpleIcon, Spinner as SpinnerIcon } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { getCriteria } from '@/lib/utils/criteria';
@@ -13,6 +13,8 @@ import { getCriteria } from '@/lib/utils/criteria';
 import { PageShell } from '@/components/layout/page-shell';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useJobProgress } from '@/hooks/use-job-progress';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
@@ -111,8 +113,50 @@ export default function ResultsPage() {
   const [sortBy, setSortBy] = useState('createdAt,asc');
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [exportJobId, setExportJobId] = useState<string | null>(null);
+  const [exportFormat, setExportFormat] = useState<'EXCEL' | 'JSON' | null>(null);
 
   const queryClient = useQueryClient();
+
+  const createExportMutation = useMutation({
+    mutationFn: (fileType: 'EXCEL' | 'JSON') =>
+      apiClient.post<{ jobPublicId: string; exportPublicId: string }>(
+        `/api/v1/evaluation-runs/${runId}/exports`,
+        { fileType }
+      ),
+    onSuccess: (data, fileType) => {
+      setExportFormat(fileType);
+      setExportJobId(data.jobPublicId);
+    },
+  });
+
+  const { isPolling: isExporting } = useJobProgress(exportJobId, {
+    onCompleted: async (jobData) => {
+      setExportJobId(null);
+      if (!jobData.resourcePublicId) return;
+      try {
+        const response = await apiClient.get<Blob>(
+          `/api/v1/exports/${jobData.resourcePublicId}/file`,
+          { responseType: 'blob' }
+        );
+        const url = window.URL.createObjectURL(new Blob([response as unknown as BlobPart]));
+        const link = document.createElement('a');
+        link.href = url;
+        const extension = exportFormat === 'EXCEL' ? 'xlsx' : 'json';
+        link.setAttribute('download', `evaluation_result_${runId}.${extension}`);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode?.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error('Failed to download export', err);
+      }
+    },
+    onFailed: () => {
+      setExportJobId(null);
+      console.error('Export job failed');
+    },
+  });
 
   const quickReviewMutation = useMutation({
     mutationFn: ({ resultPublicId, qcStatus }: { resultPublicId: string; qcStatus: 'PASS' | 'FAIL' }) =>
@@ -409,6 +453,33 @@ export default function ResultsPage() {
             </select>
             <CaretDownIcon className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           </div>
+        </div>
+
+        <div className="flex-1" />
+        
+        {/* Export Button */}
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={isExporting} className="h-9">
+                {isExporting ? (
+                  <SpinnerIcon className="mr-2 size-4 animate-spin" />
+                ) : (
+                  <DownloadSimpleIcon className="mr-2 size-4" />
+                )}
+                {isExporting ? tDetail('exporting') : tDetail('exportReport')}
+                <CaretDownIcon className="ml-2 size-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => createExportMutation.mutate('EXCEL')}>
+                {tDetail('exportExcel')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => createExportMutation.mutate('JSON')}>
+                {tDetail('exportJson')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

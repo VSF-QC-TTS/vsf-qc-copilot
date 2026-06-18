@@ -931,7 +931,11 @@
     "nextResult": "Sau",
     "keyboardNav": "để điều hướng",
     "quickPass": "Đánh giá Đạt nhanh",
-    "quickFail": "Đánh giá Lỗi nhanh"
+    "quickFail": "Đánh giá Lỗi nhanh",
+    "exportReport": "Xuất Báo Cáo",
+    "exportExcel": "Xuất file Excel",
+    "exportJson": "Xuất file JSON",
+    "exporting": "Đang xuất..."
   },
   "exports": {
     "title": "Xuất file",
