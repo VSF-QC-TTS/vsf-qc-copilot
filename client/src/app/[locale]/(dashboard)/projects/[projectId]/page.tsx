@@ -305,16 +305,16 @@ export default function ProjectDetailPage() {
             <span className="font-medium text-foreground">
               {t('columns.createdAt')}:
             </span>{' '}
-            <span className="font-mono text-[11px] tracking-widest uppercase ml-1">
-              {new Date(project.createdAt).toLocaleDateString()}
+            <span className="font-medium ml-1">
+              {new Date(project.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
             </span>
           </div>
           <div>
             <span className="font-medium text-foreground">
               {t('columns.updatedAt')}:
             </span>{' '}
-            <span className="font-mono text-[11px] tracking-widest uppercase ml-1">
-              {new Date(project.updatedAt).toLocaleDateString()}
+            <span className="font-medium ml-1">
+              {new Date(project.updatedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
             </span>
           </div>
         </div>
@@ -525,8 +525,8 @@ export default function ProjectDetailPage() {
                     </div>
                     <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 w-full sm:w-auto shrink-0 mt-1 sm:mt-0">
                       <StatusBadge status={run.status} size="sm" />
-                      <span className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground/60">
-                        {new Date(run.createdAt).toLocaleDateString()}
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(run.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                       </span>
                     </div>
                   </Link>
